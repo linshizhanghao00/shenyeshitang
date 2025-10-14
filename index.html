@@ -252,7 +252,7 @@
         const app = appMod.initializeApp(firebaseConfig);
         db = fsMod.getFirestore(app); fbReady = true;
 
-        // === 管理员：实时订阅（前端排序 + 完成/撤销 + 批量完成） ===
+        // === 管理员：逐行订阅 yd_order_lines（前端排序 + 完成/撤销 + 批量完成） ===
         if(ADMIN){
           document.getElementById('admin').style.display='block';
           document.getElementById('roomInfo').textContent = `房间/日期: ${ROOM} · 将链接分享为 ?r=${ROOM}`;
@@ -260,81 +260,76 @@
           const showPendingOnly = document.getElementById('showPendingOnly');
           const markAllDoneBtn  = document.getElementById('markAllDone');
 
-          const q = fsMod.query(
-            fsMod.collection(db,'yd_orders'),
-            fsMod.where('room','==',ROOM)
-          );
+          const { query, collection, where, onSnapshot, getDocs, updateDoc, addDoc, serverTimestamp, doc } =
+            await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js');
 
-          fsMod.onSnapshot(
-            q,
+          // 订阅逐行集合
+          const qLines = query(collection(db, 'yd_order_lines'), where('room', '==', ROOM));
+
+          onSnapshot(
+            qLines,
             snap => {
               const tbody = document.getElementById('adminRows');
               tbody.innerHTML = '';
 
               const rows = [];
-              snap.forEach(doc => {
-                const d = doc.data();
-                const ts = d.createdAt?.toMillis?.() ? d.createdAt.toMillis() : 0;
-                rows.push({ id: doc.id, data: d, ts });
+              snap.forEach(d => {
+                const data = d.data();
+                const ts = data.createdAt?.toMillis?.() ? data.createdAt.toMillis() : 0;
+                rows.push({ id: d.id, data, ts });
               });
-              rows.sort((a,b) => b.ts - a.ts);
+              rows.sort((a, b) => b.ts - a.ts);
 
-              rows.forEach(({id, data}) => {
+              rows.forEach(({ id, data }) => {
                 const isDone = data.status === 'done';
                 if (showPendingOnly.checked && isDone) return;
 
                 const when = data.createdAt?.toDate ? data.createdAt.toDate().toLocaleString() : '';
-                (data.items || []).forEach(it => {
-                  const tr = document.createElement('tr');
-                  tr.style.opacity = isDone ? '0.55' : '1';
+                const nameCell = (() => {
+                  const m = /^(.+?)（(.+)）$/.exec(data.name); // 解析“（食材…）”
+                  if (m) return `${m[1]}<div style="font-size:12px;color:#c7cbe0">🧾 ${m[2]}</div>`;
+                  return data.name;
+                })();
 
-                  // 解析“自定义 · 名称（食材…）”
-                  const nameCell = (() => {
-                    const m = /^(.+?)（(.+)）$/.exec(it.name); // 全角括号
-                    if (m) {
-                      const base = m[1], ings = m[2];
-                      return `${base}<div style="font-size:12px;color:#c7cbe0">🧾 ${ings}</div>`;
-                    }
-                    return it.name;
-                  })();
+                const tr = document.createElement('tr');
+                tr.style.opacity = isDone ? '0.55' : '1';
+                tr.innerHTML = `
+                  <td style="border:1px solid #2a2a44;padding:8px 10px">${when}</td>
+                  <td style="border:1px solid #2a2a44;padding:8px 10px">${data.nick || '-'}</td>
+                  <td style="border:1px solid #2a2a44;padding:8px 10px">${nameCell}</td>
+                  <td style="border:1px solid #2a2a44;padding:8px 10px">${data.qty}</td>`;
 
-                  tr.innerHTML = `
-                    <td style="border:1px solid #2a2a44;padding:8px 10px">${when}</td>
-                    <td style="border:1px solid #2a2a44;padding:8px 10px">${data.nick || '-'}</td>
-                    <td style="border:1px solid #2a2a44;padding:8px 10px">${nameCell}</td>
-                    <td style="border:1px solid #2a2a44;padding:8px 10px">${it.qty}</td>`;
-
-                  const tdOp = document.createElement('td');
-                  tdOp.style.border = '1px solid #2a2a44';
-                  tdOp.style.padding = '6px 8px';
-                  const btn = document.createElement('button');
-                  btn.className = isDone ? 'muted' : 'primary';
-                  btn.textContent = isDone ? '撤销' : '完成';
-                  btn.onclick = async () => {
-                    const { doc:docFn, updateDoc } = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js');
-                    const ref = docFn(db, 'yd_orders', id);
-                    await updateDoc(ref, { status: isDone ? 'pending' : 'done', doneAt: isDone ? null : new Date() });
-                  };
-                  tdOp.appendChild(btn);
-                  tr.appendChild(tdOp);
-                  tbody.appendChild(tr);
-                });
+                const tdOp = document.createElement('td');
+                tdOp.style.border = '1px solid #2a2a44';
+                tdOp.style.padding = '6px 8px';
+                const btn = document.createElement('button');
+                btn.className = isDone ? 'muted' : 'primary';
+                btn.textContent = isDone ? '撤销' : '完成';
+                btn.onclick = async () => {
+                  await updateDoc(doc(db, 'yd_order_lines', id), {
+                    status: isDone ? 'pending' : 'done',
+                    doneAt: isDone ? null : new Date()
+                  });
+                };
+                tdOp.appendChild(btn);
+                tr.appendChild(tdOp);
+                tbody.appendChild(tr);
               });
             },
             err => { console.error('实时订单监听失败：', err); alert('实时订单监听失败：'+err.message); }
           );
 
           showPendingOnly.addEventListener('change', ()=>location.reload());
+
           markAllDoneBtn.onclick = async () => {
             if (!confirm('将当前显示的订单全部标记为完成？')) return;
-            const { query, collection, where, getDocs, updateDoc, doc } = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js');
-            const q2 = query(collection(db,'yd_orders'), where('room','==',ROOM));
+            const q2 = query(collection(db,'yd_order_lines'), where('room','==',ROOM));
             const snap2 = await getDocs(q2);
             const ops = [];
             snap2.forEach(d => {
               const data = d.data();
               if (showPendingOnly.checked && data.status === 'done') return;
-              if (data.status !== 'done') ops.push(updateDoc(doc(db,'yd_orders', d.id), { status:'done', doneAt:new Date() }));
+              if (data.status !== 'done') ops.push(updateDoc(doc(db,'yd_order_lines', d.id), { status:'done', doneAt:new Date() }));
             });
             await Promise.all(ops);
             alert('已标记完成');
@@ -343,17 +338,40 @@
       }catch(e){ console.warn('Firebase 初始化失败：', e.message); }
     })();
 
-    // 提交订单（默认带 status/pending）
+    // 提交订单（头档 + 逐行；不区分 qty 的部分完成）
     submitOrder.onclick = async () => {
       if(Object.keys(cart).length===0){ alert('请先加入菜品'); return; }
       if(!fbReady){ alert('Firebase 未配置或不可用。'); return; }
+
       const items = Object.entries(cart).map(([name, qty])=>({name, qty}));
+
       try{
-        const { addDoc, collection, serverTimestamp } = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js');
-        await addDoc(collection(db,'yd_orders'), {
+        const { addDoc, collection, serverTimestamp } =
+          await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js');
+
+        // 1) 头档（保留历史/汇总）
+        const headerRef = await addDoc(collection(db,'yd_orders'), {
           room: ROOM, nick: nickname.value.trim(), items,
           status: 'pending', doneAt: null, createdAt: serverTimestamp()
         });
+
+        // 2) 逐行（真正用于“逐道完成/撤销”）
+        const linesCol = collection(db,'yd_order_lines');
+        const ops = [];
+        for (const it of items) {
+          ops.push(addDoc(linesCol, {
+            room: ROOM,
+            nick: nickname.value.trim(),
+            orderId: headerRef.id,
+            name: it.name,
+            qty: it.qty,               // 不做部分完成，整行完成/撤销
+            status: 'pending',
+            doneAt: null,
+            createdAt: serverTimestamp()
+          }));
+        }
+        await Promise.all(ops);
+
         cart = {}; saveCart(); drawer.classList.remove('open'); alert('已提交！');
       }catch(err){ alert('提交失败：'+err.message); }
     };
