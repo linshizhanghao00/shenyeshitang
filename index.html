@@ -228,23 +228,84 @@
             fsMod.where('room','==',ROOM),
             fsMod.orderBy('createdAt','desc')
           );
-          fsMod.onSnapshot(
-            q,
-            snap => {
-              const tbody = document.getElementById('adminRows');
-              tbody.innerHTML = '';
-              snap.forEach(doc => {
-                const d = doc.data();
-                const when = d.createdAt?.toDate ? d.createdAt.toDate().toLocaleString() : new Date(d.createdAt).toLocaleString();
-                d.items.forEach(it => {
-                  const tr = document.createElement('tr');
-                  tr.innerHTML = `<td style='border:1px solid #2a2a44;padding:8px 10px'>${when}</td>
-                                  <td style='border:1px solid #2a2a44;padding:8px 10px'>${d.nick||'-'}</td>
-                                  <td style='border:1px solid #2a2a44;padding:8px 10px'>${it.name}</td>
-                                  <td style='border:1px solid #2a2a44;padding:8px 10px'>${it.qty}</td>`;
-                  tbody.appendChild(tr);
-                });
-              });
+          // === 管理员视图逻辑（带完成标记） ===
+const showPendingOnly = document.getElementById('showPendingOnly');
+const markAllDoneBtn  = document.getElementById('markAllDone');
+
+const q = fsMod.query(
+  fsMod.collection(db,'yd_orders'),
+  fsMod.where('room','==',ROOM)
+);
+
+fsMod.onSnapshot(q, snap => {
+  const tbody = document.getElementById('adminRows');
+  tbody.innerHTML = '';
+
+  // 收集并前端排序（最新在上）
+  const rows = [];
+  snap.forEach(doc => {
+    const d = doc.data();
+    const ts = d.createdAt?.toMillis?.() ? d.createdAt.toMillis() : 0;
+    rows.push({ id: doc.id, data: d, ts });
+  });
+  rows.sort((a,b) => b.ts - a.ts);
+
+  // 渲染每条订单
+  rows.forEach(({id, data}) => {
+    const isDone = data.status === 'done';
+    if (showPendingOnly.checked && isDone) return;
+
+    const when = data.createdAt?.toDate ? data.createdAt.toDate().toLocaleString() : '';
+    (data.items || []).forEach(it => {
+      const tr = document.createElement('tr');
+      tr.style.opacity = isDone ? '0.55' : '1';
+      tr.innerHTML = `
+        <td style="border:1px solid #2a2a44;padding:8px 10px">${when}</td>
+        <td style="border:1px solid #2a2a44;padding:8px 10px">${data.nick || '-'}</td>
+        <td style="border:1px solid #2a2a44;padding:8px 10px">${it.name}</td>
+        <td style="border:1px solid #2a2a44;padding:8px 10px">${it.qty}</td>`;
+      
+      // “完成 / 撤销”按钮
+      const tdOp = document.createElement('td');
+      tdOp.style.border = '1px solid #2a2a44';
+      tdOp.style.padding = '6px 8px';
+      const btn = document.createElement('button');
+      btn.className = isDone ? 'muted' : 'primary';
+      btn.textContent = isDone ? '撤销' : '完成';
+      btn.onclick = async () => {
+        const { doc:docFn, updateDoc } = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js');
+        const ref = docFn(db, 'yd_orders', id);
+        await updateDoc(ref, {
+          status: isDone ? 'pending' : 'done',
+          doneAt: isDone ? null : new Date()
+        });
+      };
+      tdOp.appendChild(btn);
+      tr.appendChild(tdOp);
+      tbody.appendChild(tr);
+    });
+  });
+});
+
+// 监听“只看未做”切换
+showPendingOnly.addEventListener('change', ()=>location.reload());
+
+// 批量完成按钮
+markAllDoneBtn.onclick = async () => {
+  if (!confirm('将当前显示的订单全部标记为完成？')) return;
+  const { query, collection, where, getDocs, updateDoc, doc } = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js');
+  const q2 = query(collection(db,'yd_orders'), where('room','==',ROOM));
+  const snap2 = await getDocs(q2);
+  const ops = [];
+  snap2.forEach(d => {
+    const data = d.data();
+    if (showPendingOnly.checked && data.status === 'done') return;
+    if (data.status !== 'done') ops.push(updateDoc(doc(db,'yd_orders', d.id), { status:'done', doneAt:new Date() }));
+  });
+  await Promise.all(ops);
+  alert('已标记完成');
+};
+
             },
             err => { console.error('实时订单监听失败：', err); alert('实时订单监听失败：'+err.message); }
           );
