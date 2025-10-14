@@ -5,8 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-  <link rel="manifest" href="manifest.webmanifest">
-  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <link rel="manifest" href="/shenyeshitang/manifest.webmanifest">
+  <link rel="apple-touch-icon" href="/shenyeshitang/icons/icon-192.png">
   <title>夜间食堂 · iPad 菜单</title>
   <style>
     :root{ --bg:#0c0c0f;--panel:#121218;--muted:#8a8fa3;--text:#e9e9f2;--brand:#7c5cff;--brand2:#3dd9b2;--accent:#ffd166;--radius:18px;--shadow:0 10px 30px rgba(0,0,0,.35);--safe:max(env(safe-area-inset-left),16px); }
@@ -183,7 +183,7 @@
     renderCart();
 
     // 加载 JSON 菜单
-    fetch('./menu.json').then(r=>r.json()).then(data => { MENU = data; renderMenu(); });
+    fetch('/shenyeshitang/menu.json').then(r=>r.json()).then(data => { MENU = data; renderMenu(); });
 
     // --- Firebase（已写入你的配置） ---
     const firebaseConfig = {"apiKey": "AIzaSyA45H7MVPejI-09EmX3Y9RP0G-BzxKUA0M", "authDomain": "shenyeshitang-9a3c2.firebaseapp.com", "projectId": "shenyeshitang-9a3c2", "storageBucket": "shenyeshitang-9a3c2.firebasestorage.app", "messagingSenderId": "293937999981", "appId": "1:293937999981:web:364b69c1ea61b48e8acf64"};
@@ -227,7 +227,8 @@
       }catch(err){ alert('提交失败：'+err.message); }
     };
 
-    if('serviceWorker' in navigator){ navigator.serviceWorker.register('./sw.js'); }
+    if('serviceWorker' in navigator){ navigator.serviceWorker.register('/shenyeshitang/sw.js');
+}
   </script>
 </body>
 </html>
