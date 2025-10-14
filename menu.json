@@ -71,6 +71,7 @@
     "emoji": "🍤",
     "desc": "金黄酥脆的炸虾、炸鸡块与炸台湾香肠，酥香诱人。"
   },
+
   {
     "name_cn": "泡菜炒饭",
     "name_en": "Kimchi Fried Rice",
@@ -96,6 +97,39 @@
     "desc": "皮薄馅香，咬一口满是家的味道。"
   },
   {
+    "name_cn": "方便面",
+    "name_en": "Instant Noodles",
+    "category": "Rice",
+    "tags": ["Noodle", "Instant"],
+    "emoji": "🍜",
+    "desc": "快速方便，热气腾腾一碗满足。"
+  },
+  {
+    "name_cn": "螺蛳粉",
+    "name_en": "Luosifen",
+    "category": "Rice",
+    "tags": ["Noodle", "Spicy", "Luosifen"],
+    "emoji": "🍜",
+    "desc": "酸辣顺滑，螺蛳汤底风味独特。"
+  },
+  {
+    "name_cn": "拉面",
+    "name_en": "Ramen",
+    "category": "Rice",
+    "tags": ["Noodle"],
+    "emoji": "🍜",
+    "desc": "劲道拉面，暖胃解馋。"
+  },
+
+  {
+    "name_cn": "麻辣烫",
+    "name_en": "Mala Tang",
+    "category": "Main",
+    "tags": ["malatang", "Spicy"],
+    "emoji": "🌶️",
+    "desc": "麻辣鲜香，汤底热辣，食材可自选。"
+  },
+  {
     "name_cn": "排骨汤",
     "name_en": "Pork Rib Soup",
     "category": "Main",
@@ -111,6 +145,7 @@
     "emoji": "🍄",
     "desc": "清汤鲜香，蘑菇滑嫩，瘦肉爽口。"
   },
+
   {
     "name_cn": "蒜蓉白菜粉丝",
     "name_en": "Garlic Napa with Vermicelli",
@@ -120,7 +155,7 @@
     "desc": "蒜香浓郁，软滑粉丝吸足汤汁，清爽不腻。"
   },
   {
-    "name_cn": "凉拌菜",
+    "name_cn": "凉拌菜（黄瓜金针菇豆芽）",
     "name_en": "Cold Mixed Veg Trio",
     "category": "Veg",
     "tags": ["Cold", "Refreshing"],
