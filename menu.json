@@ -1,7 +1,7 @@
 [
   {
     "name_cn": "酸汤肥牛",
-
+    "name_en": "Beef Slices in Sour Broth",
     "category": "Main",
     "tags": [
       "Beef",
@@ -12,7 +12,7 @@
   },
   {
     "name_cn": "西红柿炒鸡蛋",
-
+    "name_en": "Tomato & Egg Stir-fry",
     "category": "Main",
     "tags": [
       "Egg",
@@ -23,7 +23,7 @@
   },
   {
     "name_cn": "咖喱",
-
+    "name_en": "Curry",
     "category": "Main",
     "tags": [
       "Comfort"
@@ -33,7 +33,7 @@
   },
   {
     "name_cn": "青椒肉丝",
-
+    "name_en": "Shredded Pork with Green Pepper",
     "category": "Main",
     "tags": [
       "Pork",
@@ -44,7 +44,7 @@
   },
   {
     "name_cn": "蒜蓉白菜粉丝",
-
+    "name_en": "Garlic Napa with Vermicelli",
     "category": "Veg",
     "tags": [
       "Vegetarian"
@@ -54,7 +54,7 @@
   },
   {
     "name_cn": "酸菜羊肉",
-
+    "name_en": "Lamb & Pickled Cabbage",
     "category": "Main",
     "tags": [
       "Lamb",
@@ -65,7 +65,7 @@
   },
   {
     "name_cn": "泡菜炒饭",
-
+    "name_en": "Kimchi Fried Rice",
     "category": "Rice",
     "tags": [
       "Rice",
@@ -76,7 +76,7 @@
   },
   {
     "name_cn": "辣椒醋炒蛋",
-
+    "name_en": "Chili-Vinegar Fried Egg",
     "category": "Main",
     "tags": [
       "Egg",
@@ -87,7 +87,7 @@
   },
   {
     "name_cn": "豆角肉末",
- 
+    "name_en": "Green Beans with Minced Pork",
     "category": "Main",
     "tags": [
       "Pork",
@@ -98,7 +98,7 @@
   },
   {
     "name_cn": "凉拌菜（黄瓜金针菇豆芽）",
-
+    "name_en": "Cold Mixed Veg Trio",
     "category": "Veg",
     "tags": [
       "Cold",
@@ -109,7 +109,7 @@
   },
   {
     "name_cn": "Guacamole",
-
+    "name_en": "Guacamole",
     "category": "Veg",
     "tags": [
       "Avocado",
