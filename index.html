@@ -95,6 +95,15 @@
   <!-- 管理员面板 -->
   <section id="admin" style="display:none;padding:14px var(--safe)">
     <h3>📟 实时订单</h3>
+    <!-- ✅ 新增：筛选栏 -->
+  <div style="display:flex;align-items:center;gap:12px;margin:8px 0 6px">
+    <label style="display:flex;align-items:center;gap:6px;cursor:pointer">
+      <input id="showPendingOnly" type="checkbox" checked>
+      <span>只看未做</span>
+    </label>
+    <button id="markAllDone" class="muted">将当前显示的全部标记为完成</button>
+  </div>
+    
     <div id="roomInfo" style="color:#c7cbe0;margin:8px 0"></div>
     <table style="width:100%;border-collapse:collapse;border:1px solid #2a2a44">
       <thead><tr><th style="border:1px solid #2a2a44;padding:8px 10px">时间</th><th style="border:1px solid #2a2a44;padding:8px 10px">来源</th><th style="border:1px solid #2a2a44;padding:8px 10px">菜品</th><th style="border:1px solid #2a2a44;padding:8px 10px">数量</th></tr></thead>
@@ -243,17 +252,26 @@
       }catch(e){ console.warn('Firebase 初始化失败：', e.message); }
     })();
 
-    // 提交订单
-    submitOrder.onclick = async () => {
-      if(Object.keys(cart).length===0){ alert('请先加入菜品'); return; }
-      if(!fbReady){ alert('Firebase 未配置或不可用。'); return; }
-      const items = Object.entries(cart).map(([name, qty])=>({name, qty}));
-      try{
-        const { addDoc, collection, serverTimestamp } = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js');
-        await addDoc(collection(db,'yd_orders'), { room: ROOM, nick: nickname.value.trim(), items, createdAt: serverTimestamp() });
-        cart = {}; saveCart(); drawer.classList.remove('open'); alert('已提交！');
-      }catch(err){ alert('提交失败：'+err.message); }
-    };
+// 提交订单
+submitOrder.onclick = async () => {
+  if(Object.keys(cart).length===0){ alert('请先加入菜品'); return; }
+  if(!fbReady){ alert('Firebase 未配置或不可用。'); return; }
+
+  const items = Object.entries(cart).map(([name, qty])=>({name, qty}));
+  try{
+    const { addDoc, collection, serverTimestamp } = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js');
+    await addDoc(collection(db,'yd_orders'), {
+      room: ROOM,
+      nick: nickname.value.trim(),
+      items,
+      status: 'pending',          // 👈 新增：默认未完成
+      doneAt: null,               // 👈 新增：完成时间
+      createdAt: serverTimestamp()
+    });
+    cart = {}; saveCart(); drawer.classList.remove('open'); alert('已提交！');
+  }catch(err){ alert('提交失败：'+err.message); }
+};
+
 
     // 注册 Service Worker（绝对路径）
     if('serviceWorker' in navigator){ navigator.serviceWorker.register(`${BASE}/sw.js`); }
