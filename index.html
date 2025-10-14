@@ -134,9 +134,9 @@ const submitOrder = document.getElementById('submitOrder');
 const clearCart = document.getElementById('clearCart');
 
 const qs = new URLSearchParams(location.search);
-// 本地时区的 YYYY-MM-DD（sv-SE 区域格式保证是 2025-10-13 这种）
-const localYYYYMMDD = new Date().toLocaleDateString('sv-SE');
+const localYYYYMMDD = new Date().toLocaleDateString('sv-SE'); // 2025-10-14 这种
 const ROOM = qs.get('r') || localYYYYMMDD;
+
 
 const ADMIN = new URLSearchParams(location.search).get('admin') === '1';
 let activeFilter = 'all';
