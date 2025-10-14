@@ -128,7 +128,6 @@
       <button class="pill" data-filter="all" aria-pressed="true">全部</button>
       <button class="pill" data-filter="Main">热菜</button>
       <button class="pill" data-filter="Rice">主食</button>
-      <button class="pill" data-filter="Veg">素菜/凉菜</button>
     </div>
   </header>
 
@@ -176,9 +175,8 @@
 </svg>`);
       return `<img class="thumb" alt="${label}" src="data:image/svg+xml;utf8,${svg}">`;
     };
-
     const mediaFor = (item) => {
-      // if (item.img) return `<img class="thumb" src="${item.img}" alt="${item.name_cn}" loading="lazy" referrerpolicy="no-referrer">`;
+      // 若以后用图片：if (item.img) return `<img class="thumb" src="${item.img}" alt="${item.name_cn}" loading="lazy">`;
       return iconSVG(item.emoji, item.name_cn);
     };
 
@@ -198,19 +196,25 @@
     const addCustom = document.getElementById('addCustom');
 
     const qs = new URLSearchParams(location.search);
-    const localYYYYMMDD = new Date().toLocaleDateString('sv-SE');
+    const localYYYYMMDD = new Date().toLocaleDateString('sv-SE'); // 本地 YYYY-MM-DD
     const ROOM = qs.get('r') || localYYYYMMDD;
     const ADMIN = qs.get('admin') === '1';
     let activeFilter = 'all';
     let MENU = [];
     let cart = JSON.parse(localStorage.getItem('yd_cart')||'{}');
 
-    const groupDefs = [
-      { key:'hot',    title:'🥘 热菜类',        filter: it => it.category === 'Main' && !(it.tags||[]).includes('Soup') },
-      { key:'staple', title:'🍚 主食',          filter: it => it.category === 'Rice' },
-      { key:'soups',  title:'🍲 汤类',          filter: it => (it.tags||[]).includes('Soup') },
-      { key:'veg',    title:'🥦 素菜 / 凉菜类', filter: it => it.category === 'Veg' }
-    ];
+    // === 子分组（热菜总类下分三组） + 主食 ===
+    const groupHotHot   = { key:'hot-hot',   title:'🔥 热菜', filter: it => it.category === 'Main' && !(it.tags||[]).includes('Soup') };
+    const groupHotVeg   = { key:'hot-veg',   title:'🥦 素菜', filter: it => it.category === 'Veg' };
+    const groupHotSoup  = { key:'hot-soup',  title:'🍲 汤类', filter: it => (it.tags||[]).includes('Soup') };
+    const groupStaple   = { key:'staple',    title:'🍚 主食', filter: it => it.category === 'Rice' };
+
+    // 组装要渲染的顺序：热菜页=三小组；主食页=主食；全部=三小组+主食
+    function getRenderOrder(){
+      if (activeFilter === 'Main') return [groupHotHot, groupHotVeg, groupHotSoup];
+      if (activeFilter === 'Rice') return [groupStaple];
+      return [groupHotHot, groupHotVeg, groupHotSoup, groupStaple];
+    }
 
     function renderSection(title, items, expanded = true){
       const sec = document.createElement('section');
@@ -269,17 +273,21 @@
       root.innerHTML = '';
       const q = (searchInput?.value || '').trim().toLowerCase();
 
+      // 先按照搜索和顶层分类过滤
       const filtered = MENU.filter(it => {
-        const matchCat = (activeFilter === 'all') || (it.category === activeFilter);
+        const matchCat = (activeFilter === 'all') ||
+                         (activeFilter === 'Main' && (it.category === 'Main' || it.category === 'Veg' || (it.tags||[]).includes('Soup'))) ||
+                         (activeFilter === 'Rice' && it.category === 'Rice');
         const hay = (it.name_cn + ' ' + (it.name_en||'') + ' ' + (it.tags||[]).join(' ')).toLowerCase();
         const matchText = !q || hay.includes(q);
         return matchCat && matchText;
       });
 
-      groupDefs.forEach(g => {
+      // 分别取子组数据，按顺序渲染
+      getRenderOrder().forEach(g => {
         const items = filtered.filter(g.filter);
         if (!items.length) return;
-        root.appendChild(renderSection(g.title, items, true)); // 默认展开
+        root.appendChild(renderSection(g.title, items, true));
       });
     }
 
@@ -327,7 +335,7 @@
       .then(data => { MENU = data; renderMenu(); })
       .catch(err => { console.error('加载菜单失败：', err); alert('加载菜单失败：请检查 menu.json 路径'); });
 
-    // Firestore
+    // Firestore（略，与之前版本相同）
     const firebaseConfig = {
       apiKey: "AIzaSyA45H7MVPejI-09EmX3Y9RP0G-BzxKUA0M",
       authDomain: "shenyeshitang-9a3c2.firebaseapp.com",
@@ -336,7 +344,6 @@
       messagingSenderId: "293937999981",
       appId: "1:293937999981:web:364b69c1ea61b48e8acf64"
     };
-
     let db=null; let fbReady=false;
     (async () => {
       try{
@@ -345,11 +352,12 @@
         const app = appMod.initializeApp(firebaseConfig);
         db = fsMod.getFirestore(app); fbReady = true;
 
+        // 顶部展示 admin
         if (ADMIN) {
           const adminSection = document.getElementById('admin');
           adminSection.style.display = 'block';
           const headerEl = document.querySelector('header');
-          document.body.insertBefore(adminSection, headerEl); // 置顶
+          document.body.insertBefore(adminSection, headerEl);
         }
 
         if(ADMIN){
@@ -367,7 +375,6 @@
             snap => {
               const tbody = document.getElementById('adminRows');
               tbody.innerHTML = '';
-
               const rows = [];
               snap.forEach(d => {
                 const data = d.data();
@@ -379,7 +386,6 @@
               rows.forEach(({ id, data }) => {
                 const isDone = data.status === 'done';
                 if (showPendingOnly.checked && isDone) return;
-
                 const when = data.createdAt?.toDate ? data.createdAt.toDate().toLocaleString() : '';
                 const m = /^(.+?)（(.+)）$/.exec(data.name);
                 const nameCell = m ? `${m[1]}<div style="font-size:12px;color:#c7cbe0">🧾 ${m[2]}</div>` : data.name;
@@ -391,7 +397,6 @@
                   <td style="border:1px solid #2a2a44;padding:8px 10px">${data.nick || '-'}</td>
                   <td style="border:1px solid #2a2a44;padding:8px 10px">${nameCell}</td>
                   <td style="border:1px solid #2a2a44;padding:8px 10px">${data.qty}</td>`;
-
                 const tdOp = document.createElement('td');
                 tdOp.style.border = '1px solid #2a2a44';
                 tdOp.style.padding = '6px 8px';
@@ -429,13 +434,11 @@
       }catch(e){ console.warn('Firebase 初始化失败：', e.message); }
     })();
 
-    // 提交订单（头档 + 逐行；不区分 qty 的部分完成）
+    // 提交订单（头档 + 逐行）
     submitOrder.onclick = async () => {
       if(Object.keys(cart).length===0){ alert('请先加入菜品'); return; }
       if(!fbReady){ alert('Firebase 未配置或不可用。'); return; }
-
       const items = Object.entries(cart).map(([name, qty])=>({name, qty}));
-
       try{
         const { addDoc, collection, serverTimestamp } =
           await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js');
@@ -460,7 +463,6 @@
           }));
         }
         await Promise.all(ops);
-
         cart = {}; saveCart(); drawer.classList.remove('open'); alert('已提交！');
       }catch(err){ alert('提交失败：'+err.message); }
     };
