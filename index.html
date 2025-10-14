@@ -29,7 +29,7 @@
     .pill{border:1px solid #28283e;background:#13131b;color:var(--text);padding:10px 14px;border-radius:999px;font-size:14px;cursor:pointer;flex:0 0 auto}
     .pill[aria-pressed="true"]{background:linear-gradient(135deg,rgba(124,92,255,.25),rgba(61,217,178,.2));border-color:var(--brand)}
 
-    /* 详细卡片 */
+    /* 详细卡片（热菜/主食/凉拌菜） */
     .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:22px}
     .card{display:grid;grid-template-columns:140px 1fr;background:linear-gradient(180deg,#171a24,#12131a 40%);border:1px solid #282b3f;border-radius:16px;overflow:hidden;box-shadow:0 12px 30px rgba(0,0,0,.35);transition:transform .18s,border-color .18s}
     .card:hover{transform:translateY(-3px);border-color:#3b3f5b}
@@ -78,18 +78,18 @@
     input.muted{background:#161622;border:1px solid #2a2a44;color:#fff}
     footer{margin:28px 0 120px;text-align:center;color:#98a0be;font-size:12px}
 
-    /* —— “全部”页骨架屏 —— */
+    /* “全部”页骨架屏 */
     .thumb.loading{background:#222;opacity:0.0;animation:pulse 1.2s ease-in-out infinite}
     .thumb.loaded{opacity:1;animation:none;transition:opacity .4s ease}
     @keyframes pulse{0%{opacity:0.4}50%{opacity:0.9}100%{opacity:0.4}}
 
-    /* —— toast 提示 —— */
+    /* toast 提示 */
     #toast{position:fixed;top:14px;right:14px;z-index:60;display:grid;gap:8px}
     .toast{background:rgba(20,22,30,.95);border:1px solid #2a2a44;color:#e9e9f2;padding:10px 12px;border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,.45);font-size:14px}
   </style>
 </head>
 <body>
-  <!-- 管理员面板 -->
+  <!-- 管理员面板（admin=1 时顶部展示） -->
   <section id="admin" style="display:none;padding:14px var(--safe)">
     <h3>📟 实时订单</h3>
     <div class="toolbar">
@@ -182,11 +182,11 @@
     const ADMIN = qs.get('admin') === '1';
     let activeFilter = 'all';
     let MENU = [];
-    let cart = JSON.parse(localStorage.getItem('yd_cart')||'{}');
+    let cart; try { cart = JSON.parse(localStorage.getItem('yd_cart') || '{}'); } catch { cart = {}; }
 
     // 分组
     const groupHotHot  = { key:'hot-hot',  title:'🔥 热菜',  filter: it => it.category === 'Main' && !(it.tags||[]).includes('Soup') };
-    const groupHotVeg  = { key:'hot-veg',  title:'🥦 素菜',  filter: it => it.category === 'Veg' && !(it.tags||[]).includes('Cold') }; // 不含凉拌
+    const groupHotVeg  = { key:'hot-veg',  title:'🥦 素菜',  filter: it => it.category === 'Veg' && !(it.tags||[]).includes('Cold') };
     const groupHotSoup = { key:'hot-soup', title:'🍲 汤类',  filter: it => (it.tags||[]).includes('Soup') };
     const groupStaple  = { key:'staple',   title:'🍚 主食',  filter: it => it.category === 'Rice' };
     const groupCold    = { key:'cold',     title:'🥒 凉拌菜', filter: it => (it.tags||[]).includes('Cold') };
@@ -202,7 +202,7 @@
       setTimeout(()=>{ wrap.removeChild(el); }, 3000);
     }
 
-    // 声音 & 震动
+    // 声音 & 震动降级
     const ding = new Audio("data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEAESsAACJWAAACABYAAAAgAAAASAAAAGZmZmZmZmZmZmY=");
     function softAlert(title, body){
       try{ ding.currentTime = 0; ding.play().catch(()=>{});}catch{}
@@ -210,7 +210,7 @@
       showToast(`${title} · ${body}`);
     }
 
-    // 媒体元素（全部页支持骨架屏）
+    // 媒体：全部页支持骨架屏
     function resolveMediaElement(item){
       if (item.img){
         const img = document.createElement('img');
@@ -293,18 +293,19 @@
       cartCount.textContent = `(${totalQty})`;
     }
 
-    // 顶部筛选 & 搜索
-    const pills = document.querySelectorAll('.pill');
-    pills.forEach(btn => btn.addEventListener('click', () => { pills.forEach(b => b.setAttribute('aria-pressed','false')); btn.setAttribute('aria-pressed','true'); activeFilter = btn.dataset.filter; renderMenu(); }));
-    const searchInput = document.getElementById('search'); searchInput?.addEventListener('input', renderMenu);
+    // 顶部筛选 & 搜索（注意：变量只声明一次）
+    pills.forEach(btn => btn.addEventListener('click', () => {
+      pills.forEach(b => b.setAttribute('aria-pressed','false'));
+      btn.setAttribute('aria-pressed','true');
+      activeFilter = btn.dataset.filter; renderMenu();
+    }));
+    searchInput?.addEventListener('input', renderMenu);
 
-    // 购物车抽屉
     cartBtn.onclick = ()=>{ drawer.classList.add('open'); drawer.setAttribute('aria-hidden','false'); };
     closeDrawer.onclick = ()=>{ drawer.classList.remove('open'); drawer.setAttribute('aria-hidden','true'); };
     clearCart.onclick = ()=>{ cart = {}; saveCart(); };
     renderCart();
 
-    // 自定义点菜
     addCustom.onclick = () => {
       const name = (cName.value || '').trim();
       const ings = (cIngs.value || '').trim();
@@ -316,11 +317,16 @@
       cName.value = ''; cIngs.value = '';
     };
 
-    // ====== Firestore + 新单提醒（含降级） ======
+    // 载入菜单
+    fetch(`${BASE}/menu.json`, { cache: 'no-store' })
+      .then(r => { if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); })
+      .then(data => { MENU = data; renderMenu(); })
+      .catch(err => { console.error('加载菜单失败：', err); alert('加载菜单失败：请检查 menu.json 路径'); });
+
+    // ===== Firestore + 新单提醒（系统通知 or 降级 声音/震动/toast） =====
     const firebaseConfig = { apiKey:"AIzaSyA45H7MVPejI-09EmX3Y9RP0G-BzxKUA0M", authDomain:"shenyeshitang-9a3c2.firebaseapp.com", projectId:"shenyeshitang-9a3c2", storageBucket:"shenyeshitang-9a3c2.firebasestorage.app", messagingSenderId:"293937999981", appId:"1:293937999981:web:364b69c1ea61b48e8acf64" };
     let db=null; let fbReady=false;
 
-    // 通知权限 & 按钮
     async function requestNotify(){
       if (!('Notification' in window)) return false;
       if (Notification.permission === 'granted') return true;
@@ -333,7 +339,6 @@
     }
     function alertNewLine(d){
       const title = `新订单 · ${d.name} × ${d.qty}`; const body = `${d.nick||'-'} · 房间 ${d.room||ROOM}`;
-      // 先尝试系统通知；不行就降级为声音+震动+toast
       if (!systemNotify(title, body)) softAlert(title, body);
     }
 
@@ -345,9 +350,11 @@
         db = fsMod.getFirestore(app); fbReady = true;
 
         if (ADMIN) {
+          // 置顶 admin 区
           const adminSection = document.getElementById('admin'); adminSection.style.display='block';
           const headerEl = document.querySelector('header'); document.body.insertBefore(adminSection, headerEl);
 
+          // 通知按钮
           const enableBtn = document.getElementById('enableNotify');
           const updateBtn = () => {
             if (!('Notification' in window)) { enableBtn.textContent='提醒已启用（声音/震动）'; return; }
@@ -363,6 +370,7 @@
           let firstLoad = true;
 
           onSnapshot(qLines, snap => {
+            // 渲染表格
             const tbody = document.getElementById('adminRows'); tbody.innerHTML='';
             const rows = []; snap.forEach(d => { const data=d.data(); const ts=data.createdAt?.toMillis?.()?data.createdAt.toMillis():0; rows.push({id:d.id,data,ts}); });
             rows.sort((a,b)=>b.ts-a.ts);
@@ -378,11 +386,11 @@
               tdOp.appendChild(btn); tr.appendChild(tdOp); tbody.appendChild(tr);
             });
 
+            // 新增提醒（跳过首帧）
             if (firstLoad){ firstLoad=false; return; }
             snap.docChanges().forEach(ch => {
               if (ch.type === 'added') {
-                const d = ch.doc.data();
-                if (d.status !== 'done') alertNewLine(d);
+                const d = ch.doc.data(); if (d.status !== 'done') alertNewLine(d);
               }
             });
           }, err => { console.error('实时订单监听失败：', err); showToast('实时订单监听失败：'+err.message); });
@@ -420,7 +428,7 @@
           name: it.name, qty: it.qty, status: 'pending', doneAt: null, createdAt: serverTimestamp()
         })));
 
-        cart = {}; saveCart(); drawer.classList.remove('open'); showToast('已提交'); 
+        cart = {}; saveCart(); drawer.classList.remove('open'); showToast('已提交');
       }catch(err){ alert('提交失败：'+err.message); }
     };
 
