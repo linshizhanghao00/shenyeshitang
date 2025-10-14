@@ -215,22 +215,36 @@ let db=null; let fbReady=false;
     if(ADMIN){
       document.getElementById('admin').style.display='block';
       document.getElementById('roomInfo').textContent = `房间/日期: ${ROOM} · 将链接分享为 ?r=${ROOM}`;
-      const q = fsMod.query(fsMod.collection(db,'yd_orders'), fsMod.where('room','==',ROOM), fsMod.orderBy('createdAt','desc'));
-      fsMod.onSnapshot(q, snap => {
-        const tbody = document.getElementById('adminRows'); tbody.innerHTML='';
-        snap.forEach(doc=>{
-          const d = doc.data();
-          const when = d.createdAt?.toDate ? d.createdAt.toDate().toLocaleString() : new Date(d.createdAt).toLocaleString();
-          d.items.forEach(it=>{
-            const tr = document.createElement('tr');
-            tr.innerHTML = `<td style='border:1px solid #2a2a44;padding:8px 10px'>${when}</td><td style='border:1px solid #2a2a44;padding:8px 10px'>${d.nick||'-'}</td><td style='border:1px solid #2a2a44;padding:8px 10px'>${it.name}</td><td style='border:1px solid #2a2a4;padding:8px 10px'>${it.qty}</td>`;
-            tbody.appendChild(tr);
-          });
-        });
+const q = fsMod.query(
+  fsMod.collection(db,'yd_orders'),
+  fsMod.where('room','==',ROOM),
+  fsMod.orderBy('createdAt','desc')
+);
+
+fsMod.onSnapshot(
+  q,
+  snap => {
+    const tbody = document.getElementById('adminRows');
+    tbody.innerHTML = '';
+    snap.forEach(doc => {
+      const d = doc.data();
+      const when = d.createdAt?.toDate ? d.createdAt.toDate().toLocaleString() : new Date(d.createdAt).toLocaleString();
+      d.items.forEach(it => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td style='border:1px solid #2a2a44;padding:8px 10px'>${when}</td>
+                        <td style='border:1px solid #2a2a44;padding:8px 10px'>${d.nick||'-'}</td>
+                        <td style='border:1px solid #2a2a44;padding:8px 10px'>${it.name}</td>
+                        <td style='border:1px solid #2a2a44;padding:8px 10px'>${it.qty}</td>`;
+        tbody.appendChild(tr);
       });
-    }
-  }catch(e){ console.warn('Firebase 初始化失败：', e.message); }
-})();
+    });
+  },
+  err => {
+    console.error('订阅失败:', err);
+    alert('实时订单监听失败：' + err.message);
+  }
+);
+
 
 /* ========== 提交订单到 Firestore ========== */
 submitOrder.onclick = async () => {
