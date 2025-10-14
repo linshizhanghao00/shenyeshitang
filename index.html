@@ -51,6 +51,7 @@
     .primary{background:linear-gradient(135deg,var(--brand),var(--accent));color:#0b0b0e;border:0;border-radius:12px;padding:12px;font-weight:900;cursor:pointer}
     .muted{background:#161622;border:1px solid #2a2a44;color:#fff;border-radius:12px;padding:10px;cursor:pointer}
     footer{margin:28px 0 120px;text-align:center;color:#98a0be;font-size:12px}
+    input.muted{background:#161622;border:1px solid #2a2a44;color:#fff}
   </style>
 </head>
 <body>
@@ -85,6 +86,15 @@
       <strong>🛒 购物车</strong>
       <button class="muted" id="closeDrawer">关闭</button>
     </div>
+
+    <!-- 自定义点菜：菜名必填，食材可选（逗号分隔） -->
+    <div id="customDish" style="display:grid;gap:8px;margin:6px 16px 6px">
+      <div style="font-weight:700;opacity:.9">✍️ 自定义点菜</div>
+      <input id="cName" placeholder="菜名（必填）" class="muted" style="padding:10px;border-radius:10px">
+      <input id="cIngs" placeholder="食材（可选，逗号分隔：如 牛肉, 洋葱 ）" class="muted" style="padding:10px;border-radius:10px">
+      <button id="addCustom" class="primary">加入购物车（自定义）</button>
+    </div>
+
     <div class="drawer-ct" id="cartList"></div>
     <div class="drawer-ft">
       <input id="nickname" placeholder="备注 / 桌号 (选填)" class="muted" style="padding:10px;border-radius:10px" />
@@ -96,8 +106,6 @@
   <!-- 管理员面板 -->
   <section id="admin" style="display:none;padding:14px var(--safe)">
     <h3>📟 实时订单</h3>
-
-    <!-- 筛选栏 -->
     <div style="display:flex;align-items:center;gap:12px;margin:8px 0 6px">
       <label style="display:flex;align-items:center;gap:6px;cursor:pointer">
         <input id="showPendingOnly" type="checkbox" checked>
@@ -105,7 +113,6 @@
       </label>
       <button id="markAllDone" class="muted">将当前显示的全部标记为完成</button>
     </div>
-
     <div id="roomInfo" style="color:#c7cbe0;margin:8px 0"></div>
     <table style="width:100%;border-collapse:collapse;border:1px solid #2a2a44">
       <thead>
@@ -152,6 +159,10 @@
     const closeDrawer = document.getElementById('closeDrawer');
     const submitOrder = document.getElementById('submitOrder');
     const clearCart = document.getElementById('clearCart');
+    // 自定义点菜元素
+    const cName = document.getElementById('cName');
+    const cIngs = document.getElementById('cIngs');
+    const addCustom = document.getElementById('addCustom');
 
     const qs = new URLSearchParams(location.search);
     const localYYYYMMDD = new Date().toLocaleDateString('sv-SE'); // 本地 YYYY-MM-DD
@@ -204,6 +215,18 @@
     closeDrawer.onclick = ()=>{ drawer.classList.remove('open'); drawer.setAttribute('aria-hidden','true'); };
     clearCart.onclick = ()=>{ cart = {}; saveCart(); };
     renderCart();
+
+    // 自定义点菜：加入购物车
+    addCustom.onclick = () => {
+      const name = (cName.value || '').trim();
+      const ings = (cIngs.value || '').trim();
+      if (!name) { alert('请先输入菜名'); cName.focus(); return; }
+      const display = ings ? `自定义 · ${name}（${ings}）` : `自定义 · ${name}`;
+      cart[display] = (cart[display] || 0) + 1;
+      saveCart();
+      drawer.classList.add('open'); drawer.setAttribute('aria-hidden','false');
+      cName.value = ''; cIngs.value = '';
+    };
 
     // 加载菜单（绝对路径 + no-store 避免缓存）
     fetch(`${BASE}/menu.json`, { cache: 'no-store' })
@@ -264,11 +287,23 @@
                 (data.items || []).forEach(it => {
                   const tr = document.createElement('tr');
                   tr.style.opacity = isDone ? '0.55' : '1';
+
+                  // 解析“自定义 · 名称（食材…）”
+                  const nameCell = (() => {
+                    const m = /^(.+?)（(.+)）$/.exec(it.name); // 全角括号
+                    if (m) {
+                      const base = m[1], ings = m[2];
+                      return `${base}<div style="font-size:12px;color:#c7cbe0">🧾 ${ings}</div>`;
+                    }
+                    return it.name;
+                  })();
+
                   tr.innerHTML = `
                     <td style="border:1px solid #2a2a44;padding:8px 10px">${when}</td>
                     <td style="border:1px solid #2a2a44;padding:8px 10px">${data.nick || '-'}</td>
-                    <td style="border:1px solid #2a2a44;padding:8px 10px">${it.name}</td>
+                    <td style="border:1px solid #2a2a44;padding:8px 10px">${nameCell}</td>
                     <td style="border:1px solid #2a2a44;padding:8px 10px">${it.qty}</td>`;
+
                   const tdOp = document.createElement('td');
                   tdOp.style.border = '1px solid #2a2a44';
                   tdOp.style.padding = '6px 8px';
