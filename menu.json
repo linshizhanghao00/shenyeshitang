@@ -42,7 +42,7 @@
   {
     "name_cn": "蒜油意面",
     "name_en": "Aglio e Olio Pasta",
-    "category": "Main",
+    "category": "Rice",
     "tags": ["Pasta", "Garlic"],
     "emoji": "🍝",
     "desc": "橄榄油与蒜香融合，简单又经典。"
@@ -120,15 +120,15 @@
     "emoji": "🍜",
     "desc": "劲道拉面，暖胃解馋。"
   },
-
   {
     "name_cn": "麻辣烫",
     "name_en": "Mala Tang",
-    "category": "Main",
-    "tags": ["malatang", "Spicy"],
+    "category": "Rice",
+    "tags": ["Spicy"],
     "emoji": "🌶️",
-    "desc": "麻辣鲜香，汤底热辣，食材可自选。"
+    "desc": "麻辣鲜香，热辣汤底，食材可自选。"
   },
+
   {
     "name_cn": "排骨汤",
     "name_en": "Pork Rib Soup",
