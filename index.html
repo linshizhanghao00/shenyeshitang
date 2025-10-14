@@ -53,9 +53,8 @@
     /* —— “全部”页：大图两列 —— */
     .grid-all{
       display:grid;
-      grid-template-columns:repeat(2,minmax(0,1fr)); /* 两列 */
-      gap:14px;
-      padding:0 16px 16px;
+      grid-template-columns:repeat(2,minmax(0,1fr));
+      gap:14px; padding:0 16px 16px;
     }
     @media (min-width:1024px){ .grid-all{grid-template-columns:repeat(3,minmax(0,1fr));} }
     .card-all{
@@ -107,21 +106,9 @@
     footer{margin:28px 0 120px;text-align:center;color:#98a0be;font-size:12px}
 
     /* —— 骨架屏（仅“全部”页大图使用） —— */
-    .thumb.loading{
-      background:#222;
-      opacity:0.0;
-      animation:pulse 1.2s ease-in-out infinite;
-    }
-    .thumb.loaded{
-      opacity:1;
-      animation:none;
-      transition:opacity .4s ease;
-    }
-    @keyframes pulse{
-      0%{opacity:0.4}
-      50%{opacity:0.9}
-      100%{opacity:0.4}
-    }
+    .thumb.loading{ background:#222; opacity:0.0; animation:pulse 1.2s ease-in-out infinite; }
+    .thumb.loaded{ opacity:1; animation:none; transition:opacity .4s ease; }
+    @keyframes pulse{ 0%{opacity:0.4} 50%{opacity:0.9} 100%{opacity:0.4} }
   </style>
 </head>
 <body>
@@ -134,6 +121,8 @@
         <span>只看未做</span>
       </label>
       <button id="markAllDone" class="muted">将当前显示的全部标记为完成</button>
+      <!-- 新增：开启提醒按钮 -->
+      <button id="enableNotify" class="primary" title="开启系统通知">开启提醒</button>
     </div>
     <div id="roomInfo" style="color:#c7cbe0;margin:8px 0"></div>
     <table style="width:100%;border-collapse:collapse;border:1px solid #2a2a44">
@@ -201,6 +190,7 @@
   <script>
     const BASE = '/shenyeshitang';
 
+    // Emoji 盘子（emoji 视为已加载）
     const iconSVG = (emoji, label) => {
       const svg = encodeURIComponent(`<?xml version='1.0' encoding='UTF-8'?>
 <svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 220 220'>
@@ -211,7 +201,6 @@
   <rect x='60' y='168' width='100' height='28' rx='14' fill='rgba(0,0,0,.45)'/>
   <text x='110' y='184' font-size='14' text-anchor='middle' fill='white' font-weight='700'>${label}</text>
 </svg>`);
-      // 注意：emoji 直接作为已加载
       return `<img class="thumb loaded" alt="${label}" src="data:image/svg+xml;utf8,${svg}">`;
     };
 
@@ -240,13 +229,13 @@
 
     // —— 子分组（热菜页）与独立页（主食/凉拌菜） ——
     const groupHotHot  = { key:'hot-hot',  title:'🔥 热菜',  filter: it => it.category === 'Main' && !(it.tags||[]).includes('Soup') };
-    const groupHotVeg  = { key:'hot-veg',  title:'🥦 素菜',  filter: it => it.category === 'Veg' && !(it.tags||[]).includes('Cold') }; // 不含凉拌
+    const groupHotVeg  = { key:'hot-veg',  title:'🥦 素菜',  filter: it => it.category === 'Veg' && !(it.tags||[]).includes('Cold') };
     const groupHotSoup = { key:'hot-soup', title:'🍲 汤类',  filter: it => (it.tags||[]).includes('Soup') };
     const groupStaple  = { key:'staple',   title:'🍚 主食',  filter: it => it.category === 'Rice' };
     const groupCold    = { key:'cold',     title:'🥒 凉拌菜', filter: it => (it.tags||[]).includes('Cold') };
 
+    // 媒体元素（全部页支持骨架屏）
     function resolveMediaElement(item){
-      // 如果有图片：创建带骨架屏的 <img>
       if (item.img){
         const img = document.createElement('img');
         img.className = 'thumb loading';
@@ -257,7 +246,6 @@
         img.src = item.img;
         return img;
       }
-      // 无图片：返回一个已加载的 emoji <img> 节点
       const wrapper = document.createElement('div');
       wrapper.innerHTML = iconSVG(item.emoji, item.name_cn);
       return wrapper.firstChild;
@@ -301,13 +289,9 @@
       const grid = document.createElement('div'); grid.className = 'grid-all';
       items.forEach(item=>{
         const card = document.createElement('article'); card.className='card-all'; card.dataset.category=item.category;
-
         const imgbox = document.createElement('div'); imgbox.className='imgbox';
-        imgbox.appendChild(resolveMediaElement(item)); // 有图=骨架屏；无图=emoji 立即加载
-
-        const title = document.createElement('div'); title.className='title-only';
-        title.textContent = item.name_cn;
-
+        imgbox.appendChild(resolveMediaElement(item));
+        const title = document.createElement('div'); title.className='title-only'; title.textContent = item.name_cn;
         card.append(imgbox, title);
         card.addEventListener('click', ()=>{ cart[item.name_cn]=(cart[item.name_cn]||0)+1; saveCart(); });
         grid.appendChild(card);
@@ -315,7 +299,6 @@
       return grid;
     }
 
-    // 渲染流程
     function renderMenu(){
       root.innerHTML = '';
       const q = (searchInput?.value || '').trim().toLowerCase();
@@ -337,7 +320,6 @@
       if (activeFilter === 'Main') { groups.push(groupHotHot, groupHotVeg, groupHotSoup); }
       if (activeFilter === 'Rice') { groups.push(groupStaple); }
       if (activeFilter === 'Cold') { groups.push(groupCold); }
-
       groups.forEach(g=>{
         const items = filtered.filter(g.filter);
         if (!items.length) return;
@@ -362,7 +344,6 @@
       cartCount.textContent = `(${totalQty})`;
     }
 
-    // 顶部筛选 & 搜索
     pills.forEach(btn => btn.addEventListener('click', () => {
       pills.forEach(b => b.setAttribute('aria-pressed','false'));
       btn.setAttribute('aria-pressed','true');
@@ -370,7 +351,6 @@
     }));
     searchInput?.addEventListener('input', renderMenu);
 
-    // 购物车抽屉
     cartBtn.onclick = ()=>{ drawer.classList.add('open'); drawer.setAttribute('aria-hidden','false'); };
     closeDrawer.onclick = ()=>{ drawer.classList.remove('open'); drawer.setAttribute('aria-hidden','true'); };
     clearCart.onclick = ()=>{ cart = {}; saveCart(); };
@@ -394,7 +374,7 @@
       .then(data => { MENU = data; renderMenu(); })
       .catch(err => { console.error('加载菜单失败：', err); alert('加载菜单失败：请检查 menu.json 路径'); });
 
-    // Firestore（管理员与逐行订阅同前）
+    // ========== 管理员：实时提醒（系统通知 + 叮一声） ==========
     const firebaseConfig = {
       apiKey: "AIzaSyA45H7MVPejI-09EmX3Y9RP0G-BzxKUA0M",
       authDomain: "shenyeshitang-9a3c2.firebaseapp.com",
@@ -403,7 +383,26 @@
       messagingSenderId: "293937999981",
       appId: "1:293937999981:web:364b69c1ea61b48e8acf64"
     };
+
     let db=null; let fbReady=false;
+    // 简单“叮”声（440Hz 正弦 150ms）
+    const ding = new Audio("data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEAESsAACJWAAACABYAAAAgAAAASAAAAGZmZmZmZmZmZmY=");
+
+    async function requestNotify(){
+      if (!('Notification' in window)) return false;
+      if (Notification.permission === 'granted') return true;
+      if (Notification.permission === 'denied') return false;
+      const res = await Notification.requestPermission();
+      return res === 'granted';
+    }
+    function notifyLine(d){
+      try{ ding.currentTime = 0; ding.play().catch(()=>{}); }catch{}
+      if (!('Notification' in window) || Notification.permission !== 'granted') return;
+      const title = `新订单 · ${d.name} × ${d.qty}`;
+      const body  = `${d.nick || '客人'} · 房间 ${d.room || ROOM}`;
+      new Notification(title, { body });
+    }
+
     (async () => {
       try{
         const appMod = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js');
@@ -412,43 +411,44 @@
         db = fsMod.getFirestore(app); fbReady = true;
 
         if (qs.get('admin') === '1') {
+          // 置顶显示管理员区
           const adminSection = document.getElementById('admin');
           adminSection.style.display = 'block';
           const headerEl = document.querySelector('header');
-          document.body.insertBefore(adminSection, headerEl); // 置顶
-        }
+          document.body.insertBefore(adminSection, headerEl);
 
-        if(qs.get('admin') === '1'){
-          const showPendingOnly = document.getElementById('showPendingOnly');
-          const markAllDoneBtn  = document.getElementById('markAllDone');
-          document.getElementById('roomInfo').textContent = `房间/日期: ${ROOM} · 将链接分享为 ?r=${ROOM}`;
+          // 开启提醒按钮
+          const enableBtn = document.getElementById('enableNotify');
+          const applyBtnState = () => {
+            if (!('Notification' in window)) { enableBtn.textContent = '提醒不支持'; enableBtn.disabled = true; return; }
+            enableBtn.textContent = (Notification.permission === 'granted') ? '提醒已开启' : '开启提醒';
+          };
+          applyBtnState();
+          enableBtn.onclick = async () => { const ok = await requestNotify(); applyBtnState(); if(!ok) alert('未开启系统通知；将仅播放提示音。'); };
 
+          // 逐行订阅 + 新增行提醒（跳过首帧）
           const { query, collection, where, onSnapshot, getDocs, updateDoc, doc } =
             await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js');
 
           const qLines = query(collection(db, 'yd_order_lines'), where('room', '==', ROOM));
+          let firstLoad = true;
 
           onSnapshot(qLines, snap => {
-            const tbody = document.getElementById('adminRows');
-            tbody.innerHTML = '';
+            // 渲染表格
+            const tbody = document.getElementById('adminRows'); tbody.innerHTML = '';
             const rows = [];
             snap.forEach(d => {
-              const data = d.data();
-              const ts = data.createdAt?.toMillis?.() ? data.createdAt.toMillis() : 0;
+              const data = d.data(); const ts = data.createdAt?.toMillis?.() ? data.createdAt.toMillis() : 0;
               rows.push({ id: d.id, data, ts });
             });
-            rows.sort((a, b) => b.ts - a.ts);
-
+            rows.sort((a,b)=> b.ts - a.ts);
             rows.forEach(({ id, data }) => {
               const isDone = data.status === 'done';
-              if (showPendingOnly.checked && isDone) return;
-
+              if (document.getElementById('showPendingOnly').checked && isDone) return;
               const when = data.createdAt?.toDate ? data.createdAt.toDate().toLocaleString() : '';
               const m = /^(.+?)（(.+)）$/.exec(data.name);
               const nameCell = m ? `${m[1]}<div style="font-size:12px;color:#c7cbe0">🧾 ${m[2]}</div>` : data.name;
-
-              const tr = document.createElement('tr');
-              tr.style.opacity = isDone ? '0.55' : '1';
+              const tr = document.createElement('tr'); tr.style.opacity = isDone ? '0.55' : '1';
               tr.innerHTML = `
                 <td style="border:1px solid #2a2a44;padding:8px 10px">${when}</td>
                 <td style="border:1px solid #2a2a44;padding:8px 10px">${data.nick || '-'}</td>
@@ -459,16 +459,30 @@
               btn.onclick = async ()=>{ await updateDoc(doc(db,'yd_order_lines',id), { status: isDone?'pending':'done', doneAt: isDone?null:new Date() }); };
               tdOp.appendChild(btn); tr.appendChild(tdOp); tbody.appendChild(tr);
             });
+
+            // 新增提醒
+            if (firstLoad){ firstLoad = false; return; }
+            snap.docChanges().forEach(ch => {
+              if (ch.type === 'added') {
+                const d = ch.doc.data();
+                // 仅“待做”的新增行提醒
+                if (d.status !== 'done') notifyLine(d);
+              }
+            });
           }, err => { console.error('实时订单监听失败：', err); alert('实时订单监听失败：'+err.message); });
 
-          showPendingOnly.addEventListener('change', ()=>location.reload());
-          markAllDoneBtn.onclick = async () => {
+          // 过滤开关
+          document.getElementById('showPendingOnly').addEventListener('change', ()=>location.reload());
+          document.getElementById('markAllDone').onclick = async () => {
             if (!confirm('将当前显示的订单全部标记为完成？')) return;
-            const snap2 = await getDocs(qLines);
+            const { query, collection, where, getDocs, updateDoc, doc } =
+              await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js');
+            const q2 = query(collection(db,'yd_order_lines'), where('room','==',ROOM));
+            const snap2 = await getDocs(q2);
             const ops = [];
             snap2.forEach(d => {
               const data = d.data();
-              if (showPendingOnly.checked && data.status === 'done') return;
+              if (document.getElementById('showPendingOnly').checked && data.status === 'done') return;
               if (data.status !== 'done') ops.push(updateDoc(doc(db,'yd_order_lines', d.id), { status:'done', doneAt:new Date() }));
             });
             await Promise.all(ops);
