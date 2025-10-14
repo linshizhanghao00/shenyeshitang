@@ -6,8 +6,9 @@
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <link rel="manifest" href="/shenyeshitang/manifest.webmanifest">
-  <link rel="apple-touch-icon" href="/shenyeshitang/icons/icon-192.png">
-  <title>夜间食堂 · iPad 菜单</title>
+<link rel="apple-touch-icon" href="/shenyeshitang/icons/icon-192.png">
+
+  <title>深夜食堂</title>
   <style>
     :root{ --bg:#0c0c0f;--panel:#121218;--muted:#8a8fa3;--text:#e9e9f2;--brand:#7c5cff;--brand2:#3dd9b2;--accent:#ffd166;--radius:18px;--shadow:0 10px 30px rgba(0,0,0,.35);--safe:max(env(safe-area-inset-left),16px); }
     *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -18,7 +19,7 @@
     .topbar{display:grid;grid-template-columns:1fr auto;gap:16px;align-items:center;padding:18px var(--safe) 10px}
     .brand{display:flex;align-items:center;gap:14px}
     .logo{width:46px;height:46px;border-radius:14px;display:grid;place-items:center;position:relative;box-shadow:var(--shadow);background:linear-gradient(135deg,var(--brand),var(--brand2));color:#fff;font-weight:900}
-    .logo::after{content:'夜';font-size:22px;filter:drop-shadow(0 1px 0 rgba(0,0,0,.35))}
+    .logo::after { content: '🌙'; }
     .title{font-size:clamp(22px,3.2vw,30px);font-weight:800}
     .subtitle{color:var(--muted);font-size:13px;margin-top:2px}
     .search{display:flex;align-items:center;gap:8px;background:#0f0f15;border:1px solid #242438;color:var(--text);padding:10px 12px;border-radius:12px;min-width:min(360px,60vw)}
@@ -105,8 +106,8 @@
   <footer>© 2025 夜间食堂 · 安装到主屏幕后离线可用。店主在链接后加 <code>?admin=1</code> 可查看实时订单。</footer>
 
 <script>
-  const iconSVG = (emoji, label) => {
-    const svg = encodeURIComponent(`<?xml version='1.0' encoding='UTF-8'?>
+const iconSVG = (emoji, label) => {
+  const svg = encodeURIComponent(`<?xml version='1.0' encoding='UTF-8'?>
 <svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 220 220'>
   <defs><linearGradient id='g' x1='0' y1='0' x2='1' y2='1'><stop offset='0%' stop-color='#7c5cff'/><stop offset='100%' stop-color='#3dd9b2'/></linearGradient></defs>
   <rect width='220' height='220' rx='28' fill='url(#g)'/>
@@ -115,8 +116,9 @@
   <rect x='60' y='168' width='100' height='28' rx='14' fill='rgba(0,0,0,.45)'/>
   <text x='110' y='184' font-size='14' text-anchor='middle' fill='white' font-weight='700'>${label}</text>
 </svg>`);
-    return `<img class="qsvg" alt="${label}" src="data:image/svg+xml;utf8,${svg}">`;
-  };
+  return `<img class="qsvg" alt="${label}" src="data:image/svg+xml;utf8,${svg}">`;
+};
+
 </script>
 
 
@@ -229,7 +231,10 @@
       }catch(err){ alert('提交失败：'+err.message); }
     };
 
-    if('serviceWorker' in navigator){ navigator.serviceWorker.register('/shenyeshitang/sw.js');
+    if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/shenyeshitang/sw.js');
+}
+
 }
   </script>
 </body>
