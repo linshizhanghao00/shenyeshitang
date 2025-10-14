@@ -3,10 +3,7 @@
     "name_cn": "酸汤肥牛",
     "name_en": "Beef Slices in Sour Broth",
     "category": "Main",
-    "tags": [
-      "Beef",
-      "Sour-Spicy"
-    ],
+    "tags": ["Beef", "Sour-Spicy"],
     "emoji": "🍲",
     "desc": "开胃酸辣，鲜嫩肥牛片配金针菇、酸汤。"
   },
@@ -14,10 +11,7 @@
     "name_cn": "西红柿炒鸡蛋",
     "name_en": "Tomato & Egg Stir-fry",
     "category": "Main",
-    "tags": [
-      "Egg",
-      "Home Style"
-    ],
+    "tags": ["Egg", "Home Style"],
     "emoji": "🍅",
     "desc": "酸甜适口，家常经典，配米饭更香。"
   },
@@ -25,9 +19,7 @@
     "name_cn": "咖喱",
     "name_en": "Curry",
     "category": "Main",
-    "tags": [
-      "Comfort"
-    ],
+    "tags": ["Comfort"],
     "emoji": "🍛",
     "desc": "温和辛香，土豆与胡萝卜的软糯与咖喱香融合。"
   },
@@ -35,10 +27,7 @@
     "name_cn": "青椒肉丝",
     "name_en": "Shredded Pork with Green Pepper",
     "category": "Main",
-    "tags": [
-      "Pork",
-      "Pepper"
-    ],
+    "tags": ["Pork", "Pepper"],
     "emoji": "🫑",
     "desc": "脆嫩青椒配滑嫩肉丝，酱香下饭。"
   },
@@ -46,9 +35,7 @@
     "name_cn": "蒜蓉白菜粉丝",
     "name_en": "Garlic Napa with Vermicelli",
     "category": "Veg",
-    "tags": [
-      "Vegetarian"
-    ],
+    "tags": ["Vegetarian"],
     "emoji": "🧄",
     "desc": "蒜香浓郁，软滑粉丝吸足汤汁，清爽不腻。"
   },
@@ -56,10 +43,7 @@
     "name_cn": "酸菜羊肉",
     "name_en": "Lamb & Pickled Cabbage",
     "category": "Main",
-    "tags": [
-      "Lamb",
-      "Sour"
-    ],
+    "tags": ["Lamb", "Sour"],
     "emoji": "🥘",
     "desc": "酸香开胃，羊肉鲜香不膻，暖胃下饭。"
   },
@@ -67,21 +51,15 @@
     "name_cn": "泡菜炒饭",
     "name_en": "Kimchi Fried Rice",
     "category": "Rice",
-    "tags": [
-      "Rice",
-      "Kimchi"
-    ],
+    "tags": ["Rice", "Kimchi"],
     "emoji": "🍚",
     "desc": "酸辣泡菜拌炒米饭，颗颗分明，开胃爽口。"
   },
   {
     "name_cn": "辣椒醋炒蛋",
-    "name_en": "Chili-Vinegar Fried Egg",
+    "name_en": "Chili-Vinegar Scrambled Egg",
     "category": "Main",
-    "tags": [
-      "Egg",
-      "Chili"
-    ],
+    "tags": ["Egg", "Chili"],
     "emoji": "🌶️",
     "desc": "酸辣提味，鸡蛋松软多汁，风味独特。"
   },
@@ -89,10 +67,7 @@
     "name_cn": "豆角肉末",
     "name_en": "Green Beans with Minced Pork",
     "category": "Main",
-    "tags": [
-      "Pork",
-      "Homestyle"
-    ],
+    "tags": ["Pork", "Homestyle"],
     "emoji": "🫘",
     "desc": "豆角微焦更香，肉末酱香浓郁，配饭绝佳。"
   },
@@ -100,10 +75,7 @@
     "name_cn": "凉拌菜（黄瓜金针菇豆芽）",
     "name_en": "Cold Mixed Veg Trio",
     "category": "Veg",
-    "tags": [
-      "Cold",
-      "Refreshing"
-    ],
+    "tags": ["Cold", "Refreshing"],
     "emoji": "🥒",
     "desc": "清爽开胃三拼：黄瓜、金针菇、豆芽。"
   },
@@ -111,11 +83,56 @@
     "name_cn": "Guacamole",
     "name_en": "Guacamole",
     "category": "Veg",
-    "tags": [
-      "Avocado",
-      "Dip"
-    ],
+    "tags": ["Avocado", "Dip"],
     "emoji": "🥑",
     "desc": "墨西哥牛油果酱，细腻顺滑，搭配玉米片最佳。"
+  },
+  {
+    "name_cn": "洋葱炒肉",
+    "name_en": "Pork with Onion",
+    "category": "Main",
+    "tags": ["Pork", "Home-style"],
+    "emoji": "🧅",
+    "desc": "洋葱焦香与肉片酱香融合，米饭杀手。"
+  },
+  {
+    "name_cn": "排骨汤",
+    "name_en": "Pork Rib Soup",
+    "category": "Main",
+    "tags": ["Soup", "Comfort"],
+    "emoji": "🍖",
+    "desc": "汤鲜味浓，排骨酥烂，滋补暖胃。"
+  },
+  {
+    "name_cn": "蘑菇瘦肉汤",
+    "name_en": "Mushroom & Pork Soup",
+    "category": "Main",
+    "tags": ["Soup", "Clear"],
+    "emoji": "🍄",
+    "desc": "清汤鲜香，蘑菇滑嫩，瘦肉爽口。"
+  },
+  {
+    "name_cn": "餐蛋饭",
+    "name_en": "Spam & Egg Rice",
+    "category": "Rice",
+    "tags": ["Rice", "Egg"],
+    "emoji": "🍳",
+    "desc": "煎蛋搭配午餐肉，经典港式风味。"
+  },
+  {
+    "name_cn": "水饺",
+    "name_en": "Boiled Dumplings",
+    "category": "Main",
+    "tags": ["Dumpling", "Traditional"],
+    "emoji": "🥟",
+    "desc": "皮薄馅香，咬一口满是家的味道。"
+  },
+  {
+    "name_cn": "蒜油意面",
+    "name_en": "Aglio e Olio Pasta",
+    "category": "Main",
+    "tags": ["Pasta", "Garlic"],
+    "emoji": "🍝",
+    "desc": "橄榄油与蒜香融合，简单又经典。"
   }
 ]
