@@ -30,7 +30,7 @@
     .pill{border:1px solid #28283e;background:#13131b;color:var(--text);padding:10px 14px;border-radius:999px;font-size:14px;cursor:pointer;flex:0 0 auto}
     .pill[aria-pressed="true"]{background:linear-gradient(135deg,rgba(124,92,255,.25),rgba(61,217,178,.2));border-color:var(--brand)}
 
-    /* 卡片与图片 */
+    /* —— 详细卡片（热菜/主食/凉拌菜使用） —— */
     .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:22px}
     .card{
       display:grid; grid-template-columns:140px 1fr; gap:0;
@@ -42,16 +42,39 @@
     .imgbox{ position:relative; background:#0a0b10; aspect-ratio:4/3; overflow:hidden; }
     .thumb{ width:100%; height:100%; object-fit:cover; transform:scale(1.02); transition:transform .25s ease; }
     .card:hover .thumb{ transform:scale(1.05); }
-
     .content{ padding:14px 14px 16px; display:grid; align-content:start; gap:8px }
-    .name{ font-size:18px; font-weight:900; margin:2px 0 0 }
+    .name{ font-size:18px; font-weight:900; margin:2px 0 0; color:#fff }
     .desc{ font-size:13px; color:#98a0be; min-height:34px }
     .tags{ display:flex; flex-wrap:wrap; gap:8px }
     .tag{ font-size:12px; color:#c7cbe0; border:1px dashed #2d2d44; padding:4px 8px; border-radius:999px }
     .add{margin-top:2px;background:#1a1a28;border:1px solid #2a2a44;color:#fff;border-radius:10px;padding:9px 12px;font-weight:700;cursor:pointer;justify-self:start}
     .add:hover{border-color:var(--brand)}
 
-    /* 分组标题 + 折叠 */
+    /* —— “全部”页：大图两列 —— */
+    .grid-all{
+      display:grid;
+      grid-template-columns:repeat(2,minmax(0,1fr)); /* 两列 */
+      gap:14px;
+      padding:0 16px 16px;
+    }
+    @media (min-width:1024px){ .grid-all{grid-template-columns:repeat(3,minmax(0,1fr));} }
+    .card-all{
+      display:grid; gap:8px;
+      background:linear-gradient(180deg,#171a24,#12131a 40%);
+      border:1px solid #2a2a44; border-radius:16px; overflow:hidden;
+      box-shadow:0 12px 30px rgba(0,0,0,.35);
+      cursor:pointer; user-select:none;
+      transition:transform .18s ease,border-color .18s;
+    }
+    .card-all:hover{ transform:translateY(-3px); border-color:#3b3f5b; }
+    .card-all .imgbox{ aspect-ratio:4/3; }
+    .title-only{
+      padding:0 10px 12px;
+      font-weight:900; font-size:16px; color:#fff;
+      white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+    }
+
+    /* —— 分组标题 + 折叠（用于热菜/主食/凉拌菜） —— */
     .section{ margin:18px var(--safe); }
     .section-header{
       display:flex;align-items:center;justify-content:space-between;
@@ -61,16 +84,13 @@
     }
     .section-title{display:flex;align-items:center;gap:10px;font-weight:900}
     .section-sub{color:#8a8fa3;font-size:12px}
-    .section-toggle{
-      background:#161622;border:1px solid #2a2a44;color:#fff;border-radius:10px;
-      padding:8px 10px;cursor:pointer
-    }
+    .section-toggle{background:#161622;border:1px solid #2a2a44;color:#fff;border-radius:10px;padding:8px 10px;cursor:pointer}
     .section[aria-expanded="false"] .grid{ display:none }
 
-    /* 管理员工具条 */
+    /* —— 管理员工具条 —— */
     #admin .toolbar{display:flex;gap:12px;align-items:center;margin:8px 0 10px;position:sticky;top:56px;z-index:5;background:rgba(12,12,15,.85);backdrop-filter:blur(6px);padding:6px 8px;border-radius:10px;border:1px solid #2a2a44}
 
-    /* 购物车抽屉等 */
+    /* —— 购物车抽屉 —— */
     #cartBtn{position:fixed;right:16px;bottom:calc(16px + env(safe-area-inset-bottom));background:linear-gradient(135deg,var(--brand),var(--accent));color:#0b0b0e;border:0;border-radius:16px;padding:12px 16px;font-weight:900;box-shadow:0 14px 40px rgba(0,0,0,.45);z-index:40}
     #cartBtn small{opacity:.8}
     #drawer{position:fixed;inset:auto 0 0 auto;right:0;width:min(420px,96vw);max-height:86vh;background:#0f0f16;border-top-left-radius:18px;border:1px solid #2a2a44;box-shadow:0 -20px 60px rgba(0,0,0,.6);transform:translateY(110%);transition:transform .25s ease;z-index:50}
@@ -132,7 +152,7 @@
     </div>
   </header>
 
-  <!-- 分组渲染根节点 -->
+  <!-- 渲染根节点 -->
   <main id="menu-root"></main>
 
   <!-- 购物车抽屉 -->
@@ -172,4 +192,289 @@
   <circle cx='110' cy='118' r='72' fill='white'/><circle cx='110' cy='118' r='58' fill='#f4f4f4'/>
   <text x='110' y='124' font-size='72' text-anchor='middle' dominant-baseline='middle'>${emoji || '🍽️'}</text>
   <rect x='60' y='168' width='100' height='28' rx='14' fill='rgba(0,0,0,.45)'/>
-  <text x='110' y='184' font-size='14' text-anchor='middle' fill='
+  <text x='110' y='184' font-size='14' text-anchor='middle' fill='white' font-weight='700'>${label}</text>
+</svg>`);
+      return `<img class="thumb" alt="${label}" src="data:image/svg+xml;utf8,${svg}">`;
+    };
+    const mediaFor = (item) => {
+      // 若以后用图片：if (item.img) return `<img class="thumb" src="${item.img}" alt="${item.name_cn}" loading="lazy">`;
+      return iconSVG(item.emoji, item.name_cn);
+    };
+
+    const root = document.getElementById('menu-root');
+    const pills = document.querySelectorAll('.pill');
+    const searchInput = document.getElementById('search');
+    const cartBtn = document.getElementById('cartBtn');
+    const drawer = document.getElementById('drawer');
+    const cartList = document.getElementById('cartList');
+    const cartCount = document.getElementById('cartCount');
+    const nickname = document.getElementById('nickname');
+    const closeDrawer = document.getElementById('closeDrawer');
+    const submitOrder = document.getElementById('submitOrder');
+    const clearCart = document.getElementById('clearCart');
+    const cName = document.getElementById('cName');
+    const cIngs = document.getElementById('cIngs');
+    const addCustom = document.getElementById('addCustom');
+
+    const qs = new URLSearchParams(location.search);
+    const localYYYYMMDD = new Date().toLocaleDateString('sv-SE'); // 本地 YYYY-MM-DD
+    const ROOM = qs.get('r') || localYYYYMMDD;
+    const ADMIN = qs.get('admin') === '1';
+    let activeFilter = 'all';
+    let MENU = [];
+    let cart = JSON.parse(localStorage.getItem('yd_cart')||'{}');
+
+    // —— 子分组（热菜页）与独立页（主食/凉拌菜） ——
+    const groupHotHot  = { key:'hot-hot',  title:'🔥 热菜',  filter: it => it.category === 'Main' && !(it.tags||[]).includes('Soup') };
+    const groupHotVeg  = { key:'hot-veg',  title:'🥦 素菜',  filter: it => it.category === 'Veg' && !(it.tags||[]).includes('Cold') }; // 不含凉拌
+    const groupHotSoup = { key:'hot-soup', title:'🍲 汤类',  filter: it => (it.tags||[]).includes('Soup') };
+    const groupStaple  = { key:'staple',   title:'🍚 主食',  filter: it => it.category === 'Rice' };
+    const groupCold    = { key:'cold',     title:'🥒 凉拌菜', filter: it => (it.tags||[]).includes('Cold') };
+
+    // 顶层分类对应的渲染顺序
+    function getRenderOrder(){
+      if (activeFilter === 'Main') return [groupHotHot, groupHotVeg, groupHotSoup];
+      if (activeFilter === 'Rice') return [groupStaple];
+      if (activeFilter === 'Cold') return [groupCold];
+      // 全部：不分组，改用大图两列
+      return [];
+    }
+
+    // 详细分组卡片（热菜/主食/凉拌）
+    function renderSection(title, items, expanded = true){
+      const sec = document.createElement('section');
+      sec.className = 'section';
+      sec.setAttribute('aria-expanded', expanded ? 'true' : 'false');
+
+      const header = document.createElement('div'); header.className = 'section-header';
+      const left = document.createElement('div'); left.className = 'section-title';
+      left.innerHTML = `<span>${title}</span><span class="section-sub">共 ${items.length} 道</span>`;
+      const btn = document.createElement('button'); btn.type='button'; btn.className='section-toggle';
+      btn.textContent = expanded ? '收起' : '展开';
+      btn.addEventListener('click', (ev)=>{ ev.stopPropagation(); const now=sec.getAttribute('aria-expanded')==='true'; sec.setAttribute('aria-expanded', now?'false':'true'); btn.textContent= now?'展开':'收起'; });
+      header.addEventListener('click', ()=>btn.click());
+
+      const grid = document.createElement('div'); grid.className = 'grid';
+      items.forEach(item=>{
+        const card = document.createElement('article'); card.className='card'; card.dataset.category=item.category;
+        card.innerHTML = `
+          <div class="imgbox">${mediaFor(item)}</div>
+          <div class="content">
+            <h3 class="name">${item.name_cn}${item.name_en ? ' · ' + item.name_en : ''}</h3>
+            <p class="desc">${item.desc || ''}</p>
+            <div class="tags">${(item.tags||[]).map(t=>`<span class="tag">${t}</span>`).join('')}</div>
+            <button class="add" data-item="${item.name_cn}">加入</button>
+          </div>`;
+        card.querySelector('.add').addEventListener('click', ()=>{ cart[item.name_cn]=(cart[item.name_cn]||0)+1; saveCart(); drawer.classList.add('open'); drawer.setAttribute('aria-hidden','false'); });
+        grid.appendChild(card);
+      });
+      header.append(left, btn); sec.append(header, grid); return sec;
+    }
+
+    // “全部”页的大图两列卡片（只显示中文名）
+    function renderAllSimple(items){
+      const grid = document.createElement('div'); grid.className = 'grid-all';
+      items.forEach(item=>{
+        const card = document.createElement('article'); card.className='card-all'; card.dataset.category=item.category;
+        card.innerHTML = `
+          <div class="imgbox">${mediaFor(item)}</div>
+          <div class="title-only">${item.name_cn}</div>`;
+        // 点击整卡加入购物车
+        card.addEventListener('click', ()=>{ cart[item.name_cn]=(cart[item.name_cn]||0)+1; saveCart(); });
+        grid.appendChild(card);
+      });
+      return grid;
+    }
+
+    function renderMenu(){
+      root.innerHTML = '';
+      const q = (searchInput?.value || '').trim().toLowerCase();
+
+      // 顶层分类预过滤
+      const filtered = MENU.filter(it => {
+        const matchTop =
+          activeFilter === 'all' ||
+          (activeFilter === 'Main' && (it.category === 'Main' || it.category === 'Veg' || (it.tags||[]).includes('Soup'))) ||
+          (activeFilter === 'Rice' && it.category === 'Rice') ||
+          (activeFilter === 'Cold' && (it.tags||[]).includes('Cold'));
+        const hay = (it.name_cn + ' ' + (it.name_en||'') + ' ' + (it.tags||[]).join(' ')).toLowerCase();
+        const matchText = !q || hay.includes(q);
+        return matchTop && matchText;
+      });
+
+      // “全部”→ 直接大图两列
+      if (activeFilter === 'all') {
+        root.appendChild(renderAllSimple(filtered));
+        return;
+      }
+
+      // 其它顶层→ 按定义分组渲染
+      getRenderOrder().forEach(g => {
+        const items = filtered.filter(g.filter);
+        if (!items.length) return;
+        root.appendChild(renderSection(g.title, items, true));
+      });
+    }
+
+    // 购物车
+    function saveCart(){ localStorage.setItem('yd_cart', JSON.stringify(cart)); renderCart(); }
+    function renderCart(){
+      cartList.innerHTML = '';
+      let totalQty = 0;
+      Object.entries(cart).forEach(([name, qty])=>{
+        totalQty += qty;
+        const row = document.createElement('div'); row.className='item';
+        row.innerHTML = `<strong>${name}</strong><div></div>
+          <div class='qty'><button data-op='-'>-</button><span>${qty}</span><button data-op='+'>+</button></div>`;
+        row.querySelector('[data-op="-"]').onclick = ()=>{ cart[name]=Math.max(0,(cart[name]||0)-1); if(cart[name]===0) delete cart[name]; saveCart(); };
+        row.querySelector('[data-op="+"]').onclick = ()=>{ cart[name]=(cart[name]||0)+1; saveCart(); };
+        cartList.appendChild(row);
+      });
+      cartCount.textContent = `(${totalQty})`;
+    }
+
+    // 顶部筛选 & 搜索
+    pills.forEach(btn => btn.addEventListener('click', () => {
+      pills.forEach(b => b.setAttribute('aria-pressed','false'));
+      btn.setAttribute('aria-pressed','true');
+      activeFilter = btn.dataset.filter; renderMenu();
+    }));
+    searchInput?.addEventListener('input', renderMenu);
+
+    // 购物车按钮
+    cartBtn.onclick = ()=>{ drawer.classList.add('open'); drawer.setAttribute('aria-hidden','false'); };
+    closeDrawer.onclick = ()=>{ drawer.classList.remove('open'); drawer.setAttribute('aria-hidden','true'); };
+    clearCart.onclick = ()=>{ cart = {}; saveCart(); };
+    renderCart();
+
+    // 自定义点菜
+    addCustom.onclick = () => {
+      const name = (cName.value || '').trim();
+      const ings = (cIngs.value || '').trim();
+      if (!name) { alert('请先输入菜名'); cName.focus(); return; }
+      const display = ings ? `自定义 · ${name}（${ings}）` : `自定义 · ${name}`;
+      cart[display] = (cart[display] || 0) + 1;
+      saveCart();
+      drawer.classList.add('open'); drawer.setAttribute('aria-hidden','false');
+      cName.value = ''; cIngs.value = '';
+    };
+
+    // 载入菜单
+    fetch(`${BASE}/menu.json`, { cache: 'no-store' })
+      .then(r => { if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); })
+      .then(data => { MENU = data; renderMenu(); })
+      .catch(err => { console.error('加载菜单失败：', err); alert('加载菜单失败：请检查 menu.json 路径'); });
+
+    // Firestore（管理员与逐行订阅，和上一版一致）
+    const firebaseConfig = {
+      apiKey: "AIzaSyA45H7MVPejI-09EmX3Y9RP0G-BzxKUA0M",
+      authDomain: "shenyeshitang-9a3c2.firebaseapp.com",
+      projectId: "shenyeshitang-9a3c2",
+      storageBucket: "shenyeshitang-9a3c2.firebasestorage.app",
+      messagingSenderId: "293937999981",
+      appId: "1:293937999981:web:364b69c1ea61b48e8acf64"
+    };
+    let db=null; let fbReady=false;
+    (async () => {
+      try{
+        const appMod = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js');
+        const fsMod  = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js');
+        const app = appMod.initializeApp(firebaseConfig);
+        db = fsMod.getFirestore(app); fbReady = true;
+
+        if (ADMIN) {
+          const adminSection = document.getElementById('admin');
+          adminSection.style.display = 'block';
+          const headerEl = document.querySelector('header');
+          document.body.insertBefore(adminSection, headerEl); // 置顶
+        }
+
+        if(ADMIN){
+          const showPendingOnly = document.getElementById('showPendingOnly');
+          const markAllDoneBtn  = document.getElementById('markAllDone');
+          document.getElementById('roomInfo').textContent = `房间/日期: ${ROOM} · 将链接分享为 ?r=${ROOM}`;
+
+          const { query, collection, where, onSnapshot, getDocs, updateDoc, doc } =
+            await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js');
+
+          const qLines = query(collection(db, 'yd_order_lines'), where('room', '==', ROOM));
+
+          onSnapshot(qLines, snap => {
+            const tbody = document.getElementById('adminRows');
+            tbody.innerHTML = '';
+            const rows = [];
+            snap.forEach(d => {
+              const data = d.data();
+              const ts = data.createdAt?.toMillis?.() ? data.createdAt.toMillis() : 0;
+              rows.push({ id: d.id, data, ts });
+            });
+            rows.sort((a, b) => b.ts - a.ts);
+
+            rows.forEach(({ id, data }) => {
+              const isDone = data.status === 'done';
+              if (showPendingOnly.checked && isDone) return;
+
+              const when = data.createdAt?.toDate ? data.createdAt.toDate().toLocaleString() : '';
+              const m = /^(.+?)（(.+)）$/.exec(data.name);
+              const nameCell = m ? `${m[1]}<div style="font-size:12px;color:#c7cbe0">🧾 ${m[2]}</div>` : data.name;
+
+              const tr = document.createElement('tr');
+              tr.style.opacity = isDone ? '0.55' : '1';
+              tr.innerHTML = `
+                <td style="border:1px solid #2a2a44;padding:8px 10px">${when}</td>
+                <td style="border:1px solid #2a2a44;padding:8px 10px">${data.nick || '-'}</td>
+                <td style="border:1px solid #2a2a44;padding:8px 10px">${nameCell}</td>
+                <td style="border:1px solid #2a2a44;padding:8px 10px">${data.qty}</td>`;
+              const tdOp = document.createElement('td'); tdOp.style.border='1px solid #2a2a44'; tdOp.style.padding='6px 8px';
+              const btn = document.createElement('button'); btn.className = isDone ? 'muted' : 'primary'; btn.textContent = isDone ? '撤销' : '完成';
+              btn.onclick = async ()=>{ await updateDoc(doc(db,'yd_order_lines',id), { status: isDone?'pending':'done', doneAt: isDone?null:new Date() }); };
+              tdOp.appendChild(btn); tr.appendChild(tdOp); tbody.appendChild(tr);
+            });
+          }, err => { console.error('实时订单监听失败：', err); alert('实时订单监听失败：'+err.message); });
+
+          showPendingOnly.addEventListener('change', ()=>location.reload());
+          markAllDoneBtn.onclick = async () => {
+            if (!confirm('将当前显示的订单全部标记为完成？')) return;
+            const snap2 = await getDocs(qLines);
+            const ops = [];
+            snap2.forEach(d => {
+              const data = d.data();
+              if (showPendingOnly.checked && data.status === 'done') return;
+              if (data.status !== 'done') ops.push(updateDoc(doc(db,'yd_order_lines', d.id), { status:'done', doneAt:new Date() }));
+            });
+            await Promise.all(ops);
+            alert('已标记完成');
+          };
+        }
+      }catch(e){ console.warn('Firebase 初始化失败：', e.message); }
+    })();
+
+    // 提交订单（头档 + 逐行）
+    submitOrder.onclick = async () => {
+      if(Object.keys(cart).length===0){ alert('请先加入菜品'); return; }
+      if(!fbReady){ alert('Firebase 未配置或不可用。'); return; }
+      const items = Object.entries(cart).map(([name, qty])=>({name, qty}));
+      try{
+        const { addDoc, collection, serverTimestamp } =
+          await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js');
+
+        const headerRef = await addDoc(collection(db,'yd_orders'), {
+          room: ROOM, nick: nickname.value.trim(), items,
+          status: 'pending', doneAt: null, createdAt: serverTimestamp()
+        });
+
+        const linesCol = collection(db,'yd_order_lines');
+        const ops = items.map(it => addDoc(linesCol, {
+          room: ROOM, nick: nickname.value.trim(), orderId: headerRef.id,
+          name: it.name, qty: it.qty, status: 'pending', doneAt: null, createdAt: serverTimestamp()
+        }));
+        await Promise.all(ops);
+
+        cart = {}; saveCart(); drawer.classList.remove('open'); alert('已提交！');
+      }catch(err){ alert('提交失败：'+err.message); }
+    };
+
+    if('serviceWorker' in navigator){ navigator.serviceWorker.register(`${BASE}/sw.js`); }
+  </script>
+</body>
+</html>
