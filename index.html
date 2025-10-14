@@ -15,6 +15,7 @@
     body{margin:0;font-family: ui-sans-serif, -apple-system, Segoe UI, Roboto, Helvetica, Arial, 'PingFang SC', 'Microsoft YaHei', sans-serif;letter-spacing:.2px;color:var(--text);background:
       radial-gradient(1200px 600px at 70% -10%, rgba(124,92,255,.15), transparent 60%),
       radial-gradient(1000px 500px at 0% 100%, rgba(61,217,178,.12), transparent 60%),var(--bg)}
+
     header{position:sticky;top:0;z-index:20;background:linear-gradient(180deg, rgba(12,12,15,.9), rgba(12,12,15,.6) 70%, transparent);backdrop-filter:blur(8px)}
     .topbar{display:grid;grid-template-columns:1fr auto;gap:16px;align-items:center;padding:18px var(--safe) 10px}
     .brand{display:flex;align-items:center;gap:14px}
@@ -29,7 +30,7 @@
     .pill{border:1px solid #28283e;background:#13131b;color:var(--text);padding:10px 14px;border-radius:999px;font-size:14px;cursor:pointer;flex:0 0 auto}
     .pill[aria-pressed="true"]{background:linear-gradient(135deg,rgba(124,92,255,.25),rgba(61,217,178,.2));border-color:var(--brand)}
 
-    /* 卡片与图片（新UI基线） */
+    /* 卡片与图片 */
     .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:22px}
     .card{
       display:grid; grid-template-columns:140px 1fr; gap:0;
@@ -50,7 +51,7 @@
     .add{margin-top:2px;background:#1a1a28;border:1px solid #2a2a44;color:#fff;border-radius:10px;padding:9px 12px;font-weight:700;cursor:pointer;justify-self:start}
     .add:hover{border-color:var(--brand)}
 
-    /* =========== 分组标题 + 折叠 =========== */
+    /* 分组标题 + 折叠 */
     .section{ margin:18px var(--safe); }
     .section-header{
       display:flex;align-items:center;justify-content:space-between;
@@ -66,17 +67,17 @@
     }
     .section[aria-expanded="false"] .grid{ display:none }
 
-    /* 管理员工具条固定在表头 */
+    /* 管理员工具条 */
     #admin .toolbar{display:flex;gap:12px;align-items:center;margin:8px 0 10px;position:sticky;top:56px;z-index:5;background:rgba(12,12,15,.85);backdrop-filter:blur(6px);padding:6px 8px;border-radius:10px;border:1px solid #2a2a44}
 
-    /* 购物车抽屉等通用 */
+    /* 购物车抽屉等 */
     #cartBtn{position:fixed;right:16px;bottom:calc(16px + env(safe-area-inset-bottom));background:linear-gradient(135deg,var(--brand),var(--accent));color:#0b0b0e;border:0;border-radius:16px;padding:12px 16px;font-weight:900;box-shadow:0 14px 40px rgba(0,0,0,.45);z-index:40}
     #cartBtn small{opacity:.8}
     #drawer{position:fixed;inset:auto 0 0 auto;right:0;width:min(420px,96vw);max-height:86vh;background:#0f0f16;border-top-left-radius:18px;border:1px solid #2a2a44;box-shadow:0 -20px 60px rgba(0,0,0,.6);transform:translateY(110%);transition:transform .25s ease;z-index:50}
     #drawer.open{transform:translateY(0)}
     .drawer-hd{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid #22243c}
     .drawer-ct{padding:12px 16px;max-height:60vh;overflow:auto}
-    .item{display:grid;grid-template-columns:1fr auto auto;gap:10px;align-items:center;padding:10px 0;border-bottom:1px dashed #2d2a44}
+    .item{display:grid;grid-template-columns:1fr auto auto;gap:10px;align-items:center;padding:10px 0;border-bottom:1px dashed #2a2a44}
     .qty{display:flex;align-items:center;gap:8px}
     .qty button{width:28px;height:28px;border-radius:8px;background:#19192a;border:1px solid #2a2a44;color:#fff;cursor:pointer}
     .drawer-ft{padding:14px 16px;border-top:1px solid #22243c;display:grid;gap:8px}
@@ -87,14 +88,36 @@
   </style>
 </head>
 <body>
+  <!-- 管理员面板（默认在中部；admin=1 时会被移动到页面最上方） -->
+  <section id="admin" style="display:none;padding:14px var(--safe)">
+    <h3>📟 实时订单</h3>
+    <div class="toolbar">
+      <label style="display:flex;align-items:center;gap:6px;cursor:pointer">
+        <input id="showPendingOnly" type="checkbox" checked>
+        <span>只看未做</span>
+      </label>
+      <button id="markAllDone" class="muted">将当前显示的全部标记为完成</button>
+    </div>
+    <div id="roomInfo" style="color:#c7cbe0;margin:8px 0"></div>
+    <table style="width:100%;border-collapse:collapse;border:1px solid #2a2a44">
+      <thead>
+        <tr>
+          <th style="border:1px solid #2a2a44;padding:8px 10px">时间</th>
+          <th style="border:1px solid #2a2a44;padding:8px 10px">来源</th>
+          <th style="border:1px solid #2a2a44;padding:8px 10px">菜品</th>
+          <th style="border:1px solid #2a2a44;padding:8px 10px">数量</th>
+          <th style="border:1px solid #2a2a44;padding:8px 10px">操作</th>
+        </tr>
+      </thead>
+      <tbody id="adminRows"></tbody>
+    </table>
+  </section>
+
   <header>
     <div class="topbar">
       <div class="brand">
         <div class="logo" aria-label="moon"></div>
-        <div>
-          <div class="title">深夜食堂</div>
-          <!-- 副标题已删除，根据你的要求去掉 -->
-        </div>
+        <div><div class="title">深夜食堂</div></div>
       </div>
       <div class="search" role="search">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M21 21l-4.35-4.35M10.5 18a7.5 7.5 0 1 1 0-15 7.5 7.5 0 0 1 0 15z" stroke="#8086a3" stroke-width="2" stroke-linecap="round"/></svg>
@@ -136,37 +159,11 @@
     </div>
   </aside>
 
-  <!-- 管理员面板 -->
-  <section id="admin" style="display:none;padding:14px var(--safe)">
-    <h3>📟 实时订单</h3>
-    <div class="toolbar">
-      <label style="display:flex;align-items:center;gap:6px;cursor:pointer">
-        <input id="showPendingOnly" type="checkbox" checked>
-        <span>只看未做</span>
-      </label>
-      <button id="markAllDone" class="muted">将当前显示的全部标记为完成</button>
-    </div>
-    <div id="roomInfo" style="color:#c7cbe0;margin:8px 0"></div>
-    <table style="width:100%;border-collapse:collapse;border:1px solid #2a2a44">
-      <thead>
-        <tr>
-          <th style="border:1px solid #2a2a44;padding:8px 10px">时间</th>
-          <th style="border:1px solid #2a2a44;padding:8px 10px">来源</th>
-          <th style="border:1px solid #2a2a44;padding:8px 10px">菜品</th>
-          <th style="border:1px solid #2a2a44;padding:8px 10px">数量</th>
-          <th style="border:1px solid #2a2a44;padding:8px 10px">操作</th>
-        </tr>
-      </thead>
-      <tbody id="adminRows"></tbody>
-    </table>
-  </section>
-
   <footer>© 2025 深夜食堂 · 安装到主屏幕后离线可用。店主在链接后加 <code>?admin=1</code> 可查看实时订单。</footer>
 
   <script>
     const BASE = '/shenyeshitang';
 
-    // Emoji 盘子（无图片时回退用）
     const iconSVG = (emoji, label) => {
       const svg = encodeURIComponent(`<?xml version='1.0' encoding='UTF-8'?>
 <svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 220 220'>
@@ -180,13 +177,11 @@
       return `<img class="thumb" alt="${label}" src="data:image/svg+xml;utf8,${svg}">`;
     };
 
-    // 图片优先渲染（目前用 emoji，为图片预留）
     const mediaFor = (item) => {
       // if (item.img) return `<img class="thumb" src="${item.img}" alt="${item.name_cn}" loading="lazy" referrerpolicy="no-referrer">`;
       return iconSVG(item.emoji, item.name_cn);
     };
 
-    // 元素/状态
     const root = document.getElementById('menu-root');
     const pills = document.querySelectorAll('.pill');
     const searchInput = document.getElementById('search');
@@ -198,20 +193,18 @@
     const closeDrawer = document.getElementById('closeDrawer');
     const submitOrder = document.getElementById('submitOrder');
     const clearCart = document.getElementById('clearCart');
-    // 自定义点菜
     const cName = document.getElementById('cName');
     const cIngs = document.getElementById('cIngs');
     const addCustom = document.getElementById('addCustom');
 
     const qs = new URLSearchParams(location.search);
-    const localYYYYMMDD = new Date().toLocaleDateString('sv-SE'); // 本地 YYYY-MM-DD
+    const localYYYYMMDD = new Date().toLocaleDateString('sv-SE');
     const ROOM = qs.get('r') || localYYYYMMDD;
     const ADMIN = qs.get('admin') === '1';
     let activeFilter = 'all';
     let MENU = [];
     let cart = JSON.parse(localStorage.getItem('yd_cart')||'{}');
 
-    // 过滤与分组定义
     const groupDefs = [
       { key:'hot',    title:'🥘 热菜类',        filter: it => it.category === 'Main' && !(it.tags||[]).includes('Soup') },
       { key:'staple', title:'🍚 主食 / 炒饭类', filter: it => it.category === 'Rice' },
@@ -241,11 +234,7 @@
         sec.setAttribute('aria-expanded', now ? 'false' : 'true');
         btn.textContent = now ? '展开' : '收起';
       });
-
-      // 也允许点标题区域折叠/展开（更易点中）
       header.addEventListener('click', () => btn.click());
-
-      header.append(left, btn);
 
       const grid = document.createElement('div');
       grid.className = 'grid';
@@ -271,6 +260,7 @@
         grid.appendChild(card);
       });
 
+      header.append(left, btn);
       sec.append(header, grid);
       return sec;
     }
@@ -289,12 +279,10 @@
       groupDefs.forEach(g => {
         const items = filtered.filter(g.filter);
         if (!items.length) return;
-        // 默认展开（expanded=true）
-        root.appendChild(renderSection(g.title, items, true));
+        root.appendChild(renderSection(g.title, items, true)); // 默认展开
       });
     }
 
-    // 购物车
     function saveCart(){ localStorage.setItem('yd_cart', JSON.stringify(cart)); renderCart(); }
     function renderCart(){
       cartList.innerHTML = '';
@@ -311,7 +299,6 @@
       cartCount.textContent = `(${totalQty})`;
     }
 
-    // 顶部筛选&搜索
     pills.forEach(btn => btn.addEventListener('click', () => {
       pills.forEach(b => b.setAttribute('aria-pressed','false'));
       btn.setAttribute('aria-pressed','true');
@@ -324,7 +311,6 @@
     clearCart.onclick = ()=>{ cart = {}; saveCart(); };
     renderCart();
 
-    // 自定义点菜：加入购物车
     addCustom.onclick = () => {
       const name = (cName.value || '').trim();
       const ings = (cIngs.value || '').trim();
@@ -336,13 +322,12 @@
       cName.value = ''; cIngs.value = '';
     };
 
-    // 加载菜单（绝对路径 + no-store 避免缓存）
     fetch(`${BASE}/menu.json`, { cache: 'no-store' })
       .then(r => { if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); })
       .then(data => { MENU = data; renderMenu(); })
       .catch(err => { console.error('加载菜单失败：', err); alert('加载菜单失败：请检查 menu.json 路径'); });
 
-    // ===== Firebase 配置（你提供的） =====
+    // Firestore
     const firebaseConfig = {
       apiKey: "AIzaSyA45H7MVPejI-09EmX3Y9RP0G-BzxKUA0M",
       authDomain: "shenyeshitang-9a3c2.firebaseapp.com",
@@ -360,13 +345,19 @@
         const app = appMod.initializeApp(firebaseConfig);
         db = fsMod.getFirestore(app); fbReady = true;
 
-        // === 管理员：逐行订阅 yd_order_lines（前端排序 + 完成/撤销 + 批量完成） ===
-        if(ADMIN){
-          document.getElementById('admin').style.display='block';
-          document.getElementById('roomInfo').textContent = `房间/日期: ${ROOM} · 将链接分享为 ?r=${ROOM}`;
+        // ===== 管理员：把实时订单区移到页面最上方 =====
+        if (ADMIN) {
+          const adminSection = document.getElementById('admin');
+          adminSection.style.display = 'block';
+          const headerEl = document.querySelector('header');
+          // 移动到页面最上方（header 之前）
+          document.body.insertBefore(adminSection, headerEl);
+        }
 
+        if(ADMIN){
           const showPendingOnly = document.getElementById('showPendingOnly');
           const markAllDoneBtn  = document.getElementById('markAllDone');
+          document.getElementById('roomInfo').textContent = `房间/日期: ${ROOM} · 将链接分享为 ?r=${ROOM}`;
 
           const { query, collection, where, onSnapshot, getDocs, updateDoc, doc } =
             await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js');
@@ -393,7 +384,7 @@
 
                 const when = data.createdAt?.toDate ? data.createdAt.toDate().toLocaleString() : '';
                 const nameCell = (() => {
-                  const m = /^(.+?)（(.+)）$/.exec(data.name); // 解析“（食材…）”
+                  const m = /^(.+?)（(.+)）$/.exec(data.name);
                   if (m) return `${m[1]}<div style="font-size:12px;color:#c7cbe0">🧾 ${m[2]}</div>`;
                   return data.name;
                 })();
@@ -454,13 +445,11 @@
         const { addDoc, collection, serverTimestamp } =
           await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js');
 
-        // 1) 头档（保留历史/汇总）
         const headerRef = await addDoc(collection(db,'yd_orders'), {
           room: ROOM, nick: nickname.value.trim(), items,
           status: 'pending', doneAt: null, createdAt: serverTimestamp()
         });
 
-        // 2) 逐行（用于逐道完成/撤销）
         const linesCol = collection(db,'yd_order_lines');
         const ops = [];
         for (const it of items) {
@@ -469,7 +458,7 @@
             nick: nickname.value.trim(),
             orderId: headerRef.id,
             name: it.name,
-            qty: it.qty,               // 不做“部分完成”，整行完成/撤销
+            qty: it.qty,
             status: 'pending',
             doneAt: null,
             createdAt: serverTimestamp()
@@ -481,7 +470,6 @@
       }catch(err){ alert('提交失败：'+err.message); }
     };
 
-    // 注册 Service Worker（绝对路径）
     if('serviceWorker' in navigator){ navigator.serviceWorker.register(`${BASE}/sw.js`); }
   </script>
 </body>
