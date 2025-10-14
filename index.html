@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <!-- GitHub Pages 子路径 -->
   <link rel="manifest" href="/shenyeshitang/manifest.webmanifest">
   <link rel="apple-touch-icon" href="/shenyeshitang/icons/icon-192.png">
   <title>深夜食堂</title>
@@ -95,18 +96,27 @@
   <!-- 管理员面板 -->
   <section id="admin" style="display:none;padding:14px var(--safe)">
     <h3>📟 实时订单</h3>
-    <!-- ✅ 新增：筛选栏 -->
-  <div style="display:flex;align-items:center;gap:12px;margin:8px 0 6px">
-    <label style="display:flex;align-items:center;gap:6px;cursor:pointer">
-      <input id="showPendingOnly" type="checkbox" checked>
-      <span>只看未做</span>
-    </label>
-    <button id="markAllDone" class="muted">将当前显示的全部标记为完成</button>
-  </div>
-    
+
+    <!-- 筛选栏 -->
+    <div style="display:flex;align-items:center;gap:12px;margin:8px 0 6px">
+      <label style="display:flex;align-items:center;gap:6px;cursor:pointer">
+        <input id="showPendingOnly" type="checkbox" checked>
+        <span>只看未做</span>
+      </label>
+      <button id="markAllDone" class="muted">将当前显示的全部标记为完成</button>
+    </div>
+
     <div id="roomInfo" style="color:#c7cbe0;margin:8px 0"></div>
     <table style="width:100%;border-collapse:collapse;border:1px solid #2a2a44">
-      <thead><tr><th style="border:1px solid #2a2a44;padding:8px 10px">时间</th><th style="border:1px solid #2a2a44;padding:8px 10px">来源</th><th style="border:1px solid #2a2a44;padding:8px 10px">菜品</th><th style="border:1px solid #2a2a44;padding:8px 10px">数量</th></tr></thead>
+      <thead>
+        <tr>
+          <th style="border:1px solid #2a2a44;padding:8px 10px">时间</th>
+          <th style="border:1px solid #2a2a44;padding:8px 10px">来源</th>
+          <th style="border:1px solid #2a2a44;padding:8px 10px">菜品</th>
+          <th style="border:1px solid #2a2a44;padding:8px 10px">数量</th>
+          <th style="border:1px solid #2a2a44;padding:8px 10px">操作</th>
+        </tr>
+      </thead>
       <tbody id="adminRows"></tbody>
     </table>
   </section>
@@ -114,10 +124,9 @@
   <footer>© 2025 深夜食堂 · 安装到主屏幕后离线可用。店主在链接后加 <code>?admin=1</code> 可查看实时订单。</footer>
 
   <script>
-    // GitHub Pages 子路径
     const BASE = '/shenyeshitang';
 
-    // Emoji 盘子图标（注意使用 ${}）
+    // Emoji 盘子图标（使用模板字符串 ${}）
     const iconSVG = (emoji, label) => {
       const svg = encodeURIComponent(`<?xml version='1.0' encoding='UTF-8'?>
 <svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 220 220'>
@@ -145,7 +154,7 @@
     const clearCart = document.getElementById('clearCart');
 
     const qs = new URLSearchParams(location.search);
-    const localYYYYMMDD = new Date().toLocaleDateString('sv-SE'); // 本地时区 YYYY-MM-DD
+    const localYYYYMMDD = new Date().toLocaleDateString('sv-SE'); // 本地 YYYY-MM-DD
     const ROOM = qs.get('r') || localYYYYMMDD;
     const ADMIN = qs.get('admin') === '1';
     let activeFilter = 'all';
@@ -165,7 +174,7 @@
         card.innerHTML = `
           <div class="imgbox">${iconSVG(item.emoji, item.name_cn)}</div>
           <div class="content">
-            <h3 class="name">${item.name_cn} · ${item.name_en}</h3>
+            <h3 class="name">${item.name_cn}${item.name_en ? ' · ' + item.name_en : ''}</h3>
             <p class="desc">${item.desc||''}</p>
             <div class="tags">${(item.tags||[]).map(t=>`<span class='tag'>${t}</span>`).join('')}</div>
             <button class="add" data-item="${item.name_cn}">加入</button>
@@ -196,13 +205,13 @@
     clearCart.onclick = ()=>{ cart = {}; saveCart(); };
     renderCart();
 
-    // 加载菜单 JSON（绝对路径 + no-store，避免 SW 旧缓存）
+    // 加载菜单（绝对路径 + no-store 避免缓存）
     fetch(`${BASE}/menu.json`, { cache: 'no-store' })
       .then(r => { if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); })
       .then(data => { MENU = data; renderMenu(); })
-      .catch(err => { document.querySelector('.subtitle').textContent = '加载菜单失败，请刷新或检查 menu.json 路径'; console.error('加载菜单失败：', err); });
+      .catch(err => { document.querySelector('.subtitle').textContent = '加载菜单失败，请检查 menu.json 路径'; console.error('加载菜单失败：', err); });
 
-    // Firebase（你的配置）
+    // ===== Firebase 配置（你提供的） =====
     const firebaseConfig = {
       apiKey: "AIzaSyA45H7MVPejI-09EmX3Y9RP0G-BzxKUA0M",
       authDomain: "shenyeshitang-9a3c2.firebaseapp.com",
@@ -220,119 +229,99 @@
         const app = appMod.initializeApp(firebaseConfig);
         db = fsMod.getFirestore(app); fbReady = true;
 
+        // === 管理员：实时订阅（前端排序 + 完成/撤销 + 批量完成） ===
         if(ADMIN){
           document.getElementById('admin').style.display='block';
           document.getElementById('roomInfo').textContent = `房间/日期: ${ROOM} · 将链接分享为 ?r=${ROOM}`;
+
+          const showPendingOnly = document.getElementById('showPendingOnly');
+          const markAllDoneBtn  = document.getElementById('markAllDone');
+
           const q = fsMod.query(
             fsMod.collection(db,'yd_orders'),
-            fsMod.where('room','==',ROOM),
-            fsMod.orderBy('createdAt','desc')
+            fsMod.where('room','==',ROOM)
           );
-          // === 管理员视图逻辑（带完成标记） ===
-const showPendingOnly = document.getElementById('showPendingOnly');
-const markAllDoneBtn  = document.getElementById('markAllDone');
 
-const q = fsMod.query(
-  fsMod.collection(db,'yd_orders'),
-  fsMod.where('room','==',ROOM)
-);
+          fsMod.onSnapshot(
+            q,
+            snap => {
+              const tbody = document.getElementById('adminRows');
+              tbody.innerHTML = '';
 
-fsMod.onSnapshot(q, snap => {
-  const tbody = document.getElementById('adminRows');
-  tbody.innerHTML = '';
+              const rows = [];
+              snap.forEach(doc => {
+                const d = doc.data();
+                const ts = d.createdAt?.toMillis?.() ? d.createdAt.toMillis() : 0;
+                rows.push({ id: doc.id, data: d, ts });
+              });
+              rows.sort((a,b) => b.ts - a.ts);
 
-  // 收集并前端排序（最新在上）
-  const rows = [];
-  snap.forEach(doc => {
-    const d = doc.data();
-    const ts = d.createdAt?.toMillis?.() ? d.createdAt.toMillis() : 0;
-    rows.push({ id: doc.id, data: d, ts });
-  });
-  rows.sort((a,b) => b.ts - a.ts);
+              rows.forEach(({id, data}) => {
+                const isDone = data.status === 'done';
+                if (showPendingOnly.checked && isDone) return;
 
-  // 渲染每条订单
-  rows.forEach(({id, data}) => {
-    const isDone = data.status === 'done';
-    if (showPendingOnly.checked && isDone) return;
-
-    const when = data.createdAt?.toDate ? data.createdAt.toDate().toLocaleString() : '';
-    (data.items || []).forEach(it => {
-      const tr = document.createElement('tr');
-      tr.style.opacity = isDone ? '0.55' : '1';
-      tr.innerHTML = `
-        <td style="border:1px solid #2a2a44;padding:8px 10px">${when}</td>
-        <td style="border:1px solid #2a2a44;padding:8px 10px">${data.nick || '-'}</td>
-        <td style="border:1px solid #2a2a44;padding:8px 10px">${it.name}</td>
-        <td style="border:1px solid #2a2a44;padding:8px 10px">${it.qty}</td>`;
-      
-      // “完成 / 撤销”按钮
-      const tdOp = document.createElement('td');
-      tdOp.style.border = '1px solid #2a2a44';
-      tdOp.style.padding = '6px 8px';
-      const btn = document.createElement('button');
-      btn.className = isDone ? 'muted' : 'primary';
-      btn.textContent = isDone ? '撤销' : '完成';
-      btn.onclick = async () => {
-        const { doc:docFn, updateDoc } = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js');
-        const ref = docFn(db, 'yd_orders', id);
-        await updateDoc(ref, {
-          status: isDone ? 'pending' : 'done',
-          doneAt: isDone ? null : new Date()
-        });
-      };
-      tdOp.appendChild(btn);
-      tr.appendChild(tdOp);
-      tbody.appendChild(tr);
-    });
-  });
-});
-
-// 监听“只看未做”切换
-showPendingOnly.addEventListener('change', ()=>location.reload());
-
-// 批量完成按钮
-markAllDoneBtn.onclick = async () => {
-  if (!confirm('将当前显示的订单全部标记为完成？')) return;
-  const { query, collection, where, getDocs, updateDoc, doc } = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js');
-  const q2 = query(collection(db,'yd_orders'), where('room','==',ROOM));
-  const snap2 = await getDocs(q2);
-  const ops = [];
-  snap2.forEach(d => {
-    const data = d.data();
-    if (showPendingOnly.checked && data.status === 'done') return;
-    if (data.status !== 'done') ops.push(updateDoc(doc(db,'yd_orders', d.id), { status:'done', doneAt:new Date() }));
-  });
-  await Promise.all(ops);
-  alert('已标记完成');
-};
-
+                const when = data.createdAt?.toDate ? data.createdAt.toDate().toLocaleString() : '';
+                (data.items || []).forEach(it => {
+                  const tr = document.createElement('tr');
+                  tr.style.opacity = isDone ? '0.55' : '1';
+                  tr.innerHTML = `
+                    <td style="border:1px solid #2a2a44;padding:8px 10px">${when}</td>
+                    <td style="border:1px solid #2a2a44;padding:8px 10px">${data.nick || '-'}</td>
+                    <td style="border:1px solid #2a2a44;padding:8px 10px">${it.name}</td>
+                    <td style="border:1px solid #2a2a44;padding:8px 10px">${it.qty}</td>`;
+                  const tdOp = document.createElement('td');
+                  tdOp.style.border = '1px solid #2a2a44';
+                  tdOp.style.padding = '6px 8px';
+                  const btn = document.createElement('button');
+                  btn.className = isDone ? 'muted' : 'primary';
+                  btn.textContent = isDone ? '撤销' : '完成';
+                  btn.onclick = async () => {
+                    const { doc:docFn, updateDoc } = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js');
+                    const ref = docFn(db, 'yd_orders', id);
+                    await updateDoc(ref, { status: isDone ? 'pending' : 'done', doneAt: isDone ? null : new Date() });
+                  };
+                  tdOp.appendChild(btn);
+                  tr.appendChild(tdOp);
+                  tbody.appendChild(tr);
+                });
+              });
             },
             err => { console.error('实时订单监听失败：', err); alert('实时订单监听失败：'+err.message); }
           );
+
+          showPendingOnly.addEventListener('change', ()=>location.reload());
+          markAllDoneBtn.onclick = async () => {
+            if (!confirm('将当前显示的订单全部标记为完成？')) return;
+            const { query, collection, where, getDocs, updateDoc, doc } = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js');
+            const q2 = query(collection(db,'yd_orders'), where('room','==',ROOM));
+            const snap2 = await getDocs(q2);
+            const ops = [];
+            snap2.forEach(d => {
+              const data = d.data();
+              if (showPendingOnly.checked && data.status === 'done') return;
+              if (data.status !== 'done') ops.push(updateDoc(doc(db,'yd_orders', d.id), { status:'done', doneAt:new Date() }));
+            });
+            await Promise.all(ops);
+            alert('已标记完成');
+          };
         }
       }catch(e){ console.warn('Firebase 初始化失败：', e.message); }
     })();
 
-// 提交订单
-submitOrder.onclick = async () => {
-  if(Object.keys(cart).length===0){ alert('请先加入菜品'); return; }
-  if(!fbReady){ alert('Firebase 未配置或不可用。'); return; }
-
-  const items = Object.entries(cart).map(([name, qty])=>({name, qty}));
-  try{
-    const { addDoc, collection, serverTimestamp } = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js');
-    await addDoc(collection(db,'yd_orders'), {
-      room: ROOM,
-      nick: nickname.value.trim(),
-      items,
-      status: 'pending',          // 👈 新增：默认未完成
-      doneAt: null,               // 👈 新增：完成时间
-      createdAt: serverTimestamp()
-    });
-    cart = {}; saveCart(); drawer.classList.remove('open'); alert('已提交！');
-  }catch(err){ alert('提交失败：'+err.message); }
-};
-
+    // 提交订单（默认带 status/pending）
+    submitOrder.onclick = async () => {
+      if(Object.keys(cart).length===0){ alert('请先加入菜品'); return; }
+      if(!fbReady){ alert('Firebase 未配置或不可用。'); return; }
+      const items = Object.entries(cart).map(([name, qty])=>({name, qty}));
+      try{
+        const { addDoc, collection, serverTimestamp } = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js');
+        await addDoc(collection(db,'yd_orders'), {
+          room: ROOM, nick: nickname.value.trim(), items,
+          status: 'pending', doneAt: null, createdAt: serverTimestamp()
+        });
+        cart = {}; saveCart(); drawer.classList.remove('open'); alert('已提交！');
+      }catch(err){ alert('提交失败：'+err.message); }
+    };
 
     // 注册 Service Worker（绝对路径）
     if('serviceWorker' in navigator){ navigator.serviceWorker.register(`${BASE}/sw.js`); }
