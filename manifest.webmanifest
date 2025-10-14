@@ -1,6 +1,6 @@
 {
-  "name": "深夜食堂 · 菜单",
-  "short_name": "深夜食堂",
+  "name": "夜间食堂 · 菜单",
+  "short_name": "夜间食堂",
   "start_url": "/shenyeshitang/",
   "scope": "/shenyeshitang/",
   "display": "standalone",
