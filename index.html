@@ -22,22 +22,55 @@
     .logo::after{content:'🌙'}
     .title{font-size:clamp(22px,3.2vw,30px);font-weight:800}
     .subtitle{color:var(--muted);font-size:13px;margin-top:2px}
+
     .search{display:flex;align-items:center;gap:8px;background:#0f0f15;border:1px solid #242438;color:var(--text);padding:10px 12px;border-radius:12px;min-width:min(360px,60vw)}
     .search input{flex:1;background:transparent;border:0;color:inherit;outline:none;font-size:15px}
+
     .tabs{display:flex;gap:10px;overflow:auto;padding:8px var(--safe) 14px}
     .pill{border:1px solid #28283e;background:#13131b;color:var(--text);padding:10px 14px;border-radius:999px;font-size:14px;cursor:pointer;flex:0 0 auto}
     .pill[aria-pressed="true"]{background:linear-gradient(135deg,rgba(124,92,255,.25),rgba(61,217,178,.2));border-color:var(--brand)}
-    .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:20px;padding:10px var(--safe) 96px}
-    @media (min-width: 1024px){.grid{grid-template-columns:repeat(3,minmax(320px,1fr));}}
-    .card{display:flex;gap:16px;align-items:stretch;background:linear-gradient(180deg,#161621,#12121a 30%);border:1px solid #24243a;border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow)}
-    .imgbox{flex:0 0 160px;display:grid;place-items:center;background:#0a0a10;border-right:1px solid #23233a}
-    .qsvg{width:140px;height:140px}
-    .content{flex:1;padding:16px}
-    .name{font-size:19px;font-weight:900;margin:0 0 6px}
-    .desc{font-size:14px;color:#8a8fa3;min-height:36px;margin:0 0 8px}
-    .tags{display:flex;flex-wrap:wrap;gap:8px}
-    .tag{font-size:12px;color:#c7cbe0;border:1px dashed #2d2d44;padding:4px 8px;border-radius:999px}
-    .add{margin-top:10px;background:#1a1a28;color:#fff;border:1px solid #2a2a44;border-radius:12px;padding:10px 12px;font-weight:800;cursor:pointer;width:fit-content}
+
+    /* 卡片与图片（新UI基线） */
+    .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:22px}
+    .card{
+      display:grid; grid-template-columns:140px 1fr; gap:0;
+      background:linear-gradient(180deg,#171a24,#12131a 40%);
+      border:1px solid #282b3f; border-radius:16px; overflow:hidden;
+      box-shadow:0 12px 30px rgba(0,0,0,.35); transition:transform .18s ease,border-color .18s;
+    }
+    .card:hover{ transform:translateY(-3px); border-color:#3b3f5b; }
+    .imgbox{ position:relative; background:#0a0b10; aspect-ratio:4/3; overflow:hidden; }
+    .thumb{ width:100%; height:100%; object-fit:cover; transform:scale(1.02); transition:transform .25s ease; }
+    .card:hover .thumb{ transform:scale(1.05); }
+
+    .content{ padding:14px 14px 16px; display:grid; align-content:start; gap:8px }
+    .name{ font-size:18px; font-weight:900; margin:2px 0 0 }
+    .desc{ font-size:13px; color:#98a0be; min-height:34px }
+    .tags{ display:flex; flex-wrap:wrap; gap:8px }
+    .tag{ font-size:12px; color:#c7cbe0; border:1px dashed #2d2d44; padding:4px 8px; border-radius:999px }
+    .add{margin-top:2px;background:#1a1a28;border:1px solid #2a2a44;color:#fff;border-radius:10px;padding:9px 12px;font-weight:700;cursor:pointer;justify-self:start}
+    .add:hover{border-color:var(--brand)}
+
+    /* =========== 分组标题 + 折叠 =========== */
+    .section{ margin:18px var(--safe); }
+    .section-header{
+      display:flex;align-items:center;justify-content:space-between;
+      gap:10px;margin:6px 0 10px;padding:10px 12px;border:1px solid #2a2a44;
+      border-radius:12px;background:linear-gradient(180deg,#12131a,#11121a);
+      position:sticky;top:56px;z-index:5;backdrop-filter:blur(6px);
+    }
+    .section-title{display:flex;align-items:center;gap:10px;font-weight:900}
+    .section-sub{color:#8a8fa3;font-size:12px}
+    .section-toggle{
+      background:#161622;border:1px solid #2a2a44;color:#fff;border-radius:10px;
+      padding:8px 10px;cursor:pointer
+    }
+    .section[aria-expanded="false"] .grid{ display:none }
+
+    /* 管理员工具条固定在表头 */
+    #admin .toolbar{display:flex;gap:12px;align-items:center;margin:8px 0 10px;position:sticky;top:56px;z-index:5;background:rgba(12,12,15,.85);backdrop-filter:blur(6px);padding:6px 8px;border-radius:10px;border:1px solid #2a2a44}
+
+    /* 购物车抽屉等通用 */
     #cartBtn{position:fixed;right:16px;bottom:calc(16px + env(safe-area-inset-bottom));background:linear-gradient(135deg,var(--brand),var(--accent));color:#0b0b0e;border:0;border-radius:16px;padding:12px 16px;font-weight:900;box-shadow:0 14px 40px rgba(0,0,0,.45);z-index:40}
     #cartBtn small{opacity:.8}
     #drawer{position:fixed;inset:auto 0 0 auto;right:0;width:min(420px,96vw);max-height:86vh;background:#0f0f16;border-top-left-radius:18px;border:1px solid #2a2a44;box-shadow:0 -20px 60px rgba(0,0,0,.6);transform:translateY(110%);transition:transform .25s ease;z-index:50}
@@ -50,8 +83,8 @@
     .drawer-ft{padding:14px 16px;border-top:1px solid #22243c;display:grid;gap:8px}
     .primary{background:linear-gradient(135deg,var(--brand),var(--accent));color:#0b0b0e;border:0;border-radius:12px;padding:12px;font-weight:900;cursor:pointer}
     .muted{background:#161622;border:1px solid #2a2a44;color:#fff;border-radius:12px;padding:10px;cursor:pointer}
-    footer{margin:28px 0 120px;text-align:center;color:#98a0be;font-size:12px}
     input.muted{background:#161622;border:1px solid #2a2a44;color:#fff}
+    footer{margin:28px 0 120px;text-align:center;color:#98a0be;font-size:12px}
   </style>
 </head>
 <body>
@@ -61,7 +94,7 @@
         <div class="logo" aria-label="moon"></div>
         <div>
           <div class="title">深夜食堂</div>
-          <div class="subtitle">支持自助点餐</div>
+          <div class="subtitle">可安装到主屏幕 · 内置购物车 · 实时订单（JSON 菜单，离线可用）</div>
         </div>
       </div>
       <div class="search" role="search">
@@ -72,12 +105,13 @@
     <div class="tabs" role="tablist" aria-label="分类筛选">
       <button class="pill" data-filter="all" aria-pressed="true">全部</button>
       <button class="pill" data-filter="Main">主食/热菜</button>
-      <button class="pill" data-filter="Rice">炒饭/饭类</button>
-      <button class="pill" data-filter="Veg">素菜/凉菜/蘸酱</button>
+      <button class="pill" data-filter="Rice">炒饭/主食</button>
+      <button class="pill" data-filter="Veg">素菜/凉菜</button>
     </div>
   </header>
 
-  <main class="grid" id="menu-grid"></main>
+  <!-- 分组渲染根节点 -->
+  <main id="menu-root"></main>
 
   <!-- 购物车抽屉 -->
   <button id="cartBtn">🛒 购物车 <small id="cartCount">(0)</small></button>
@@ -87,7 +121,7 @@
       <button class="muted" id="closeDrawer">关闭</button>
     </div>
 
-    <!-- 自定义点菜：菜名必填，食材可选（逗号分隔） -->
+    <!-- 自定义点菜 -->
     <div id="customDish" style="display:grid;gap:8px;margin:6px 16px 6px">
       <div style="font-weight:700;opacity:.9">✍️ 自定义点菜</div>
       <input id="cName" placeholder="菜名（必填）" class="muted" style="padding:10px;border-radius:10px">
@@ -106,7 +140,7 @@
   <!-- 管理员面板 -->
   <section id="admin" style="display:none;padding:14px var(--safe)">
     <h3>📟 实时订单</h3>
-    <div style="display:flex;align-items:center;gap:12px;margin:8px 0 6px">
+    <div class="toolbar">
       <label style="display:flex;align-items:center;gap:6px;cursor:pointer">
         <input id="showPendingOnly" type="checkbox" checked>
         <span>只看未做</span>
@@ -133,22 +167,29 @@
   <script>
     const BASE = '/shenyeshitang';
 
-    // Emoji 盘子图标（使用模板字符串 ${}）
+    // Emoji 盘子（无图片时回退用）
     const iconSVG = (emoji, label) => {
       const svg = encodeURIComponent(`<?xml version='1.0' encoding='UTF-8'?>
 <svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 220 220'>
   <defs><linearGradient id='g' x1='0' y1='0' x2='1' y2='1'><stop offset='0%' stop-color='#7c5cff'/><stop offset='100%' stop-color='#3dd9b2'/></linearGradient></defs>
   <rect width='220' height='220' rx='28' fill='url(#g)'/>
   <circle cx='110' cy='118' r='72' fill='white'/><circle cx='110' cy='118' r='58' fill='#f4f4f4'/>
-  <text x='110' y='124' font-size='72' text-anchor='middle' dominant-baseline='middle'>${emoji}</text>
+  <text x='110' y='124' font-size='72' text-anchor='middle' dominant-baseline='middle'>${emoji || '🍽️'}</text>
   <rect x='60' y='168' width='100' height='28' rx='14' fill='rgba(0,0,0,.45)'/>
   <text x='110' y='184' font-size='14' text-anchor='middle' fill='white' font-weight='700'>${label}</text>
 </svg>`);
-      return `<img class="qsvg" alt="${label}" src="data:image/svg+xml;utf8,${svg}">`;
+      return `<img class="thumb" alt="${label}" src="data:image/svg+xml;utf8,${svg}">`;
+    };
+
+    // 图片优先渲染（目前用 emoji，为图片预留）
+    const mediaFor = (item) => {
+      // 若以后给 item 加 "img" 字段，这里优先展示图片：
+      // if (item.img) return `<img class="thumb" src="${item.img}" alt="${item.name_cn}" loading="lazy" referrerpolicy="no-referrer">`;
+      return iconSVG(item.emoji, item.name_cn);
     };
 
     // 元素/状态
-    const grid = document.getElementById('menu-grid');
+    const root = document.getElementById('menu-root');
     const pills = document.querySelectorAll('.pill');
     const search = document.getElementById('search');
     const cartBtn = document.getElementById('cartBtn');
@@ -159,7 +200,7 @@
     const closeDrawer = document.getElementById('closeDrawer');
     const submitOrder = document.getElementById('submitOrder');
     const clearCart = document.getElementById('clearCart');
-    // 自定义点菜元素
+    // 自定义点菜
     const cName = document.getElementById('cName');
     const cIngs = document.getElementById('cIngs');
     const addCustom = document.getElementById('addCustom');
@@ -172,28 +213,81 @@
     let MENU = [];
     let cart = JSON.parse(localStorage.getItem('yd_cart')||'{}');
 
-    function renderMenu(){
-      grid.innerHTML = '';
-      const q = (search?.value || '').trim().toLowerCase();
-      MENU.forEach(item => {
-        const catOk = activeFilter === 'all' || item.category === activeFilter;
-        const textOk = !q || item.name_cn.toLowerCase().includes(q) || item.name_en.toLowerCase().includes(q) || (item.tags||[]).join(' ').toLowerCase().includes(q);
-        if(!(catOk && textOk)) return;
+    // 过滤与分组定义
+    const groupDefs = [
+      { key:'hot',    title:'🥘 热菜类',           filter: it => it.category === 'Main' && !(it.tags||[]).includes('Soup') },
+      { key:'staple', title:'🍚 主食 / 炒饭类',    filter: it => it.category === 'Rice' },
+      { key:'soups',  title:'🍲 汤类',             filter: it => (it.tags||[]).includes('Soup') },
+      { key:'veg',    title:'🥦 素菜 / 凉菜类',    filter: it => it.category === 'Veg' }
+    ];
+
+    function renderSection(title, items, expanded = true){
+      const sec = document.createElement('section');
+      sec.className = 'section';
+      sec.setAttribute('aria-expanded', expanded ? 'true' : 'false');
+
+      const header = document.createElement('div');
+      header.className = 'section-header';
+      const left = document.createElement('div');
+      left.className = 'section-title';
+      left.innerHTML = `<span>${title}</span><span class="section-sub">共 ${items.length} 道</span>`;
+      const btn = document.createElement('button');
+      btn.className = 'section-toggle';
+      btn.textContent = expanded ? '收起' : '展开';
+      btn.onclick = () => {
+        const now = sec.getAttribute('aria-expanded') === 'true';
+        sec.setAttribute('aria-expanded', now ? 'false' : 'true');
+        btn.textContent = now ? '展开' : '收起';
+      };
+      header.append(left, btn);
+
+      const grid = document.createElement('div');
+      grid.className = 'grid';
+
+      items.forEach(item => {
         const card = document.createElement('article');
         card.className = 'card';
         card.dataset.category = item.category;
         card.innerHTML = `
-          <div class="imgbox">${iconSVG(item.emoji, item.name_cn)}</div>
+          <div class="imgbox">${mediaFor(item)}</div>
           <div class="content">
             <h3 class="name">${item.name_cn}${item.name_en ? ' · ' + item.name_en : ''}</h3>
-            <p class="desc">${item.desc||''}</p>
-            <div class="tags">${(item.tags||[]).map(t=>`<span class='tag'>${t}</span>`).join('')}</div>
+            <p class="desc">${item.desc || ''}</p>
+            <div class="tags">${(item.tags||[]).map(t=>`<span class="tag">${t}</span>`).join('')}</div>
             <button class="add" data-item="${item.name_cn}">加入</button>
-          </div>`;
-        card.querySelector('.add').addEventListener('click', () => { cart[item.name_cn]=(cart[item.name_cn]||0)+1; saveCart(); drawer.classList.add('open'); drawer.setAttribute('aria-hidden','false'); });
+          </div>
+        `;
+        card.querySelector('.add').addEventListener('click', () => {
+          cart[item.name_cn] = (cart[item.name_cn]||0)+1;
+          saveCart();
+          drawer.classList.add('open'); drawer.setAttribute('aria-hidden','false');
+        });
         grid.appendChild(card);
       });
+
+      sec.append(header, grid);
+      return sec;
     }
+
+    function renderMenu(){
+      root.innerHTML = '';
+      const q = (search?.value || '').trim().toLowerCase();
+
+      const filtered = MENU.filter(it => {
+        const matchCat = (activeFilter === 'all') || (it.category === activeFilter);
+        const hay = (it.name_cn + ' ' + (it.name_en||'') + ' ' + (it.tags||[]).join(' ')).toLowerCase();
+        const matchText = !q || hay.includes(q);
+        return matchCat && matchText;
+      });
+
+      groupDefs.forEach(g => {
+        const items = filtered.filter(g.filter);
+        if (!items.length) return;
+        root.appendChild(renderSection(g.title, items, true));
+      });
+    }
+
+    // 购物车
     function saveCart(){ localStorage.setItem('yd_cart', JSON.stringify(cart)); renderCart(); }
     function renderCart(){
       cartList.innerHTML = '';
@@ -209,14 +303,26 @@
       });
       cartCount.textContent = `(${totalQty})`;
     }
-    pills.forEach(btn => btn.addEventListener('click', () => { pills.forEach(b => b.setAttribute('aria-pressed','false')); btn.setAttribute('aria-pressed','true'); activeFilter = btn.dataset.filter; renderMenu(); }));
+
+    // 顶部筛选&搜索
+    const pills = document.querySelectorAll('.pill');
+    pills.forEach(btn => btn.addEventListener('click', () => {
+      pills.forEach(b => b.setAttribute('aria-pressed','false'));
+      btn.setAttribute('aria-pressed','true');
+      activeFilter = btn.dataset.filter; renderMenu();
+    }));
+    const search = document.getElementById('search');
     search?.addEventListener('input', renderMenu);
+
     cartBtn.onclick = ()=>{ drawer.classList.add('open'); drawer.setAttribute('aria-hidden','false'); };
     closeDrawer.onclick = ()=>{ drawer.classList.remove('open'); drawer.setAttribute('aria-hidden','true'); };
     clearCart.onclick = ()=>{ cart = {}; saveCart(); };
     renderCart();
 
     // 自定义点菜：加入购物车
+    const cName = document.getElementById('cName');
+    const cIngs = document.getElementById('cIngs');
+    const addCustom = document.getElementById('addCustom');
     addCustom.onclick = () => {
       const name = (cName.value || '').trim();
       const ings = (cIngs.value || '').trim();
@@ -260,10 +366,9 @@
           const showPendingOnly = document.getElementById('showPendingOnly');
           const markAllDoneBtn  = document.getElementById('markAllDone');
 
-          const { query, collection, where, onSnapshot, getDocs, updateDoc, addDoc, serverTimestamp, doc } =
+          const { query, collection, where, onSnapshot, getDocs, updateDoc, doc } =
             await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js');
 
-          // 订阅逐行集合
           const qLines = query(collection(db, 'yd_order_lines'), where('room', '==', ROOM));
 
           onSnapshot(
@@ -320,11 +425,9 @@
           );
 
           showPendingOnly.addEventListener('change', ()=>location.reload());
-
           markAllDoneBtn.onclick = async () => {
             if (!confirm('将当前显示的订单全部标记为完成？')) return;
-            const q2 = query(collection(db,'yd_order_lines'), where('room','==',ROOM));
-            const snap2 = await getDocs(q2);
+            const snap2 = await getDocs(qLines);
             const ops = [];
             snap2.forEach(d => {
               const data = d.data();
@@ -355,7 +458,7 @@
           status: 'pending', doneAt: null, createdAt: serverTimestamp()
         });
 
-        // 2) 逐行（真正用于“逐道完成/撤销”）
+        // 2) 逐行（用于逐道完成/撤销）
         const linesCol = collection(db,'yd_order_lines');
         const ops = [];
         for (const it of items) {
@@ -364,7 +467,7 @@
             nick: nickname.value.trim(),
             orderId: headerRef.id,
             name: it.name,
-            qty: it.qty,               // 不做部分完成，整行完成/撤销
+            qty: it.qty,               // 不做“部分完成”，整行完成/撤销
             status: 'pending',
             doneAt: null,
             createdAt: serverTimestamp()
