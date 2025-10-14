@@ -88,7 +88,7 @@
   </style>
 </head>
 <body>
-  <!-- 管理员面板（默认在中部；admin=1 时会被移动到页面最上方） -->
+  <!-- 管理员面板（admin=1 时顶部展示） -->
   <section id="admin" style="display:none;padding:14px var(--safe)">
     <h3>📟 实时订单</h3>
     <div class="toolbar">
@@ -126,8 +126,8 @@
     </div>
     <div class="tabs" role="tablist" aria-label="分类筛选">
       <button class="pill" data-filter="all" aria-pressed="true">全部</button>
-      <button class="pill" data-filter="Main">主食/热菜</button>
-      <button class="pill" data-filter="Rice">炒饭/主食</button>
+      <button class="pill" data-filter="Main">热菜</button>
+      <button class="pill" data-filter="Rice">主食</button>
       <button class="pill" data-filter="Veg">素菜/凉菜</button>
     </div>
   </header>
@@ -207,7 +207,7 @@
 
     const groupDefs = [
       { key:'hot',    title:'🥘 热菜类',        filter: it => it.category === 'Main' && !(it.tags||[]).includes('Soup') },
-      { key:'staple', title:'🍚 主食 / 炒饭类', filter: it => it.category === 'Rice' },
+      { key:'staple', title:'🍚 主食',          filter: it => it.category === 'Rice' },
       { key:'soups',  title:'🍲 汤类',          filter: it => (it.tags||[]).includes('Soup') },
       { key:'veg',    title:'🥦 素菜 / 凉菜类', filter: it => it.category === 'Veg' }
     ];
@@ -345,13 +345,11 @@
         const app = appMod.initializeApp(firebaseConfig);
         db = fsMod.getFirestore(app); fbReady = true;
 
-        // ===== 管理员：把实时订单区移到页面最上方 =====
         if (ADMIN) {
           const adminSection = document.getElementById('admin');
           adminSection.style.display = 'block';
           const headerEl = document.querySelector('header');
-          // 移动到页面最上方（header 之前）
-          document.body.insertBefore(adminSection, headerEl);
+          document.body.insertBefore(adminSection, headerEl); // 置顶
         }
 
         if(ADMIN){
@@ -383,11 +381,8 @@
                 if (showPendingOnly.checked && isDone) return;
 
                 const when = data.createdAt?.toDate ? data.createdAt.toDate().toLocaleString() : '';
-                const nameCell = (() => {
-                  const m = /^(.+?)（(.+)）$/.exec(data.name);
-                  if (m) return `${m[1]}<div style="font-size:12px;color:#c7cbe0">🧾 ${m[2]}</div>`;
-                  return data.name;
-                })();
+                const m = /^(.+?)（(.+)）$/.exec(data.name);
+                const nameCell = m ? `${m[1]}<div style="font-size:12px;color:#c7cbe0">🧾 ${m[2]}</div>` : data.name;
 
                 const tr = document.createElement('tr');
                 tr.style.opacity = isDone ? '0.55' : '1';
