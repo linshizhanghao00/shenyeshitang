@@ -133,7 +133,11 @@ const closeDrawer = document.getElementById('closeDrawer');
 const submitOrder = document.getElementById('submitOrder');
 const clearCart = document.getElementById('clearCart');
 
-const ROOM = new URLSearchParams(location.search).get('r') || new Date().toISOString().slice(0,10);
+const qs = new URLSearchParams(location.search);
+// 本地时区的 YYYY-MM-DD（sv-SE 区域格式保证是 2025-10-13 这种）
+const localYYYYMMDD = new Date().toLocaleDateString('sv-SE');
+const ROOM = qs.get('r') || localYYYYMMDD;
+
 const ADMIN = new URLSearchParams(location.search).get('admin') === '1';
 let activeFilter = 'all';
 let MENU = [];
