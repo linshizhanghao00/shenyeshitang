@@ -6,7 +6,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <link rel="manifest" href="/shenyeshitang/manifest.webmanifest">
-<link rel="apple-touch-icon" href="/shenyeshitang/icons/icon-192.png">
+  <link rel="apple-touch-icon" href="/shenyeshitang/icons/icon-192.png">
 
   <title>深夜食堂</title>
   <style>
@@ -106,6 +106,7 @@
   <footer>© 2025 夜间食堂 · 安装到主屏幕后离线可用。店主在链接后加 <code>?admin=1</code> 可查看实时订单。</footer>
 
 <script>
+/* ========== Emoji 盘子图标（使用 ${}，别改成 {}） ========== */
 const iconSVG = (emoji, label) => {
   const svg = encodeURIComponent(`<?xml version='1.0' encoding='UTF-8'?>
 <svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 220 220'>
@@ -119,123 +120,129 @@ const iconSVG = (emoji, label) => {
   return `<img class="qsvg" alt="${label}" src="data:image/svg+xml;utf8,${svg}">`;
 };
 
+/* ========== 页面状态/元素 ========== */
+const grid = document.getElementById('menu-grid');
+const pills = document.querySelectorAll('.pill');
+const search = document.getElementById('search');
+const cartBtn = document.getElementById('cartBtn');
+const drawer = document.getElementById('drawer');
+const cartList = document.getElementById('cartList');
+const cartCount = document.getElementById('cartCount');
+const nickname = document.getElementById('nickname');
+const closeDrawer = document.getElementById('closeDrawer');
+const submitOrder = document.getElementById('submitOrder');
+const clearCart = document.getElementById('clearCart');
+
+const ROOM = new URLSearchParams(location.search).get('r') || new Date().toISOString().slice(0,10);
+const ADMIN = new URLSearchParams(location.search).get('admin') === '1';
+let activeFilter = 'all';
+let MENU = [];
+let cart = JSON.parse(localStorage.getItem('yd_cart')||'{}');
+
+/* ========== 渲染菜单 ========== */
+const renderMenu = () => {
+  grid.innerHTML = '';
+  const q = (search?.value || '').trim().toLowerCase();
+  MENU.forEach(item => {
+    const catOk = activeFilter === 'all' || item.category === activeFilter;
+    const textOk = !q || item.name_cn.toLowerCase().includes(q) || item.name_en.toLowerCase().includes(q) || (item.tags||[]).join(' ').toLowerCase().includes(q);
+    if(!(catOk && textOk)) return;
+    const card = document.createElement('article');
+    card.className = 'card';
+    card.dataset.category = item.category;
+    card.innerHTML = `
+      <div class="imgbox">${iconSVG(item.emoji, item.name_cn)}</div>
+      <div class="content">
+        <h3 class="name">${item.name_cn} · ${item.name_en}</h3>
+        <p class="desc">${item.desc||''}</p>
+        <div class="tags">${(item.tags||[]).map(t=>`<span class='tag'>${t}</span>`).join('')}</div>
+        <button class="add" data-item="${item.name_cn}">加入</button>
+      </div>`;
+    card.querySelector('.add').addEventListener('click', () => { cart[item.name_cn] = (cart[item.name_cn]||0)+1; saveCart(); drawer.classList.add('open'); drawer.setAttribute('aria-hidden','false'); });
+    grid.appendChild(card);
+  });
+};
+
+function saveCart(){ localStorage.setItem('yd_cart', JSON.stringify(cart)); renderCart(); }
+function renderCart(){
+  cartList.innerHTML = '';
+  let totalQty = 0;
+  Object.entries(cart).forEach(([name, qty]) => {
+    totalQty += qty;
+    const row = document.createElement('div'); row.className = 'item';
+    row.innerHTML = `<strong>${name}</strong><div></div>
+      <div class='qty'><button data-op='-'>-</button><span>${qty}</span><button data-op='+'>+</button></div>`;
+    row.querySelector('[data-op="-"]').onclick = ()=>{ cart[name] = Math.max(0,(cart[name]||0)-1); if(cart[name]===0) delete cart[name]; saveCart(); };
+    row.querySelector('[data-op="+"]').onclick = ()=>{ cart[name] = (cart[name]||0)+1; saveCart(); };
+    cartList.appendChild(row);
+  });
+  cartCount.textContent = `(${totalQty})`;
+}
+
+/* ========== 交互绑定 ========== */
+pills.forEach(btn => btn.addEventListener('click', () => { pills.forEach(b => b.setAttribute('aria-pressed','false')); btn.setAttribute('aria-pressed','true'); activeFilter = btn.dataset.filter; renderMenu(); }));
+search?.addEventListener('input', renderMenu);
+cartBtn.onclick = ()=>{ drawer.classList.add('open'); drawer.setAttribute('aria-hidden','false'); };
+closeDrawer.onclick = ()=>{ drawer.classList.remove('open'); drawer.setAttribute('aria-hidden','true'); };
+clearCart.onclick = ()=>{ cart = {}; saveCart(); };
+renderCart();
+
+/* ========== GitHub Pages: 使用绝对路径加载 JSON ========== */
+fetch('/shenyeshitang/menu.json').then(r=>r.json()).then(data => { MENU = data; renderMenu(); });
+
+/* ========== Firebase（你的配置已写入） ========== */
+const firebaseConfig = {
+  apiKey: "AIzaSyA45H7MVPejI-09EmX3Y9RP0G-BzxKUA0M",
+  authDomain: "shenyeshitang-9a3c2.firebaseapp.com",
+  projectId: "shenyeshitang-9a3c2",
+  storageBucket: "shenyeshitang-9a3c2.firebasestorage.app",
+  messagingSenderId: "293937999981",
+  appId: "1:293937999981:web:364b69c1ea61b48e8acf64"
+};
+
+let db=null; let fbReady=false;
+(async () => {
+  try{
+    const appMod = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js');
+    const fsMod  = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js');
+    const app = appMod.initializeApp(firebaseConfig);
+    db = fsMod.getFirestore(app); fbReady = true;
+
+    if(ADMIN){
+      document.getElementById('admin').style.display='block';
+      document.getElementById('roomInfo').textContent = `房间/日期: ${ROOM} · 将链接分享为 ?r=${ROOM}`;
+      const q = fsMod.query(fsMod.collection(db,'yd_orders'), fsMod.where('room','==',ROOM), fsMod.orderBy('createdAt','desc'));
+      fsMod.onSnapshot(q, snap => {
+        const tbody = document.getElementById('adminRows'); tbody.innerHTML='';
+        snap.forEach(doc=>{
+          const d = doc.data();
+          const when = d.createdAt?.toDate ? d.createdAt.toDate().toLocaleString() : new Date(d.createdAt).toLocaleString();
+          d.items.forEach(it=>{
+            const tr = document.createElement('tr');
+            tr.innerHTML = `<td style='border:1px solid #2a2a44;padding:8px 10px'>${when}</td><td style='border:1px solid #2a2a44;padding:8px 10px'>${d.nick||'-'}</td><td style='border:1px solid #2a2a44;padding:8px 10px'>${it.name}</td><td style='border:1px solid #2a2a4;padding:8px 10px'>${it.qty}</td>`;
+            tbody.appendChild(tr);
+          });
+        });
+      });
+    }
+  }catch(e){ console.warn('Firebase 初始化失败：', e.message); }
+})();
+
+/* ========== 提交订单到 Firestore ========== */
+submitOrder.onclick = async () => {
+  if(Object.keys(cart).length===0){ alert('请先加入菜品'); return; }
+  if(!fbReady){ alert('Firebase 未配置或不可用。'); return; }
+  const items = Object.entries(cart).map(([name, qty])=>({name, qty}));
+  try{
+    const { addDoc, collection, serverTimestamp } = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js');
+    await addDoc(collection(db,'yd_orders'), { room: ROOM, nick: nickname.value.trim(), items, createdAt: serverTimestamp() });
+    cart = {}; saveCart(); drawer.classList.remove('open'); alert('已提交！');
+  }catch(err){ alert('提交失败：'+err.message); }
+};
+
+/* ========== 注册 Service Worker（GH Pages 绝对路径） ========== */
+if('serviceWorker' in navigator){ navigator.serviceWorker.register('/shenyeshitang/sw.js'); }
 </script>
 
-
-    const grid = document.getElementById('menu-grid');
-    const pills = document.querySelectorAll('.pill');
-    const search = document.getElementById('search');
-    const cartBtn = document.getElementById('cartBtn');
-    const drawer = document.getElementById('drawer');
-    const cartList = document.getElementById('cartList');
-    const cartCount = document.getElementById('cartCount');
-    const nickname = document.getElementById('nickname');
-    const closeDrawer = document.getElementById('closeDrawer');
-    const submitOrder = document.getElementById('submitOrder');
-    const clearCart = document.getElementById('clearCart');
-
-    const ROOM = new URLSearchParams(location.search).get('r') || new Date().toISOString().slice(0,10);
-    const ADMIN = new URLSearchParams(location.search).get('admin') === '1';
-    let activeFilter = 'all';
-    let MENU = [];
-    let cart = JSON.parse(localStorage.getItem('yd_cart')||'{}');
-
-    const renderMenu = () => {
-      grid.innerHTML = '';
-      const q = (search?.value || '').trim().toLowerCase();
-      MENU.forEach(item => {
-        const catOk = activeFilter === 'all' || item.category === activeFilter;
-        const textOk = !q || item.name_cn.toLowerCase().includes(q) || item.name_en.toLowerCase().includes(q) || (item.tags||[]).join(' ').toLowerCase().includes(q);
-        if(!(catOk && textOk)) return;
-        const card = document.createElement('article');
-        card.className = 'card';
-        card.dataset.category = item.category;
-        card.innerHTML = `
-          <div class="imgbox">${iconSVG(item.emoji, item.name_cn)}</div>
-          <div class="content">
-            <h3 class="name">${item.name_cn} · ${item.name_en}</h3>
-            <p class="desc">${item.desc||''}</p>
-            <div class="tags">${(item.tags||[]).map(t=>`<span class='tag'>${t}</span>`).join('')}</div>
-            <button class="add" data-item="${item.name_cn}">加入</button>
-          </div>`;
-        card.querySelector('.add').addEventListener('click', () => { cart[item.name_cn] = (cart[item.name_cn]||0)+1; saveCart(); drawer.classList.add('open'); drawer.setAttribute('aria-hidden','false'); });
-        grid.appendChild(card);
-      });
-    };
-
-    function saveCart(){ localStorage.setItem('yd_cart', JSON.stringify(cart)); renderCart(); }
-    function renderCart(){
-      cartList.innerHTML = '';
-      let totalQty = 0;
-      Object.entries(cart).forEach(([name, qty]) => {
-        totalQty += qty;
-        const row = document.createElement('div'); row.className = 'item';
-        row.innerHTML = `<strong>${name}</strong><div></div>
-          <div class='qty'><button data-op='-'>-</button><span>${qty}</span><button data-op='+'>+</button></div>`;
-        row.querySelector('[data-op="-"]').onclick = ()=>{ cart[name] = Math.max(0,(cart[name]||0)-1); if(cart[name]===0) delete cart[name]; saveCart(); };
-        row.querySelector('[data-op="+"]').onclick = ()=>{ cart[name] = (cart[name]||0)+1; saveCart(); };
-        cartList.appendChild(row);
-      });
-      cartCount.textContent = `(${totalQty})`;
-    }
-
-    pills.forEach(btn => btn.addEventListener('click', () => { pills.forEach(b => b.setAttribute('aria-pressed','false')); btn.setAttribute('aria-pressed','true'); activeFilter = btn.dataset.filter; renderMenu(); }));
-    search?.addEventListener('input', renderMenu);
-    cartBtn.onclick = ()=>{ drawer.classList.add('open'); drawer.setAttribute('aria-hidden','false'); };
-    closeDrawer.onclick = ()=>{ drawer.classList.remove('open'); drawer.setAttribute('aria-hidden','true'); };
-    clearCart.onclick = ()=>{ cart = {}; saveCart(); };
-    renderCart();
-
-    // 加载 JSON 菜单
-    fetch('/shenyeshitang/menu.json').then(r=>r.json()).then(data => { MENU = data; renderMenu(); });
-
-    // --- Firebase（已写入你的配置） ---
-    const firebaseConfig = {"apiKey": "AIzaSyA45H7MVPejI-09EmX3Y9RP0G-BzxKUA0M", "authDomain": "shenyeshitang-9a3c2.firebaseapp.com", "projectId": "shenyeshitang-9a3c2", "storageBucket": "shenyeshitang-9a3c2.firebasestorage.app", "messagingSenderId": "293937999981", "appId": "1:293937999981:web:364b69c1ea61b48e8acf64"};
-
-    let db=null; let fbReady=false;
-    (async () => {
-      try{
-        const appMod = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js');
-        const fsMod = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js');
-        const app = appMod.initializeApp(firebaseConfig);
-        db = fsMod.getFirestore(app); fbReady = true;
-
-        if(ADMIN){
-          document.getElementById('admin').style.display='block';
-          document.getElementById('roomInfo').textContent = `房间/日期: ${ROOM} · 将链接分享为 ?r=${ROOM}`;
-          const q = fsMod.query(fsMod.collection(db,'yd_orders'), fsMod.where('room','==',ROOM), fsMod.orderBy('createdAt','desc'));
-          fsMod.onSnapshot(q, snap => {
-            const tbody = document.getElementById('adminRows'); tbody.innerHTML='';
-            snap.forEach(doc=>{
-              const d = doc.data();
-              const when = d.createdAt?.toDate ? d.createdAt.toDate().toLocaleString() : new Date(d.createdAt).toLocaleString();
-              d.items.forEach(it=>{
-                const tr = document.createElement('tr');
-                tr.innerHTML = `<td style='border:1px solid #2a2a44;padding:8px 10px'>${when}</td><td style='border:1px solid #2a2a44;padding:8px 10px'>${d.nick||'-'}</td><td style='border:1px solid #2a2a44;padding:8px 10px'>${it.name}</td><td style='border:1px solid #2a2a44;padding:8px 10px'>${it.qty}</td>`;
-                tbody.appendChild(tr);
-              });
-            });
-          });
-        }
-      }catch(e){ console.warn('Firebase 初始化失败：', e.message); }
-    })();
-
-    submitOrder.onclick = async () => {
-      if(Object.keys(cart).length===0){ alert('请先加入菜品'); return; }
-      if(!fbReady){ alert('Firebase 未配置或不可用。'); return; }
-      const items = Object.entries(cart).map(([name, qty])=>({name, qty}));
-      try{
-        const { addDoc, collection, serverTimestamp } = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js');
-        await addDoc(collection(db,'yd_orders'), { room: ROOM, nick: nickname.value.trim(), items, createdAt: serverTimestamp() });
-        cart = {}; saveCart(); drawer.classList.remove('open'); alert('已提交！');
-      }catch(err){ alert('提交失败：'+err.message); }
-    };
-
-    if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('/shenyeshitang/sw.js');
-}
-
-}
-  </script>
 </body>
 </html>
