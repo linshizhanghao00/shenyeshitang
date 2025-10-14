@@ -21,7 +21,6 @@
     .logo{width:46px;height:46px;border-radius:14px;display:grid;place-items:center;position:relative;box-shadow:var(--shadow);background:linear-gradient(135deg,var(--brand),var(--brand2));color:#fff;font-weight:900;font-size:24px}
     .logo::after{content:'🌙'}
     .title{font-size:clamp(22px,3.2vw,30px);font-weight:800}
-    .subtitle{color:var(--muted);font-size:13px;margin-top:2px}
 
     .search{display:flex;align-items:center;gap:8px;background:#0f0f15;border:1px solid #242438;color:var(--text);padding:10px 12px;border-radius:12px;min-width:min(360px,60vw)}
     .search input{flex:1;background:transparent;border:0;color:inherit;outline:none;font-size:15px}
@@ -77,7 +76,7 @@
     #drawer.open{transform:translateY(0)}
     .drawer-hd{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid #22243c}
     .drawer-ct{padding:12px 16px;max-height:60vh;overflow:auto}
-    .item{display:grid;grid-template-columns:1fr auto auto;gap:10px;align-items:center;padding:10px 0;border-bottom:1px dashed #2a2a44}
+    .item{display:grid;grid-template-columns:1fr auto auto;gap:10px;align-items:center;padding:10px 0;border-bottom:1px dashed #2d2a44}
     .qty{display:flex;align-items:center;gap:8px}
     .qty button{width:28px;height:28px;border-radius:8px;background:#19192a;border:1px solid #2a2a44;color:#fff;cursor:pointer}
     .drawer-ft{padding:14px 16px;border-top:1px solid #22243c;display:grid;gap:8px}
@@ -94,7 +93,7 @@
         <div class="logo" aria-label="moon"></div>
         <div>
           <div class="title">深夜食堂</div>
-          <div class="subtitle">可安装到主屏幕 · 内置购物车 · 实时订单（JSON 菜单，离线可用）</div>
+          <!-- 副标题已删除，根据你的要求去掉 -->
         </div>
       </div>
       <div class="search" role="search">
@@ -183,7 +182,6 @@
 
     // 图片优先渲染（目前用 emoji，为图片预留）
     const mediaFor = (item) => {
-      // 若以后给 item 加 "img" 字段，这里优先展示图片：
       // if (item.img) return `<img class="thumb" src="${item.img}" alt="${item.name_cn}" loading="lazy" referrerpolicy="no-referrer">`;
       return iconSVG(item.emoji, item.name_cn);
     };
@@ -191,7 +189,7 @@
     // 元素/状态
     const root = document.getElementById('menu-root');
     const pills = document.querySelectorAll('.pill');
-    const search = document.getElementById('search');
+    const searchInput = document.getElementById('search');
     const cartBtn = document.getElementById('cartBtn');
     const drawer = document.getElementById('drawer');
     const cartList = document.getElementById('cartList');
@@ -215,10 +213,10 @@
 
     // 过滤与分组定义
     const groupDefs = [
-      { key:'hot',    title:'🥘 热菜类',           filter: it => it.category === 'Main' && !(it.tags||[]).includes('Soup') },
-      { key:'staple', title:'🍚 主食 / 炒饭类',    filter: it => it.category === 'Rice' },
-      { key:'soups',  title:'🍲 汤类',             filter: it => (it.tags||[]).includes('Soup') },
-      { key:'veg',    title:'🥦 素菜 / 凉菜类',    filter: it => it.category === 'Veg' }
+      { key:'hot',    title:'🥘 热菜类',        filter: it => it.category === 'Main' && !(it.tags||[]).includes('Soup') },
+      { key:'staple', title:'🍚 主食 / 炒饭类', filter: it => it.category === 'Rice' },
+      { key:'soups',  title:'🍲 汤类',          filter: it => (it.tags||[]).includes('Soup') },
+      { key:'veg',    title:'🥦 素菜 / 凉菜类', filter: it => it.category === 'Veg' }
     ];
 
     function renderSection(title, items, expanded = true){
@@ -228,17 +226,25 @@
 
       const header = document.createElement('div');
       header.className = 'section-header';
+
       const left = document.createElement('div');
       left.className = 'section-title';
       left.innerHTML = `<span>${title}</span><span class="section-sub">共 ${items.length} 道</span>`;
+
       const btn = document.createElement('button');
+      btn.type = 'button';
       btn.className = 'section-toggle';
       btn.textContent = expanded ? '收起' : '展开';
-      btn.onclick = () => {
+      btn.addEventListener('click', (ev) => {
+        ev.stopPropagation();
         const now = sec.getAttribute('aria-expanded') === 'true';
         sec.setAttribute('aria-expanded', now ? 'false' : 'true');
         btn.textContent = now ? '展开' : '收起';
-      };
+      });
+
+      // 也允许点标题区域折叠/展开（更易点中）
+      header.addEventListener('click', () => btn.click());
+
       header.append(left, btn);
 
       const grid = document.createElement('div');
@@ -271,7 +277,7 @@
 
     function renderMenu(){
       root.innerHTML = '';
-      const q = (search?.value || '').trim().toLowerCase();
+      const q = (searchInput?.value || '').trim().toLowerCase();
 
       const filtered = MENU.filter(it => {
         const matchCat = (activeFilter === 'all') || (it.category === activeFilter);
@@ -283,6 +289,7 @@
       groupDefs.forEach(g => {
         const items = filtered.filter(g.filter);
         if (!items.length) return;
+        // 默认展开（expanded=true）
         root.appendChild(renderSection(g.title, items, true));
       });
     }
@@ -305,14 +312,12 @@
     }
 
     // 顶部筛选&搜索
-    const pills = document.querySelectorAll('.pill');
     pills.forEach(btn => btn.addEventListener('click', () => {
       pills.forEach(b => b.setAttribute('aria-pressed','false'));
       btn.setAttribute('aria-pressed','true');
       activeFilter = btn.dataset.filter; renderMenu();
     }));
-    const search = document.getElementById('search');
-    search?.addEventListener('input', renderMenu);
+    searchInput?.addEventListener('input', renderMenu);
 
     cartBtn.onclick = ()=>{ drawer.classList.add('open'); drawer.setAttribute('aria-hidden','false'); };
     closeDrawer.onclick = ()=>{ drawer.classList.remove('open'); drawer.setAttribute('aria-hidden','true'); };
@@ -320,9 +325,6 @@
     renderCart();
 
     // 自定义点菜：加入购物车
-    const cName = document.getElementById('cName');
-    const cIngs = document.getElementById('cIngs');
-    const addCustom = document.getElementById('addCustom');
     addCustom.onclick = () => {
       const name = (cName.value || '').trim();
       const ings = (cIngs.value || '').trim();
@@ -338,7 +340,7 @@
     fetch(`${BASE}/menu.json`, { cache: 'no-store' })
       .then(r => { if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); })
       .then(data => { MENU = data; renderMenu(); })
-      .catch(err => { document.querySelector('.subtitle').textContent = '加载菜单失败，请检查 menu.json 路径'; console.error('加载菜单失败：', err); });
+      .catch(err => { console.error('加载菜单失败：', err); alert('加载菜单失败：请检查 menu.json 路径'); });
 
     // ===== Firebase 配置（你提供的） =====
     const firebaseConfig = {
