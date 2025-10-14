@@ -40,8 +40,8 @@
     }
     .card:hover{ transform:translateY(-3px); border-color:#3b3f5b; }
     .imgbox{ position:relative; background:#0a0b10; aspect-ratio:4/3; overflow:hidden; }
-    .thumb{ width:100%; height:100%; object-fit:cover; transform:scale(1.02); transition:transform .25s ease; }
-    .card:hover .thumb{ transform:scale(1.05); }
+    .thumb{ width:100%; height:100%; object-fit:cover; }
+
     .content{ padding:14px 14px 16px; display:grid; align-content:start; gap:8px }
     .name{ font-size:18px; font-weight:900; margin:2px 0 0; color:#fff }
     .desc{ font-size:13px; color:#98a0be; min-height:34px }
@@ -105,6 +105,23 @@
     .muted{background:#161622;border:1px solid #2a2a44;color:#fff;border-radius:12px;padding:10px;cursor:pointer}
     input.muted{background:#161622;border:1px solid #2a2a44;color:#fff}
     footer{margin:28px 0 120px;text-align:center;color:#98a0be;font-size:12px}
+
+    /* —— 骨架屏（仅“全部”页大图使用） —— */
+    .thumb.loading{
+      background:#222;
+      opacity:0.0;
+      animation:pulse 1.2s ease-in-out infinite;
+    }
+    .thumb.loaded{
+      opacity:1;
+      animation:none;
+      transition:opacity .4s ease;
+    }
+    @keyframes pulse{
+      0%{opacity:0.4}
+      50%{opacity:0.9}
+      100%{opacity:0.4}
+    }
   </style>
 </head>
 <body>
@@ -194,11 +211,8 @@
   <rect x='60' y='168' width='100' height='28' rx='14' fill='rgba(0,0,0,.45)'/>
   <text x='110' y='184' font-size='14' text-anchor='middle' fill='white' font-weight='700'>${label}</text>
 </svg>`);
-      return `<img class="thumb" alt="${label}" src="data:image/svg+xml;utf8,${svg}">`;
-    };
-    const mediaFor = (item) => {
-      // 若以后用图片：if (item.img) return `<img class="thumb" src="${item.img}" alt="${item.name_cn}" loading="lazy">`;
-      return iconSVG(item.emoji, item.name_cn);
+      // 注意：emoji 直接作为已加载
+      return `<img class="thumb loaded" alt="${label}" src="data:image/svg+xml;utf8,${svg}">`;
     };
 
     const root = document.getElementById('menu-root');
@@ -231,13 +245,22 @@
     const groupStaple  = { key:'staple',   title:'🍚 主食',  filter: it => it.category === 'Rice' };
     const groupCold    = { key:'cold',     title:'🥒 凉拌菜', filter: it => (it.tags||[]).includes('Cold') };
 
-    // 顶层分类对应的渲染顺序
-    function getRenderOrder(){
-      if (activeFilter === 'Main') return [groupHotHot, groupHotVeg, groupHotSoup];
-      if (activeFilter === 'Rice') return [groupStaple];
-      if (activeFilter === 'Cold') return [groupCold];
-      // 全部：不分组，改用大图两列
-      return [];
+    function resolveMediaElement(item){
+      // 如果有图片：创建带骨架屏的 <img>
+      if (item.img){
+        const img = document.createElement('img');
+        img.className = 'thumb loading';
+        img.alt = item.name_cn;
+        img.referrerPolicy = 'no-referrer';
+        img.loading = 'lazy';
+        img.addEventListener('load', ()=>{ img.classList.remove('loading'); img.classList.add('loaded'); });
+        img.src = item.img;
+        return img;
+      }
+      // 无图片：返回一个已加载的 emoji <img> 节点
+      const wrapper = document.createElement('div');
+      wrapper.innerHTML = iconSVG(item.emoji, item.name_cn);
+      return wrapper.firstChild;
     }
 
     // 详细分组卡片（热菜/主食/凉拌）
@@ -257,40 +280,46 @@
       const grid = document.createElement('div'); grid.className = 'grid';
       items.forEach(item=>{
         const card = document.createElement('article'); card.className='card'; card.dataset.category=item.category;
-        card.innerHTML = `
-          <div class="imgbox">${mediaFor(item)}</div>
-          <div class="content">
-            <h3 class="name">${item.name_cn}${item.name_en ? ' · ' + item.name_en : ''}</h3>
-            <p class="desc">${item.desc || ''}</p>
-            <div class="tags">${(item.tags||[]).map(t=>`<span class="tag">${t}</span>`).join('')}</div>
-            <button class="add" data-item="${item.name_cn}">加入</button>
-          </div>`;
-        card.querySelector('.add').addEventListener('click', ()=>{ cart[item.name_cn]=(cart[item.name_cn]||0)+1; saveCart(); drawer.classList.add('open'); drawer.setAttribute('aria-hidden','false'); });
+        const imgbox = document.createElement('div'); imgbox.className='imgbox';
+        imgbox.appendChild(resolveMediaElement(item));
+        const content = document.createElement('div'); content.className='content';
+        content.innerHTML = `
+          <h3 class="name">${item.name_cn}${item.name_en ? ' · ' + item.name_en : ''}</h3>
+          <p class="desc">${item.desc || ''}</p>
+          <div class="tags">${(item.tags||[]).map(t=>`<span class="tag">${t}</span>`).join('')}</div>
+          <button class="add" data-item="${item.name_cn}">加入</button>
+        `;
+        content.querySelector('.add').addEventListener('click', ()=>{ cart[item.name_cn]=(cart[item.name_cn]||0)+1; saveCart(); drawer.classList.add('open'); drawer.setAttribute('aria-hidden','false'); });
+        card.append(imgbox, content);
         grid.appendChild(card);
       });
       header.append(left, btn); sec.append(header, grid); return sec;
     }
 
-    // “全部”页的大图两列卡片（只显示中文名）
+    // “全部”页：大图两列 + 骨架屏（仅这里）
     function renderAllSimple(items){
       const grid = document.createElement('div'); grid.className = 'grid-all';
       items.forEach(item=>{
         const card = document.createElement('article'); card.className='card-all'; card.dataset.category=item.category;
-        card.innerHTML = `
-          <div class="imgbox">${mediaFor(item)}</div>
-          <div class="title-only">${item.name_cn}</div>`;
-        // 点击整卡加入购物车
+
+        const imgbox = document.createElement('div'); imgbox.className='imgbox';
+        imgbox.appendChild(resolveMediaElement(item)); // 有图=骨架屏；无图=emoji 立即加载
+
+        const title = document.createElement('div'); title.className='title-only';
+        title.textContent = item.name_cn;
+
+        card.append(imgbox, title);
         card.addEventListener('click', ()=>{ cart[item.name_cn]=(cart[item.name_cn]||0)+1; saveCart(); });
         grid.appendChild(card);
       });
       return grid;
     }
 
+    // 渲染流程
     function renderMenu(){
       root.innerHTML = '';
       const q = (searchInput?.value || '').trim().toLowerCase();
 
-      // 顶层分类预过滤
       const filtered = MENU.filter(it => {
         const matchTop =
           activeFilter === 'all' ||
@@ -302,14 +331,14 @@
         return matchTop && matchText;
       });
 
-      // “全部”→ 直接大图两列
-      if (activeFilter === 'all') {
-        root.appendChild(renderAllSimple(filtered));
-        return;
-      }
+      if (activeFilter === 'all') { root.appendChild(renderAllSimple(filtered)); return; }
 
-      // 其它顶层→ 按定义分组渲染
-      getRenderOrder().forEach(g => {
+      const groups = [];
+      if (activeFilter === 'Main') { groups.push(groupHotHot, groupHotVeg, groupHotSoup); }
+      if (activeFilter === 'Rice') { groups.push(groupStaple); }
+      if (activeFilter === 'Cold') { groups.push(groupCold); }
+
+      groups.forEach(g=>{
         const items = filtered.filter(g.filter);
         if (!items.length) return;
         root.appendChild(renderSection(g.title, items, true));
@@ -341,7 +370,7 @@
     }));
     searchInput?.addEventListener('input', renderMenu);
 
-    // 购物车按钮
+    // 购物车抽屉
     cartBtn.onclick = ()=>{ drawer.classList.add('open'); drawer.setAttribute('aria-hidden','false'); };
     closeDrawer.onclick = ()=>{ drawer.classList.remove('open'); drawer.setAttribute('aria-hidden','true'); };
     clearCart.onclick = ()=>{ cart = {}; saveCart(); };
@@ -365,7 +394,7 @@
       .then(data => { MENU = data; renderMenu(); })
       .catch(err => { console.error('加载菜单失败：', err); alert('加载菜单失败：请检查 menu.json 路径'); });
 
-    // Firestore（管理员与逐行订阅，和上一版一致）
+    // Firestore（管理员与逐行订阅同前）
     const firebaseConfig = {
       apiKey: "AIzaSyA45H7MVPejI-09EmX3Y9RP0G-BzxKUA0M",
       authDomain: "shenyeshitang-9a3c2.firebaseapp.com",
@@ -382,14 +411,14 @@
         const app = appMod.initializeApp(firebaseConfig);
         db = fsMod.getFirestore(app); fbReady = true;
 
-        if (ADMIN) {
+        if (qs.get('admin') === '1') {
           const adminSection = document.getElementById('admin');
           adminSection.style.display = 'block';
           const headerEl = document.querySelector('header');
           document.body.insertBefore(adminSection, headerEl); // 置顶
         }
 
-        if(ADMIN){
+        if(qs.get('admin') === '1'){
           const showPendingOnly = document.getElementById('showPendingOnly');
           const markAllDoneBtn  = document.getElementById('markAllDone');
           document.getElementById('roomInfo').textContent = `房间/日期: ${ROOM} · 将链接分享为 ?r=${ROOM}`;
