@@ -91,7 +91,6 @@
     .drawer-ft{padding:14px 16px;border-top:1px solid #22243c;display:grid;gap:10px}
     .drawer-ft .btn{font-size:16px;padding:12px 14px;border-radius:12px}
     #submitOrder{font-size:20px;padding:20px 18px;min-height:72px;border-radius:14px}
-
     /* 管理员页面按钮放大（约2x） */
     #admin .btn{font-size:16px;padding:12px 14px;border-radius:12px}
 
@@ -136,7 +135,6 @@
   <div id="toast" aria-live="polite"></div>
   <main id="menu-root"></main>
 
-  <!-- 购物车 / 自定义 / 提交（自定义在上，提交在下；按钮已放大） -->
   <button id="cartBtn">🛒 购物车 <small id="cartCount">(0)</small></button>
   <aside id="drawer" aria-hidden="true">
     <div class="drawer-hd"><strong>🛒 购物车</strong><button class="btn" id="closeDrawer">关闭</button></div>
@@ -221,7 +219,7 @@
     }
 
     function renderMenu(){
-      // 本版保持与你在用的相同：四个 Tab 都显示两列大图（不做细分）
+      // 保持“你在用”的逻辑：四个 Tab 都显示两列大图
       root.innerHTML='';
       root.appendChild(gridAll(MENU));
     }
@@ -274,11 +272,12 @@
       })
       .catch(function(e){ console.error('加载菜单失败：', e); alert('菜单加载失败'); });
 
-    /* ============ 管理员实时订单（v10 模块化 API，最小改动） ============ */
+    /* ================= 管理员实时订单 + 提交订单（v10 模块化） ================= */
+
+    // 1) 管理员：把面板插到页面最上方，然后订阅
     (function(){
       if (!ADMIN) return;
 
-      // 把管理员区插到页面最上面，然后再订阅
       try {
         var adminSection = document.getElementById('admin');
         if (adminSection) {
@@ -307,7 +306,7 @@
           const app    = appMod.initializeApp(firebaseConfig);
           const db     = fsMod.getFirestore(app);
 
-          // 提醒按钮（可选）
+          // 提醒按钮
           var enableBtn = document.getElementById('enableNotify');
           if (enableBtn) {
             var upd = function(){ if(!('Notification'in window)){ enableBtn.textContent='提醒已启用（声音/震动）'; return; } enableBtn.textContent=(Notification.permission==='granted')?'提醒已开启':'开启提醒'; };
@@ -331,15 +330,13 @@
 
             var showPendingOnly = document.getElementById('showPendingOnly');
             rows.forEach(function(row){
-              var data=row.data;
-              var isDone = data.status === 'done';
+              var data=row.data; var isDone = data.status === 'done';
               if (showPendingOnly && showPendingOnly.checked && isDone) return;
 
               var when = (data.createdAt && data.createdAt.toDate) ? data.createdAt.toDate().toLocaleString() : '';
               var tr = document.createElement('tr'); tr.style.opacity = isDone ? '0.55' : '1';
               tr.innerHTML = '<td>'+when+'</td><td>'+(data.nick||'-')+'</td><td>'+data.name+'</td><td>'+data.qty+'</td>';
-              var tdOp = document.createElement('td');
-              var btn  = document.createElement('button'); btn.className='btn'; btn.textContent = isDone ? '撤销' : '完成';
+              var tdOp = document.createElement('td'); var btn = document.createElement('button'); btn.className='btn'; btn.textContent = isDone ? '撤销' : '完成';
               btn.onclick = async function(){
                 try{
                   await fsMod.updateDoc(fsMod.doc(db, 'yd_order_lines', row.id), { status: isDone ? 'pending' : 'done', doneAt: isDone ? null : new Date()});
@@ -365,10 +362,6 @@
             alert('实时订单监听失败：'+err.message);
           });
 
-          // 过滤勾选变化：简单刷新
-          var chk = document.getElementById('showPendingOnly');
-          if (chk) chk.addEventListener('change', function(){ location.reload(); });
-
           // 批量完成
           var markAllBtn = document.getElementById('markAllDone');
           if (markAllBtn) {
@@ -391,46 +384,35 @@
           var info = document.getElementById('roomInfo');
           if (info) info.textContent = '房间：'+ROOM_EFFECTIVE+'（固定）';
 
+          // 提交按钮：真正写入 Firestore（头档+逐行）
+          submitOrder.onclick = async function() {
+            if (Object.keys(cart).length === 0) { alert('请先加入菜品'); return; }
+            try {
+              const nick = nickname?.value?.trim() || '';
+              const items = Object.entries(cart).map(([name, qty]) => ({ name, qty }));
+              const headerRef = await fsMod.addDoc(fsMod.collection(db, "yd_orders"), {
+                room: ROOM_EFFECTIVE, nick, items,
+                status: "pending", doneAt: null, createdAt: fsMod.serverTimestamp()
+              });
+              await Promise.all(
+                items.map(it => fsMod.addDoc(fsMod.collection(db, "yd_order_lines"), {
+                  room: ROOM_EFFECTIVE, nick, orderId: headerRef.id,
+                  name: it.name, qty: it.qty, status: "pending", doneAt: null, createdAt: fsMod.serverTimestamp()
+                }))
+              );
+              cart = {}; saveCart(); drawer.style.transform = "translateY(110%)"; alert("✅ 已提交成功");
+            } catch (e) {
+              console.error("提交失败：", e); alert("提交失败：" + e.message);
+            }
+          };
+
         }catch(e){
           console.warn('Firebase 初始化失败：', e);
           alert('Firebase 初始化失败：'+e.message);
         }
       })();
     })();
-    /* ============ /管理员实时订单 ============ */
-
-    /* 提交订单：写入“家庭聚餐” */
-    function submitOrderHandler(){
-      if(Object.keys(cart).length===0){ alert('请先加入菜品'); return; }
-      if(!window.firebase || !window.firebaseApp) { /* 走模块化已在上面处理，这里做个兜底 */ }
-    }
-    submitOrder.onclick = function(){
-      // 用模块化 db（上面 init 完成后已在闭包内处理）；此处走简化版：用 REST 逻辑可省略
-      alert('提交中…如果未弹成功提示，请使用上面管理员实时面板验证是否写入。'); 
-    };
-
-    /* 初次渲染菜单/购物车 */
-    fetch(MENU_URL, { cache:'no-store' })
-      .then(function(r){ if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); })
-      .then(function(d){ if(Array.isArray(d)){ MENU=d; renderMenu(); } else { alert('menu.json 不是数组'); } })
-      .catch(function(e){ console.error('加载菜单失败：', e); alert('菜单加载失败'); });
-
-    function renderCart(){
-      var list=document.getElementById('cartList'); var count=document.getElementById('cartCount');
-      list.innerHTML=''; var total=0;
-      Object.keys(cart).forEach(function(name){
-        var qty=cart[name]; total+=qty;
-        var row=document.createElement('div');
-        row.style.display='grid'; row.style.gridTemplateColumns='1fr auto auto'; row.style.gap='10px';
-        row.style.alignItems='center'; row.style.padding='10px 0'; row.style.borderBottom='1px dashed #2a2a44';
-        row.innerHTML='<strong>'+name+'</strong><div></div>'
-          +'<div class="qty"><button class="btn" data-op="-">-</button> <span>'+qty+'</span> <button class="btn" data-op="+">+</button></div>';
-        row.querySelector('[data-op="-"]').onclick=function(){ cart[name]=Math.max(0,(cart[name]||0)-1); if(cart[name]===0) delete cart[name]; saveCart(); };
-        row.querySelector('[data-op="+"]').onclick=function(){ cart[name]=(cart[name]||0)+1; saveCart(); };
-        list.appendChild(row);
-      });
-      count.textContent='('+total+')';
-    }
+    /* ================= /管理员实时订单 + 提交订单 ================= */
   </script>
 </body>
 </html>
