@@ -9,12 +9,13 @@
   <link rel="apple-touch-icon" href="/shenyeshitang/icons/icon-192.png">
   <title>深夜食堂</title>
 
-  <!-- 早期：PWA 启动且记忆为管理员 -> 跳到 ?admin=1&r=家庭聚餐；本次是 admin 链接则记忆 -->
+  <!-- PWA 启动且记忆为管理员 -> 跳到 ?admin=1&r=家庭聚餐；本次是 admin 链接则记忆 -->
   <script>
   (function () {
     try {
       const ROOM_LOCK = '家庭聚餐';
       const p = new URLSearchParams(location.search);
+
       if (p.get('admin') === '1') {
         localStorage.setItem('adminMode','1');
         localStorage.setItem('adminRoom', ROOM_LOCK);
@@ -23,6 +24,7 @@
       const isPWA = (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches)
                  || (navigator.standalone === true);
       const savedAdmin = localStorage.getItem('adminMode') === '1';
+
       if (isPWA && savedAdmin && !p.get('admin')) {
         const base = location.pathname.replace(/\/index\.html$/, '/');
         location.replace(base + '?admin=1&r=' + encodeURIComponent(ROOM_LOCK));
@@ -174,7 +176,10 @@
   <footer>© 2025 深夜食堂 · 安装到主屏幕后离线可用。</footer>
 
   <script>
-    const BASE = '/shenyeshitang';
+    /* ===== BASE 自动适配（GH Pages 与本地）===== */
+    const PATH = location.pathname.replace(/\/index\.html$/, '');
+    const BASE = PATH.includes('/shenyeshitang') ? '/shenyeshitang' : '';
+
     const ROOM_LOCK    = '家庭聚餐';
     const qs           = new URLSearchParams(location.search);
     const isPWA        = (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) || (navigator.standalone === true);
@@ -199,7 +204,7 @@
     const cIngs=document.getElementById('cIngs');
     const addCustom=document.getElementById('addCustom');
 
-    /* ===== Emoji → <img> ===== */
+    /* Emoji → <img> */
     function iconSVG(e,label){
       const svg=encodeURIComponent(`<?xml version='1.0'?>\n<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 220 220'>\n<defs><linearGradient id='g' x1='0' y1='0' x2='1' y2='1'><stop offset='0%' stop-color='#7c5cff'/><stop offset='100%' stop-color='#3dd9b2'/></linearGradient></defs>\n<rect width='220' height='220' rx='28' fill='url(#g)'/>\n<circle cx='110' cy='118' r='72' fill='white'/><circle cx='110' cy='118' r='58' fill='#f4f4f4'/>\n<text x='110' y='124' font-size='72' text-anchor='middle'>${e||'🍽️'}</text>\n<rect x='60' y='168' width='100' height='28' rx='14' fill='rgba(0,0,0,.45)'/>\n<text x='110' y='184' font-size='14' text-anchor='middle' fill='white' font-weight='700'>${label}</text>\n</svg>`);
       const im=new Image(); im.className='thumb loaded'; im.alt=label; im.src='data:image/svg+xml;utf8,'+svg; return im;
@@ -209,7 +214,6 @@
     /* ===== 菜单渲染 ===== */
     let MENU=[];
 
-    // 小组（可折叠）
     function groupSection(title, items){
       const sec=document.createElement('section'); sec.className='section'; sec.setAttribute('aria-expanded','true');
       const header=document.createElement('div'); header.className='section-header';
@@ -232,7 +236,7 @@
       sec.append(header,grid); return sec;
     }
 
-    function mainPage(items){
+    function gridAll(items){
       const grid=document.createElement('div'); grid.className='grid-all';
       const q=(searchInput?.value||'').trim().toLowerCase();
       items.filter(it=>{
@@ -259,7 +263,7 @@
         return !q || hay.includes(q);
       };
 
-      if (active === 'all') { root.append(mainPage(MENU)); return; }
+      if (active === 'all') { root.append(gridAll(MENU)); return; }
 
       if (active === 'Main') {
         const meat = MENU.filter(it => matchQ(it) && it.category==='Main' && !(it.tags||[]).includes('Soup'));
@@ -272,11 +276,11 @@
       }
 
       if (active === 'Rice') {
-        const rice  = MENU.filter(it => matchQ(it) && it.category==='Rice' && it.name_cn.includes('饭'));
-        const noodle= MENU.filter(it => matchQ(it) && it.category==='Rice' && it.name_cn.includes('面'));
-        const pastry= MENU.filter(it => matchQ(it) && it.category==='Rice' && !it.name_cn.includes('饭') && !it.name_cn.includes('面'));
-        if (rice.length)   root.append(groupSection('🍚 饭',   rice));
-        if (noodle.length) root.append(groupSection('🍜 面',   noodle));
+        const rice   = MENU.filter(it => matchQ(it) && it.category==='Rice' && it.name_cn.includes('饭'));
+        const noodle = MENU.filter(it => matchQ(it) && it.category==='Rice' && it.name_cn.includes('面'));
+        const pastry = MENU.filter(it => matchQ(it) && it.category==='Rice' && !it.name_cn.includes('饭') && !it.name_cn.includes('面'));
+        if (rice.length)   root.append(groupSection('🍚 饭', rice));
+        if (noodle.length) root.append(groupSection('🍜 面', noodle));
         if (pastry.length) root.append(groupSection('🥟 面食', pastry));
         return;
       }
@@ -294,7 +298,7 @@
     }));
     searchInput?.addEventListener('input', renderMenu);
 
-    /* ===== 购物车（保持你的放大样式） ===== */
+    /* ===== 购物车 ===== */
     let cart; try { cart = JSON.parse(localStorage.getItem('yd_cart') || '{}'); } catch { cart = {}; }
     function saveCart(){ localStorage.setItem('yd_cart', JSON.stringify(cart)); renderCart(); }
     function renderCart(){
@@ -313,38 +317,31 @@
       });
       count.textContent=`(${total})`;
     }
-    document.getElementById('cartBtn').onclick=()=>{ drawer.style.transform='translateY(0)'; drawer.setAttribute('aria-hidden','false'); };
-    document.getElementById('closeDrawer').onclick=()=>{ drawer.style.transform='translateY(110%)'; drawer.setAttribute('aria-hidden','true'); };
-    document.getElementById('clearCart').onclick=()=>{ cart={}; saveCart(); };
-    document.getElementById('submitOrder').onclick=submitOrder;
-    document.getElementById('addCustom').onclick=()=>{ const name=(cName.value||'').trim(); const ings=(cIngs.value||'').trim(); if(!name){alert('请先输入菜名');return;} const display=ings?`自定义 · ${name}（${ings}）`:`自定义 · ${name}`; cart[display]=(cart[display]||0)+1; saveCart(); };
+    cartBtn.onclick=()=>{ drawer.style.transform='translateY(0)'; drawer.setAttribute('aria-hidden','false'); };
+    closeDrawer.onclick=()=>{ drawer.style.transform='translateY(110%)'; drawer.setAttribute('aria-hidden','true'); };
+    clearCart.onclick=()=>{ cart={}; saveCart(); };
+    addCustom.onclick=()=>{ const name=(cName.value||'').trim(); const ings=(cIngs.value||'').trim(); if(!name){alert('请先输入菜名');return;} const display=ings?`自定义 · ${name}（${ings}）`:`自定义 · ${name}`; cart[display]=(cart[display]||0)+1; saveCart(); };
     renderCart();
 
-    /* ===== 加载菜单（将“豆角肉末”显示为“豆角肉沫”） ===== */
+    /* ===== 加载菜单（路径更鲁棒；3 秒兜底提示） ===== */
+    let menuLoaded = false;
     fetch(`${BASE}/menu.json`,{cache:'no-store'})
       .then(r=>{ if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); })
       .then(d=>{ 
+        menuLoaded = true;
+        // “豆角肉末”显示为“豆角肉沫”
         MENU = d.map(x => x.name_cn==='豆角肉末' ? {...x, name_cn:'豆角肉沫'} : x);
         renderMenu();
       })
       .catch(e=>{ console.error('加载菜单失败：',e); alert('加载菜单失败：请检查 menu.json 路径'); });
+    setTimeout(()=>{ if(!menuLoaded){ alert('菜单加载失败或为空，请刷新重试'); } }, 3000);
 
     /* ===== Firestore + 提醒（保持不变，仅统一房间） ===== */
-    const firebaseConfig = {
-      apiKey: "AIzaSyA45H7MVPejI-09EmX3Y9RP0G-BzxKUA0M",
-      authDomain: "shenyeshitang-9a3c2.firebaseapp.com",
-      projectId: "shenyeshitang-9a3c2",
-      storageBucket: "shenyeshitang-9a3c2.firebasestorage.app",
-      messagingSenderId: "293937999981",
-      appId: "1:293937999981:web:364b69c1ea61b48e8acf64"
-    };
+    const firebaseConfig={apiKey:"AIzaSyA45H7MVPejI-09EmX3Y9RP0G-BzxKUA0M",authDomain:"shenyeshitang-9a3c2.firebaseapp.com",projectId:"shenyeshitang-9a3c2",storageBucket:"shenyeshitang-9a3c2.firebasestorage.app",messagingSenderId:"293937999981",appId:"1:293937999981:web:364b69c1ea61b48e8acf64"};
     let db=null; let fbReady=false;
 
     const toastWrap=document.getElementById('toast')||document.body.appendChild(Object.assign(document.createElement('div'),{id:'toast',style:'position:fixed;top:14px;right:14px;z-index:60;display:grid;gap:8px'}));
-    function showToast(msg){ const el=document.createElement('div'); el.className='toast'; el.textContent=msg; toastWrap.appendChild(el);
-      setTimeout(()=>{ el.style.opacity='0'; el.style.transition='opacity .4s'; }, 2600);
-      setTimeout(()=>{ toastWrap.removeChild(el); }, 3000);
-    }
+    function showToast(msg){ const el=document.createElement('div'); el.className='toast'; el.textContent=msg; toastWrap.appendChild(el); setTimeout(()=>{el.style.opacity='0'; el.style.transition='opacity .4s';},2600); setTimeout(()=>{toastWrap.removeChild(el);},3000); }
     const ding=new Audio("data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEAESsAACJWAAACABYAAAAgAAAASAAAAGZmZmZmZmZmZmY=");
     function softAlert(title,body){ try{ ding.currentTime=0; ding.play().catch(()=>{});}catch{} if(navigator.vibrate){ try{navigator.vibrate(120);}catch{} } showToast(`${title} · ${body}`); }
     async function requestNotify(){ if(!('Notification'in window)) return false; if(Notification.permission==='granted') return true; if(Notification.permission==='denied') return false; return (await Notification.requestPermission())==='granted'; }
