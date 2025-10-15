@@ -15,7 +15,6 @@
     try {
       const ROOM_LOCK = '家庭聚餐';
       const p = new URLSearchParams(location.search);
-
       if (p.get('admin') === '1') {
         localStorage.setItem('adminMode','1');
         localStorage.setItem('adminRoom', ROOM_LOCK);
@@ -24,7 +23,6 @@
       const isPWA = (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches)
                  || (navigator.standalone === true);
       const savedAdmin = localStorage.getItem('adminMode') === '1';
-
       if (isPWA && savedAdmin && !p.get('admin')) {
         const base = location.pathname.replace(/\/index\.html$/, '/');
         location.replace(base + '?admin=1&r=' + encodeURIComponent(ROOM_LOCK));
@@ -45,7 +43,6 @@
       background:radial-gradient(1200px 600px at 70% -10%,rgba(124,92,255,.15),transparent 60%),
                  radial-gradient(1000px 500px at 0% 100%,rgba(61,217,178,.12),transparent 60%),var(--bg)
     }
-    /* 管理员顶部安全区 + 与下方间距 */
     body.admin-on{padding-top:calc(var(--safeTop)+10px)}
     #admin{margin-bottom:14px;}
     body.admin-on header{margin-top:8px;}
@@ -59,7 +56,6 @@
     .search{display:flex;align-items:center;gap:8px;background:#0f0f15;border:1px solid #242438;color:var(--text);padding:10px 12px;border-radius:12px;min-width:min(260px,40vw)}
     .search input{flex:1;background:transparent;border:0;color:inherit;outline:none;font-size:15px}
 
-    /* 管理员按钮：默认隐藏；admin 模式仅显示“退出” */
     .admin-actions{display:none;gap:8px}
     body.admin-on .admin-actions{display:flex}
     #btnAdminOn{display:none}
@@ -67,12 +63,10 @@
     body.admin-on #btnAdminOff{display:inline-block}
     .btn{background:#161622;border:1px solid #2a2a44;color:#fff;border-radius:12px;padding:12px 14px;cursor:pointer;font-size:15px}
 
-    /* Tabs */
     .tabs{display:flex;gap:10px;overflow:auto;padding:8px var(--safe) 14px}
     .pill{border:1px solid #28283e;background:#13131b;color:var(--text);padding:10px 14px;border-radius:999px;font-size:14px;cursor:pointer}
     .pill[aria-pressed="true"]{background:linear-gradient(135deg,rgba(124,92,255,.25),rgba(61,217,178,.2));border-color:var(--brand)}
 
-    /* 全部：两列大图 + 骨架屏（图像填满卡片） */
     .grid-all{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;padding:16px}
     @media(min-width:1024px){.grid-all{grid-template-columns:repeat(3,minmax(0,1fr))}}
     .card-all{display:grid;gap:8px;background:linear-gradient(180deg,#171a24,#12131a 40%);border:1px solid #2a2a44;border-radius:16px;overflow:hidden;cursor:pointer;transition:transform .18s,border-color .18s}
@@ -84,7 +78,6 @@
     .thumb.loaded{opacity:1;animation:none;transition:opacity .4s}
     @keyframes pulse{0%{opacity:.4}50%{opacity:.9}100%{opacity:.4}}
 
-    /* 详情分组（热菜/主食/凉拌菜） */
     .section{margin:18px var(--safe)}
     .section-header{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:6px 0 10px;padding:10px 12px;border:1px solid #2a2a44;border-radius:12px;background:linear-gradient(180deg,#12131a,#11121a);position:sticky;top:56px;z-index:5;backdrop-filter:blur(6px)}
     .section-title{display:flex;gap:10px;align-items:center;font-weight:900}
@@ -103,7 +96,6 @@
     .add{margin-top:2px;background:#1a1a28;border:1px solid #2a2a44;color:#fff;border-radius:10px;padding:10px 14px;font-weight:700;cursor:pointer;justify-self:start}
     .add:hover{border-color:#7c5cff}
 
-    /* 购物车按钮 / 抽屉 —— 按钮放大；提交订单最大 */
     #cartBtn{position:fixed;right:16px;bottom:calc(16px + env(safe-area-inset-bottom));background:linear-gradient(135deg,#7c5cff,#ffd166);color:#0b0b0e;border:0;border-radius:16px;padding:14px 18px;font-weight:900;box-shadow:0 14px 40px rgba(0,0,0,.45);z-index:40;font-size:16px}
     #drawer{position:fixed;inset:auto 0 0 auto;right:0;width:min(420px,96vw);max-height:86vh;background:#0f0f16;border-top-left-radius:18px;border:1px solid #2a2a44;box-shadow:0 -20px 60px rgba(0,0,0,.6);transform:translateY(110%);transition:transform .25s;z-index:50}
     .drawer-hd{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid #22243c}
@@ -111,7 +103,6 @@
     .drawer-ft{padding:14px 16px;border-top:1px solid #22243c;display:grid;gap:10px}
     .drawer-ft .btn{font-size:16px;padding:12px 14px;border-radius:12px}
     #submitOrder{font-size:20px;padding:20px 18px;min-height:72px;border-radius:14px}
-    /* 管理员页面按钮：放大约 2 × 触控尺寸 */
     #admin .btn{font-size:16px;padding:12px 14px;border-radius:12px}
 
     footer{margin:28px 0 120px;text-align:center;color:var(--muted);font-size:12px}
@@ -120,7 +111,6 @@
   </style>
 </head>
 <body>
-  <!-- 管理员面板（admin=1 时置顶） -->
   <section id="admin" style="display:none;padding:14px var(--safe)">
     <h3>📟 实时订单</h3>
     <div class="toolbar">
@@ -155,7 +145,6 @@
   <div id="toast" aria-live="polite"></div>
   <main id="menu-root"></main>
 
-  <!-- 购物车 / 自定义 / 提交 -->
   <button id="cartBtn">🛒 购物车 <small id="cartCount">(0)</small></button>
   <aside id="drawer" aria-hidden="true">
     <div class="drawer-hd"><strong>🛒 购物车</strong><button class="btn" id="closeDrawer">关闭</button></div>
@@ -176,19 +165,14 @@
   <footer>© 2025 深夜食堂 · 安装到主屏幕后离线可用。</footer>
 
   <script>
-    /* ===== BASE 自动适配（GH Pages 与本地）===== */
-    const PATH = location.pathname.replace(/\/index\.html$/, '');
-    const BASE = PATH.includes('/shenyeshitang') ? '/shenyeshitang' : '';
-
-    const ROOM_LOCK    = '家庭聚餐';
-    const qs           = new URLSearchParams(location.search);
-    const isPWA        = (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) || (navigator.standalone === true);
-    const savedAdmin   = localStorage.getItem('adminMode') === '1';
-    const ADMIN        = qs.get('admin') === '1' || (isPWA && savedAdmin);
+    const ROOM_LOCK = '家庭聚餐';
+    const qs        = new URLSearchParams(location.search);
+    const isPWA     = (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) || (navigator.standalone === true);
+    const savedAdmin= localStorage.getItem('adminMode')==='1';
+    const ADMIN     = qs.get('admin')==='1' || (isPWA && savedAdmin);
     const ROOM_EFFECTIVE = ROOM_LOCK;
     if (ADMIN) document.body.classList.add('admin-on');
 
-    /* ===== DOM ===== */
     const root=document.getElementById('menu-root');
     const pills=document.querySelectorAll('.pill');
     const searchInput=document.getElementById('search');
@@ -204,14 +188,12 @@
     const cIngs=document.getElementById('cIngs');
     const addCustom=document.getElementById('addCustom');
 
-    /* ===== Emoji → <img> ===== */
     function iconSVG(e,label){
       const svg=encodeURIComponent(`<?xml version='1.0'?>\n<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 220 220'>\n<defs><linearGradient id='g' x1='0' y1='0' x2='1' y2='1'><stop offset='0%' stop-color='#7c5cff'/><stop offset='100%' stop-color='#3dd9b2'/></linearGradient></defs>\n<rect width='220' height='220' rx='28' fill='url(#g)'/>\n<circle cx='110' cy='118' r='72' fill='white'/><circle cx='110' cy='118' r='58' fill='#f4f4f4'/>\n<text x='110' y='124' font-size='72' text-anchor='middle'>${e||'🍽️'}</text>\n<rect x='60' y='168' width='100' height='28' rx='14' fill='rgba(0,0,0,.45)'/>\n<text x='110' y='184' font-size='14' text-anchor='middle' fill='white' font-weight='700'>${label}</text>\n</svg>`);
       const im=new Image(); im.className='thumb loaded'; im.alt=label; im.src='data:image/svg+xml;utf8,'+svg; return im;
     }
     function mediaFor(item){ return iconSVG(item.emoji,item.name_cn); }
 
-    /* ===== 菜单渲染 ===== */
     let MENU=[];
 
     function groupSection(title, items){
@@ -257,7 +239,6 @@
       root.innerHTML='';
       const q=(searchInput?.value||'').trim().toLowerCase();
       const active = document.querySelector('.pill[aria-pressed="true"]')?.dataset.filter || 'all';
-
       const matchQ = it => {
         const hay=(it.name_cn+' '+(it.name_en||'')+' '+(it.tags||[]).join(' ')).toLowerCase();
         return !q || hay.includes(q);
@@ -298,7 +279,6 @@
     }));
     searchInput?.addEventListener('input', renderMenu);
 
-    /* ===== 购物车（保持你的放大样式） ===== */
     let cart; try { cart = JSON.parse(localStorage.getItem('yd_cart') || '{}'); } catch { cart = {}; }
     function saveCart(){ localStorage.setItem('yd_cart', JSON.stringify(cart)); renderCart(); }
     function renderCart(){
@@ -323,30 +303,21 @@
     addCustom.onclick=()=>{ const name=(cName.value||'').trim(); const ings=(cIngs.value||'').trim(); if(!name){alert('请先输入菜名');return;} const display=ings?`自定义 · ${name}（${ings}）`:`自定义 · ${name}`; cart[display]=(cart[display]||0)+1; saveCart(); };
     renderCart();
 
-    /* ===== 加载菜单（多路径回退 + 3秒兜底提示） ===== */
-    let menuLoaded = false;
-    const candidates = [
-      `${BASE}/menu.json`,
-      `/menu.json`,
-      `/shenyeshitang/menu.json`
-    ];
-    (async () => {
-      for (const url of candidates) {
-        try {
-          const r = await fetch(url, { cache:'no-store' });
-          if (!r.ok) continue;
-          const d = await r.json();
-          if (Array.isArray(d) && d.length >= 0) {
-            menuLoaded = true;
-            // “豆角肉末”显示为“豆角肉沫”
-            MENU = d.map(x => x.name_cn==='豆角肉末' ? {...x, name_cn:'豆角肉沫'} : x);
-            renderMenu();
-            break;
-          }
-        } catch (e) { /* 尝试下一条 */ }
-      }
-      setTimeout(()=>{ if(!menuLoaded){ alert('菜单加载失败或为空，请稍后重试'); } }, 3000);
-    })();
+    /* ===== 固定使用你的线上 URL 加载 menu.json（去掉路径不确定性） ===== */
+    const MENU_URL = 'https://linshizhanghao00.github.io/shenyeshitang/menu.json';
+    fetch(MENU_URL, { cache:'no-store' })
+      .then(r=>{ if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); })
+      .then(d=>{
+        if (!Array.isArray(d) || d.length===0) {
+          alert('菜单为空，请检查 menu.json'); return;
+        }
+        MENU = d;        // 你已把“豆角肉沫”写进 JSON，这里不做替换
+        renderMenu();    // 默认渲染“全部”
+      })
+      .catch(e=>{
+        console.error('加载菜单失败：', e);
+        alert('菜单加载失败，请稍后重试');
+      });
 
     /* ===== Firestore + 提醒（保持不变，仅统一房间） ===== */
     const firebaseConfig={apiKey:"AIzaSyA45H7MVPejI-09EmX3Y9RP0G-BzxKUA0M",authDomain:"shenyeshitang-9a3c2.firebaseapp.com",projectId:"shenyeshitang-9a3c2",storageBucket:"shenyeshitang-9a3c2.firebasestorage.app",messagingSenderId:"293937999981",appId:"1:293937999981:web:364b69c1ea61b48e8acf64"};
@@ -416,7 +387,6 @@
       }catch(e){ console.warn('Firebase 初始化失败：', e.message); }
     })();
 
-    /* ===== 提交订单（头档 + 逐行）=> 一律写入“家庭聚餐” ===== */
     function submitOrder(){
       if(Object.keys(cart).length===0){ alert('请先加入菜品'); return; }
       if(!db){ alert('Firebase 未配置或不可用。'); return; }
@@ -433,6 +403,7 @@
         });
       }).catch(err=>alert('提交失败：'+err.message));
     }
+    document.getElementById('submitOrder').onclick=submitOrder;
   </script>
 </body>
 </html>
