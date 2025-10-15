@@ -45,7 +45,7 @@
       background:radial-gradient(1200px 600px at 70% -10%,rgba(124,92,255,.15),transparent 60%),
                  radial-gradient(1000px 500px at 0% 100%,rgba(61,217,178,.12),transparent 60%),var(--bg)
     }
-    /* 管理员顶部安全区 + 与下方间距（避免状态栏重叠） */
+    /* 管理员顶部安全区 + 与下方间距 */
     body.admin-on{padding-top:calc(var(--safeTop)+10px)}
     #admin{margin-bottom:14px;}
     body.admin-on header{margin-top:8px;}
@@ -155,7 +155,7 @@
   <div id="toast" aria-live="polite"></div>
   <main id="menu-root"></main>
 
-  <!-- 购物车 / 自定义 / 提交（自定义在上，提交在下；按钮已放大） -->
+  <!-- 购物车 / 自定义 / 提交 -->
   <button id="cartBtn">🛒 购物车 <small id="cartCount">(0)</small></button>
   <aside id="drawer" aria-hidden="true">
     <div class="drawer-hd"><strong>🛒 购物车</strong><button class="btn" id="closeDrawer">关闭</button></div>
@@ -204,7 +204,7 @@
     const cIngs=document.getElementById('cIngs');
     const addCustom=document.getElementById('addCustom');
 
-    /* Emoji → <img> */
+    /* ===== Emoji → <img> ===== */
     function iconSVG(e,label){
       const svg=encodeURIComponent(`<?xml version='1.0'?>\n<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 220 220'>\n<defs><linearGradient id='g' x1='0' y1='0' x2='1' y2='1'><stop offset='0%' stop-color='#7c5cff'/><stop offset='100%' stop-color='#3dd9b2'/></linearGradient></defs>\n<rect width='220' height='220' rx='28' fill='url(#g)'/>\n<circle cx='110' cy='118' r='72' fill='white'/><circle cx='110' cy='118' r='58' fill='#f4f4f4'/>\n<text x='110' y='124' font-size='72' text-anchor='middle'>${e||'🍽️'}</text>\n<rect x='60' y='168' width='100' height='28' rx='14' fill='rgba(0,0,0,.45)'/>\n<text x='110' y='184' font-size='14' text-anchor='middle' fill='white' font-weight='700'>${label}</text>\n</svg>`);
       const im=new Image(); im.className='thumb loaded'; im.alt=label; im.src='data:image/svg+xml;utf8,'+svg; return im;
@@ -298,7 +298,7 @@
     }));
     searchInput?.addEventListener('input', renderMenu);
 
-    /* ===== 购物车 ===== */
+    /* ===== 购物车（保持你的放大样式） ===== */
     let cart; try { cart = JSON.parse(localStorage.getItem('yd_cart') || '{}'); } catch { cart = {}; }
     function saveCart(){ localStorage.setItem('yd_cart', JSON.stringify(cart)); renderCart(); }
     function renderCart(){
@@ -323,18 +323,30 @@
     addCustom.onclick=()=>{ const name=(cName.value||'').trim(); const ings=(cIngs.value||'').trim(); if(!name){alert('请先输入菜名');return;} const display=ings?`自定义 · ${name}（${ings}）`:`自定义 · ${name}`; cart[display]=(cart[display]||0)+1; saveCart(); };
     renderCart();
 
-    /* ===== 加载菜单（路径更鲁棒；3 秒兜底提示） ===== */
+    /* ===== 加载菜单（多路径回退 + 3秒兜底提示） ===== */
     let menuLoaded = false;
-    fetch(`${BASE}/menu.json`,{cache:'no-store'})
-      .then(r=>{ if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); })
-      .then(d=>{ 
-        menuLoaded = true;
-        // “豆角肉末”显示为“豆角肉沫”
-        MENU = d.map(x => x.name_cn==='豆角肉末' ? {...x, name_cn:'豆角肉沫'} : x);
-        renderMenu();
-      })
-      .catch(e=>{ console.error('加载菜单失败：',e); alert('加载菜单失败：请检查 menu.json 路径'); });
-    setTimeout(()=>{ if(!menuLoaded){ alert('菜单加载失败或为空，请刷新重试'); } }, 3000);
+    const candidates = [
+      `${BASE}/menu.json`,
+      `/menu.json`,
+      `/shenyeshitang/menu.json`
+    ];
+    (async () => {
+      for (const url of candidates) {
+        try {
+          const r = await fetch(url, { cache:'no-store' });
+          if (!r.ok) continue;
+          const d = await r.json();
+          if (Array.isArray(d) && d.length >= 0) {
+            menuLoaded = true;
+            // “豆角肉末”显示为“豆角肉沫”
+            MENU = d.map(x => x.name_cn==='豆角肉末' ? {...x, name_cn:'豆角肉沫'} : x);
+            renderMenu();
+            break;
+          }
+        } catch (e) { /* 尝试下一条 */ }
+      }
+      setTimeout(()=>{ if(!menuLoaded){ alert('菜单加载失败或为空，请稍后重试'); } }, 3000);
+    })();
 
     /* ===== Firestore + 提醒（保持不变，仅统一房间） ===== */
     const firebaseConfig={apiKey:"AIzaSyA45H7MVPejI-09EmX3Y9RP0G-BzxKUA0M",authDomain:"shenyeshitang-9a3c2.firebaseapp.com",projectId:"shenyeshitang-9a3c2",storageBucket:"shenyeshitang-9a3c2.firebasestorage.app",messagingSenderId:"293937999981",appId:"1:293937999981:web:364b69c1ea61b48e8acf64"};
@@ -343,7 +355,7 @@
     const toastWrap=document.getElementById('toast')||document.body.appendChild(Object.assign(document.createElement('div'),{id:'toast',style:'position:fixed;top:14px;right:14px;z-index:60;display:grid;gap:8px'}));
     function showToast(msg){ const el=document.createElement('div'); el.className='toast'; el.textContent=msg; toastWrap.appendChild(el); setTimeout(()=>{el.style.opacity='0'; el.style.transition='opacity .4s';},2600); setTimeout(()=>{toastWrap.removeChild(el);},3000); }
     const ding=new Audio("data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEAESsAACJWAAACABYAAAAgAAAASAAAAGZmZmZmZmZmZmY=");
-    function softAlert(title,body){ try{ ding.currentTime=0; ding.play().catch(()=>{});}catch{} if(navigator.vibrate){ try{navigator.vibrate(120);}catch{} } showToast(`${title} · ${body}`); }
+    function softAlert(title,body){ try{ding.currentTime=0; ding.play().catch(()=>{});}catch{} if(navigator.vibrate){ try{navigator.vibrate(120);}catch{} } showToast(`${title} · ${body}`); }
     async function requestNotify(){ if(!('Notification'in window)) return false; if(Notification.permission==='granted') return true; if(Notification.permission==='denied') return false; return (await Notification.requestPermission())==='granted'; }
     function systemNotify(title,body){ if(!('Notification'in window)||Notification.permission!=='granted') return false; new Notification(title,{body}); return true; }
     function alertNewLine(d){ const title=`新订单 · ${d.name} × ${d.qty}`; const body=`房间 ${ROOM_EFFECTIVE}`; if(!systemNotify(title,body)) softAlert(title,body); }
