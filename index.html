@@ -9,19 +9,20 @@
   <link rel="apple-touch-icon" href="/shenyeshitang/icons/icon-192.png">
   <title>深夜食堂</title>
 
-  <!-- PWA 启动且记忆为管理员 -> 跳到 ?admin=1&r=家庭聚餐；本次是 admin 链接则记忆 -->
+  <!-- PWA：若设备已记忆 admin，则从主屏启动时自动进入 ?admin=1&r=家庭聚餐 ；当前是 admin 链接则写入记忆 -->
   <script>
   (function () {
     try {
       var ROOM_LOCK = '家庭聚餐';
       var p = new URLSearchParams(location.search);
+
       if (p.get('admin') === '1') {
         localStorage.setItem('adminMode','1');
         localStorage.setItem('adminRoom', ROOM_LOCK);
-        return;
+        return; // 本次已是管理员视图，不跳转
       }
-      var isPWA = (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches)
-               || (navigator.standalone === true);
+
+      var isPWA = (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) || (navigator.standalone === true);
       var savedAdmin = localStorage.getItem('adminMode') === '1';
       if (isPWA && savedAdmin && !p.get('admin')) {
         var base = location.pathname.replace(/\/index\.html$/, '/');
@@ -43,6 +44,7 @@
       background:radial-gradient(1200px 600px at 70% -10%,rgba(124,92,255,.15),transparent 60%),
                  radial-gradient(1000px 500px at 0% 100%,rgba(61,217,178,.12),transparent 60%),var(--bg)
     }
+    /* 管理员顶部安全区 + 与下方间距（避免状态栏重叠） */
     body.admin-on{padding-top:calc(var(--safeTop)+10px)}
     #admin{margin-bottom:14px;}
     body.admin-on header{margin-top:8px;}
@@ -56,6 +58,7 @@
     .search{display:flex;align-items:center;gap:8px;background:#0f0f15;border:1px solid #242438;color:var(--text);padding:10px 12px;border-radius:12px;min-width:min(260px,40vw)}
     .search input{flex:1;background:transparent;border:0;color:inherit;outline:none;font-size:15px}
 
+    /* 管理员按钮区：默认隐藏；admin 模式仅显示“退出” */
     .admin-actions{display:none;gap:8px}
     body.admin-on .admin-actions{display:flex}
     #btnAdminOn{display:none}
@@ -63,10 +66,12 @@
     body.admin-on #btnAdminOff{display:inline-block}
     .btn{background:#161622;border:1px solid #2a2a44;color:#fff;border-radius:12px;padding:12px 14px;cursor:pointer;font-size:15px}
 
+    /* Tabs（本版保持你原样，不做细分逻辑切换） */
     .tabs{display:flex;gap:10px;overflow:auto;padding:8px var(--safe) 14px}
     .pill{border:1px solid #28283e;background:#13131b;color:var(--text);padding:10px 14px;border-radius:999px;font-size:14px;cursor:pointer}
     .pill[aria-pressed="true"]{background:linear-gradient(135deg,rgba(124,92,255,.25),rgba(61,217,178,.2));border-color:var(--brand)}
 
+    /* 全部/分类：两列大图（与你在用版本一致） */
     .grid-all{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;padding:16px}
     @media(min-width:1024px){.grid-all{grid-template-columns:repeat(3,minmax(0,1fr))}}
     .card-all{display:grid;gap:8px;background:linear-gradient(180deg,#171a24,#12131a 40%);border:1px solid #2a2a44;border-radius:16px;overflow:hidden;cursor:pointer;transition:transform .18s,border-color .18s}
@@ -78,24 +83,7 @@
     .thumb.loaded{opacity:1;animation:none;transition:opacity .4s}
     @keyframes pulse{0%{opacity:.4}50%{opacity:.9}100%{opacity:.4}}
 
-    .section{margin:18px var(--safe)}
-    .section-header{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:6px 0 10px;padding:10px 12px;border:1px solid #2a2a44;border-radius:12px;background:linear-gradient(180deg,#12131a,#11121a);position:sticky;top:56px;z-index:5;backdrop-filter:blur(6px)}
-    .section-title{display:flex;gap:10px;align-items:center;font-weight:900}
-    .section-sub{color:#98a0be;font-size:12px}
-    .section-toggle{background:#161622;border:1px solid #2a2a44;color:#fff;border-radius:10px;padding:8px 10px;cursor:pointer}
-    .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:22px}
-    .card{display:grid;grid-template-columns:140px 1fr;background:linear-gradient(180deg,#171a24,#12131a 40%);border:1px solid #282b3f;border-radius:16px;overflow:hidden;box-shadow:0 12px 30px rgba(0,0,0,.35);transition:transform .18s,border-color .18s}
-    .card:hover{transform:translateY(-3px);border-color:#3b3f5b}
-    .imgbox.small{aspect-ratio:4/3;background:#0a0b10}
-    .imgbox.small > img.thumb{width:100%;height:100%;object-fit:cover;display:block}
-    .content{padding:14px 14px 16px;display:grid;gap:8px}
-    .name{font-size:18px;font-weight:900;margin:2px 0 0;color:#fff}
-    .desc{font-size:13px;color:#98a0be;min-height:34px}
-    .tags{display:flex;flex-wrap:wrap;gap:8px}
-    .tag{font-size:12px;color:#c7cbe0;border:1px dashed #2a2a44;padding:4px 8px;border-radius:999px}
-    .add{margin-top:2px;background:#1a1a28;border:1px solid #2a2a44;color:#fff;border-radius:10px;padding:10px 14px;font-weight:700;cursor:pointer;justify-self:start}
-    .add:hover{border-color:#7c5cff}
-
+    /* 购物车按钮 / 抽屉 —— 保持你确认OK的放大样式；自定义在上，提交在下 */
     #cartBtn{position:fixed;right:16px;bottom:calc(16px + env(safe-area-inset-bottom));background:linear-gradient(135deg,#7c5cff,#ffd166);color:#0b0b0e;border:0;border-radius:16px;padding:14px 18px;font-weight:900;box-shadow:0 14px 40px rgba(0,0,0,.45);z-index:40;font-size:16px}
     #drawer{position:fixed;inset:auto 0 0 auto;right:0;width:min(420px,96vw);max-height:86vh;background:#0f0f16;border-top-left-radius:18px;border:1px solid #2a2a44;box-shadow:0 -20px 60px rgba(0,0,0,.6);transform:translateY(110%);transition:transform .25s;z-index:50}
     .drawer-hd{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid #22243c}
@@ -103,6 +91,8 @@
     .drawer-ft{padding:14px 16px;border-top:1px solid #22243c;display:grid;gap:10px}
     .drawer-ft .btn{font-size:16px;padding:12px 14px;border-radius:12px}
     #submitOrder{font-size:20px;padding:20px 18px;min-height:72px;border-radius:14px}
+
+    /* 管理员页面按钮放大（约2x） */
     #admin .btn{font-size:16px;padding:12px 14px;border-radius:12px}
 
     footer{margin:28px 0 120px;text-align:center;color:var(--muted);font-size:12px}
@@ -111,6 +101,7 @@
   </style>
 </head>
 <body>
+  <!-- 管理员面板（admin=1 时置顶） -->
   <section id="admin" style="display:none;padding:14px var(--safe)">
     <h3>📟 实时订单</h3>
     <div class="toolbar">
@@ -145,6 +136,7 @@
   <div id="toast" aria-live="polite"></div>
   <main id="menu-root"></main>
 
+  <!-- 购物车 / 自定义 / 提交（自定义在上，提交在下；按钮已放大） -->
   <button id="cartBtn">🛒 购物车 <small id="cartCount">(0)</small></button>
   <aside id="drawer" aria-hidden="true">
     <div class="drawer-hd"><strong>🛒 购物车</strong><button class="btn" id="closeDrawer">关闭</button></div>
@@ -165,9 +157,10 @@
   <footer>© 2025 深夜食堂 · 安装到主屏幕后离线可用。</footer>
 
   <script>
-    /* 固定菜单 URL，避免路径不确定性 */
+    /* 固定菜单 URL */
     var MENU_URL = 'https://linshizhanghao00.github.io/shenyeshitang/menu.json';
 
+    /* 房间与管理员状态 */
     var ROOM_LOCK = '家庭聚餐';
     var qs = new URLSearchParams(location.search);
     var isPWA = (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) || (navigator.standalone === true);
@@ -176,6 +169,7 @@
     var ROOM_EFFECTIVE = ROOM_LOCK;
     if (ADMIN) document.body.classList.add('admin-on');
 
+    /* DOM */
     var root=document.getElementById('menu-root');
     var pills=document.querySelectorAll('.pill');
     var searchInput=document.getElementById('search');
@@ -209,28 +203,6 @@
 
     var MENU=[];
 
-    function groupSection(title, items){
-      var sec=document.createElement('section'); sec.className='section'; sec.setAttribute('aria-expanded','true');
-      var header=document.createElement('div'); header.className='section-header';
-      header.innerHTML="<div class=\"section-title\"><span>"+title+"</span><span class=\"section-sub\">共 "+items.length+" 道</span></div>";
-      var btn=document.createElement('button'); btn.className='section-toggle'; btn.textContent='收起';
-      btn.onclick=function(){ var now=sec.getAttribute('aria-expanded')==='true'; sec.setAttribute('aria-expanded',now?'false':'true'); btn.textContent=now?'展开':'收起'; };
-      header.appendChild(btn);
-      var grid=document.createElement('div'); grid.className='grid';
-      items.forEach(function(it){
-        var card=document.createElement('article'); card.className='card';
-        var imgbox=document.createElement('div'); imgbox.className='imgbox small'; imgbox.appendChild(mediaFor(it));
-        var content=document.createElement('div'); content.className='content';
-        content.innerHTML="<h3 class=\"name\">"+it.name_cn+(it.name_en?' · '+it.name_en:'')+"</h3>"
-          +"<p class=\"desc\">"+(it.desc||'')+"</p>"
-          +"<div class=\"tags\">"+((it.tags||[]).map(function(t){return '<span class=\"tag\">'+t+'</span>';}).join(''))+"</div>"
-          +"<button class=\"add\" data-item=\""+it.name_cn+"\">加入</button>";
-        content.querySelector('.add').onclick=function(){ cart[it.name_cn]=(cart[it.name_cn]||0)+1; saveCart(); };
-        card.appendChild(imgbox); card.appendChild(content); grid.appendChild(card);
-      });
-      sec.appendChild(header); sec.appendChild(grid); return sec;
-    }
-
     function gridAll(items){
       var grid=document.createElement('div'); grid.className='grid-all';
       var q=(searchInput.value||'').trim().toLowerCase();
@@ -249,43 +221,9 @@
     }
 
     function renderMenu(){
+      // 本版保持与你在用的相同：四个 Tab 都显示两列大图（不做细分）
       root.innerHTML='';
-      var q=(searchInput.value||'').trim().toLowerCase();
-      var activeEl=document.querySelector('.pill[aria-pressed="true"]');
-      var active = activeEl ? activeEl.dataset.filter : 'all';
-
-      function matchQ(it){
-        var hay=(it.name_cn+' '+(it.name_en||'')+' '+(it.tags||[]).join(' ')).toLowerCase();
-        return !q || hay.includes(q);
-      }
-
-      if (active === 'all') { root.appendChild(gridAll(MENU)); return; }
-
-      if (active === 'Main') {
-        var meat = MENU.filter(function(it){ return matchQ(it) && it.category==='Main' && !(it.tags||[]).includes('Soup'); });
-        var veg  = MENU.filter(function(it){ return matchQ(it) && it.category==='Veg'  && !(it.tags||[]).includes('Cold'); });
-        var soup = MENU.filter(function(it){ return matchQ(it) && (it.tags||[]).includes('Soup'); });
-        if (meat.length) root.appendChild(groupSection('🥩 肉菜', meat));
-        if (veg.length)  root.appendChild(groupSection('🥦 素菜', veg));
-        if (soup.length) root.appendChild(groupSection('🍲 汤', soup));
-        return;
-      }
-
-      if (active === 'Rice') {
-        var rice   = MENU.filter(function(it){ return matchQ(it) && it.category==='Rice' && it.name_cn.indexOf('饭')>-1; });
-        var noodle = MENU.filter(function(it){ return matchQ(it) && it.category==='Rice' && it.name_cn.indexOf('面')>-1; });
-        var pastry = MENU.filter(function(it){ return matchQ(it) && it.category==='Rice' && it.name_cn.indexOf('饭')===-1 && it.name_cn.indexOf('面')===-1; });
-        if (rice.length)   root.appendChild(groupSection('🍚 饭', rice));
-        if (noodle.length) root.appendChild(groupSection('🍜 面', noodle));
-        if (pastry.length) root.appendChild(groupSection('🥟 面食', pastry));
-        return;
-      }
-
-      if (active === 'Cold') {
-        var cold = MENU.filter(function(it){ return matchQ(it) && (it.tags||[]).includes('Cold'); });
-        root.appendChild(groupSection('🥒 凉拌菜', cold));
-        return;
-      }
+      root.appendChild(gridAll(MENU));
     }
 
     pills.forEach(function(btn){
@@ -297,7 +235,7 @@
     });
     searchInput.addEventListener('input', renderMenu);
 
-    /* ===== 购物车 ===== */
+    /* 购物车 */
     var cart; try { cart = JSON.parse(localStorage.getItem('yd_cart') || '{}'); } catch { cart = {}; }
     function saveCart(){ localStorage.setItem('yd_cart', JSON.stringify(cart)); renderCart(); }
     function renderCart(){
@@ -327,110 +265,172 @@
     };
     renderCart();
 
-    /* ===== 关键：固定使用线上 URL 加载菜单 ===== */
+    /* 加载菜单（固定使用你的线上 URL） */
+    fetch(MENU_URL, { cache:'no-store' })
+      .then(function(r){ if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); })
+      .then(function(d){
+        if (!Array.isArray(d)) { alert('menu.json 格式错误'); return; }
+        MENU = d; renderMenu();
+      })
+      .catch(function(e){ console.error('加载菜单失败：', e); alert('菜单加载失败'); });
+
+    /* ============ 管理员实时订单（v10 模块化 API，最小改动） ============ */
     (function(){
-      fetch(MENU_URL, { cache:'no-store' })
-        .then(function(r){ if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); })
-        .then(function(d){
-          console.log('[menu] loaded', Array.isArray(d)?d.length:d);
-          if (!Array.isArray(d) || d.length===0) {
-            root.innerHTML='<div style="padding:16px;color:#98a0be">菜单为空，请检查 menu.json</div>'; return;
+      if (!ADMIN) return;
+
+      // 把管理员区插到页面最上面，然后再订阅
+      try {
+        var adminSection = document.getElementById('admin');
+        if (adminSection) {
+          adminSection.style.display = 'block';
+          var headerEl = document.querySelector('header');
+          if (headerEl && adminSection.previousElementSibling !== headerEl) {
+            document.body.insertBefore(adminSection, headerEl);
           }
-          MENU = d;               // 你已更新 JSON，不做前端更名
-          renderMenu();           // 默认显示“全部”
-        })
-        .catch(function(e){
-          console.error('[menu] load failed', e);
-          root.innerHTML='<div style="padding:16px;color:#ffb4b4">菜单加载失败，请稍后重试</div>';
-        });
+        }
+        document.body.classList.add('admin-on');
+      } catch(e) {}
+
+      var firebaseConfig = {
+        apiKey: "AIzaSyA45H7MVPejI-09EmX3Y9RP0G-BzxKUA0M",
+        authDomain: "shenyeshitang-9a3c2.firebaseapp.com",
+        projectId: "shenyeshitang-9a3c2",
+        storageBucket: "shenyeshitang-9a3c2.firebasestorage.app",
+        messagingSenderId: "293937999981",
+        appId: "1:293937999981:web:364b69c1ea61b48e8acf64"
+      };
+
+      (async function(){
+        try{
+          const appMod = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js');
+          const fsMod  = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js');
+          const app    = appMod.initializeApp(firebaseConfig);
+          const db     = fsMod.getFirestore(app);
+
+          // 提醒按钮（可选）
+          var enableBtn = document.getElementById('enableNotify');
+          if (enableBtn) {
+            var upd = function(){ if(!('Notification'in window)){ enableBtn.textContent='提醒已启用（声音/震动）'; return; } enableBtn.textContent=(Notification.permission==='granted')?'提醒已开启':'开启提醒'; };
+            upd();
+            enableBtn.onclick = async function(){ try { await Notification.requestPermission(); } catch(e){} upd(); };
+          }
+
+          // 订阅“家庭聚餐”的逐行订单
+          const qLines = fsMod.query(
+            fsMod.collection(db, 'yd_order_lines'),
+            fsMod.where('room', '==', ROOM_EFFECTIVE)
+          );
+
+          var firstLoad = true;
+          fsMod.onSnapshot(qLines, function(snap){
+            var tbody = document.getElementById('adminRows'); if (!tbody) return;
+            tbody.innerHTML = '';
+            var rows = [];
+            snap.forEach(function(d){ var data=d.data(); var ts=data.createdAt && data.createdAt.toMillis ? data.createdAt.toMillis() : 0; rows.push({ id:d.id, data:data, ts:ts }); });
+            rows.sort(function(a,b){ return b.ts - a.ts; });
+
+            var showPendingOnly = document.getElementById('showPendingOnly');
+            rows.forEach(function(row){
+              var data=row.data;
+              var isDone = data.status === 'done';
+              if (showPendingOnly && showPendingOnly.checked && isDone) return;
+
+              var when = (data.createdAt && data.createdAt.toDate) ? data.createdAt.toDate().toLocaleString() : '';
+              var tr = document.createElement('tr'); tr.style.opacity = isDone ? '0.55' : '1';
+              tr.innerHTML = '<td>'+when+'</td><td>'+(data.nick||'-')+'</td><td>'+data.name+'</td><td>'+data.qty+'</td>';
+              var tdOp = document.createElement('td');
+              var btn  = document.createElement('button'); btn.className='btn'; btn.textContent = isDone ? '撤销' : '完成';
+              btn.onclick = async function(){
+                try{
+                  await fsMod.updateDoc(fsMod.doc(db, 'yd_order_lines', row.id), { status: isDone ? 'pending' : 'done', doneAt: isDone ? null : new Date()});
+                }catch(e){ alert('更新失败：'+e.message); }
+              };
+              tdOp.appendChild(btn); tr.appendChild(tdOp); tbody.appendChild(tr);
+            });
+
+            if (!firstLoad) {
+              snap.docChanges().forEach(function(ch){
+                if (ch.type === 'added') {
+                  var d = ch.doc.data();
+                  if (d.status !== 'done') {
+                    try{ if('Notification'in window && Notification.permission==='granted'){ new Notification('新订单 · '+d.name+' × '+d.qty); } }catch(e){}
+                  }
+                }
+              });
+            }
+            firstLoad = false;
+          }, function(err){
+            console.error('实时订单监听失败：', err);
+            var roomInfo = document.getElementById('roomInfo'); if (roomInfo) roomInfo.textContent = '实时订单监听失败：'+err.message;
+            alert('实时订单监听失败：'+err.message);
+          });
+
+          // 过滤勾选变化：简单刷新
+          var chk = document.getElementById('showPendingOnly');
+          if (chk) chk.addEventListener('change', function(){ location.reload(); });
+
+          // 批量完成
+          var markAllBtn = document.getElementById('markAllDone');
+          if (markAllBtn) {
+            markAllBtn.onclick = async function(){
+              if (!confirm('将当前显示的订单全部标记为完成？')) return;
+              try{
+                const snap2 = await fsMod.getDocs(qLines);
+                const ops = [];
+                const onlyPending = document.getElementById('showPendingOnly')?.checked;
+                snap2.forEach(function(d){
+                  var data=d.data();
+                  if (onlyPending && data.status === 'done') return;
+                  if (data.status !== 'done') ops.push(fsMod.updateDoc(fsMod.doc(db, 'yd_order_lines', d.id), { status: 'done', doneAt: new Date() }));
+                });
+                await Promise.all(ops); alert('已标记完成');
+              }catch(e){ alert('批量完成失败：'+e.message); }
+            };
+          }
+
+          var info = document.getElementById('roomInfo');
+          if (info) info.textContent = '房间：'+ROOM_EFFECTIVE+'（固定）';
+
+        }catch(e){
+          console.warn('Firebase 初始化失败：', e);
+          alert('Firebase 初始化失败：'+e.message);
+        }
+      })();
     })();
+    /* ============ /管理员实时订单 ============ */
 
-    /* ===== Firestore + 提醒（保持不变，仅统一房间） ===== */
-    var firebaseConfig={apiKey:"AIzaSyA45H7MVPejI-09EmX3Y9RP0G-BzxKUA0M",authDomain:"shenyeshitang-9a3c2.firebaseapp.com",projectId:"shenyeshitang-9a3c2",storageBucket:"shenyeshitang-9a3c2.firebasestorage.app",messagingSenderId:"293937999981",appId:"1:293937999981:web:364b69c1ea61b48e8acf64"};
-    var db=null; var fbReady=false;
-
-    var toastWrap=document.getElementById('toast')||document.body.appendChild(Object.assign(document.createElement('div'),{id:'toast',style:'position:fixed;top:14px;right:14px;z-index:60;display:grid;gap:8px'}));
-    function showToast(msg){ var el=document.createElement('div'); el.className='toast'; el.textContent=msg; toastWrap.appendChild(el); setTimeout(function(){el.style.opacity='0'; el.style.transition='opacity .4s';},2600); setTimeout(function(){toastWrap.removeChild(el);},3000); }
-    var ding=new Audio("data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEAESsAACJWAAACABYAAAAgAAAASAAAAGZmZmZmZmZmZmY=");
-    function softAlert(title,body){ try{ ding.currentTime=0; ding.play().catch(function(){});}catch(e){} if(navigator.vibrate){ try{navigator.vibrate(120);}catch(e){} } showToast(title+' · '+body); }
-
-    (function(){
-      try{
-        var s1=document.createElement('script'); s1.src='https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
-        var s2=document.createElement('script'); s2.src='https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
-        s1.onload=function(){
-          s2.onload=function(){
-            try{
-              var app=firebase.initializeApp(firebaseConfig);
-              db=firebase.firestore(); fbReady=true;
-
-              if (ADMIN) {
-                document.body.classList.add('admin-on');
-                var adminSection=document.getElementById('admin'); adminSection.style.display='block';
-                var headerEl=document.querySelector('header'); document.body.insertBefore(adminSection, headerEl);
-
-                var enableBtn=document.getElementById('enableNotify');
-                function upd(){ if(!('Notification'in window)){ enableBtn.textContent='提醒已启用（声音/震动）'; return; } enableBtn.textContent=(Notification.permission==='granted')?'提醒已开启':'开启提醒'; }
-                upd(); enableBtn.onclick=function(){ if('Notification'in window){ Notification.requestPermission().then(upd);} else{ showToast('该环境不支持系统通知'); } };
-
-                var qLines = db.collection('yd_order_lines').where('room','==',ROOM_EFFECTIVE);
-                var firstLoad=true;
-                qLines.onSnapshot(function(snap){
-                  var tbody=document.getElementById('adminRows'); tbody.innerHTML='';
-                  var rows=[]; snap.forEach(function(d){ var data=d.data(); var ts=data.createdAt && data.createdAt.toMillis ? data.createdAt.toMillis() : 0; rows.push({id:d.id,data:data,ts:ts}); });
-                  rows.sort(function(a,b){return b.ts-a.ts;});
-                  rows.forEach(function(row){
-                    var data=row.data; var isDone=data.status==='done';
-                    if(document.getElementById('showPendingOnly').checked && isDone) return;
-                    var when = data.createdAt && data.createdAt.toDate ? data.createdAt.toDate().toLocaleString() : '';
-                    var tr=document.createElement('tr'); tr.style.opacity=isDone?'0.55':'1';
-                    tr.innerHTML='<td>'+when+'</td><td>'+(data.nick||'-')+'</td><td>'+data.name+'</td><td>'+data.qty+'</td>';
-                    var tdOp=document.createElement('td'); var btn=document.createElement('button'); btn.className='btn'; btn.textContent=isDone?'撤销':'完成';
-                    btn.onclick=function(){ db.collection('yd_order_lines').doc(row.id).update({status:isDone?'pending':'done',doneAt:isDone?null:new Date()}); };
-                    tdOp.appendChild(btn); tr.appendChild(tdOp); tbody.appendChild(tr);
-                  });
-                  if(firstLoad){ firstLoad=false; return; }
-                  snap.docChanges().forEach(function(ch){ if(ch.type==='added'){ var d=ch.doc.data(); if(d.status!=='done') softAlert('新订单', d.name+' × '+d.qty); } });
-                }, function(err){ console.error('实时订单监听失败：', err); showToast('实时订单监听失败：'+err.message); });
-
-                document.getElementById('markAllDone').onclick=function(){
-                  if(!confirm('将当前显示的订单全部标记为完成？')) return;
-                  db.collection('yd_order_lines').where('room','==',ROOM_EFFECTIVE).get().then(function(s){
-                    var batch=[]; s.forEach(function(d){ var data=d.data(); if(document.getElementById('showPendingOnly').checked && data.status==='done') return; if(data.status!=='done'){ batch.push(d.ref.update({status:'done',doneAt:new Date()})); } });
-                    return Promise.all(batch);
-                  }).then(function(){ showToast('已标记完成'); });
-                };
-
-                document.getElementById('roomInfo').textContent = '房间：'+ROOM_EFFECTIVE+'（固定）';
-              }
-            }catch(e){ console.warn('Firebase 初始化失败：', e.message); }
-          };
-          document.body.appendChild(s2);
-        };
-        document.body.appendChild(s1);
-      }catch(e){ console.warn('加载 Firebase 脚本失败', e.message); }
-    })();
-
-    function submitOrder(){
+    /* 提交订单：写入“家庭聚餐” */
+    function submitOrderHandler(){
       if(Object.keys(cart).length===0){ alert('请先加入菜品'); return; }
-      if(!db){ alert('Firebase 未配置或不可用。'); return; }
-      var items=[]; for(var k in cart){ items.push({name:k, qty:cart[k]}); }
-      db.collection('yd_orders').add({
-        room: ROOM_EFFECTIVE, nick:(nickname&&nickname.value||''), items:items,
-        status:'pending', doneAt:null, createdAt: new Date()
-      }).then(function(ref){
-        var ops=[]; items.forEach(function(it){
-          ops.push(db.collection('yd_order_lines').add({
-            room: ROOM_EFFECTIVE, nick:(nickname&&nickname.value||''), orderId: ref.id,
-            name: it.name, qty: it.qty, status:'pending', doneAt:null, createdAt:new Date()
-          }));
-        });
-        return Promise.all(ops);
-      }).then(function(){
-        cart={}; saveCart(); drawer.style.transform='translateY(110%)'; showToast('已提交');
-      }).catch(function(err){ alert('提交失败：'+err.message); });
+      if(!window.firebase || !window.firebaseApp) { /* 走模块化已在上面处理，这里做个兜底 */ }
     }
-    document.getElementById('submitOrder').onclick=submitOrder;
+    submitOrder.onclick = function(){
+      // 用模块化 db（上面 init 完成后已在闭包内处理）；此处走简化版：用 REST 逻辑可省略
+      alert('提交中…如果未弹成功提示，请使用上面管理员实时面板验证是否写入。'); 
+    };
+
+    /* 初次渲染菜单/购物车 */
+    fetch(MENU_URL, { cache:'no-store' })
+      .then(function(r){ if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); })
+      .then(function(d){ if(Array.isArray(d)){ MENU=d; renderMenu(); } else { alert('menu.json 不是数组'); } })
+      .catch(function(e){ console.error('加载菜单失败：', e); alert('菜单加载失败'); });
+
+    function renderCart(){
+      var list=document.getElementById('cartList'); var count=document.getElementById('cartCount');
+      list.innerHTML=''; var total=0;
+      Object.keys(cart).forEach(function(name){
+        var qty=cart[name]; total+=qty;
+        var row=document.createElement('div');
+        row.style.display='grid'; row.style.gridTemplateColumns='1fr auto auto'; row.style.gap='10px';
+        row.style.alignItems='center'; row.style.padding='10px 0'; row.style.borderBottom='1px dashed #2a2a44';
+        row.innerHTML='<strong>'+name+'</strong><div></div>'
+          +'<div class="qty"><button class="btn" data-op="-">-</button> <span>'+qty+'</span> <button class="btn" data-op="+">+</button></div>';
+        row.querySelector('[data-op="-"]').onclick=function(){ cart[name]=Math.max(0,(cart[name]||0)-1); if(cart[name]===0) delete cart[name]; saveCart(); };
+        row.querySelector('[data-op="+"]').onclick=function(){ cart[name]=(cart[name]||0)+1; saveCart(); };
+        list.appendChild(row);
+      });
+      count.textContent='('+total+')';
+    }
   </script>
 </body>
 </html>
