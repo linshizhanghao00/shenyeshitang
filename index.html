@@ -9,34 +9,35 @@
   <link rel="apple-touch-icon" href="/shenyeshitang/icons/icon-192.png">
   <title>深夜食堂</title>
 
-  <!-- PWA：若设备已记忆 admin，则从主屏启动时自动进入 ?admin=1&r=家庭聚餐 ；当前是 admin 链接则写入记忆 -->
+  <!-- PWA：若设备已记忆 admin，则从主屏启动时自动进入 ?admin=1&r=家庭聚餐；当前是 admin 链接则写入记忆 -->
   <script>
-  (function () {
-    try {
-      var ROOM_LOCK = '家庭聚餐';
-      var p = new URLSearchParams(location.search);
+    (function () {
+      try {
+        var ROOM_LOCK = '家庭聚餐';
+        var p = new URLSearchParams(location.search);
 
-      if (p.get('admin') === '1') {
-        localStorage.setItem('adminMode','1');
-        localStorage.setItem('adminRoom', ROOM_LOCK);
-        return; // 本次已是管理员视图，不跳转
-      }
+        if (p.get('admin') === '1') {
+          localStorage.setItem('adminMode', '1');
+          localStorage.setItem('adminRoom', ROOM_LOCK);
+          return; // 本次已是管理员视图，不跳转
+        }
 
-      var isPWA = (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) || (navigator.standalone === true);
-      var savedAdmin = localStorage.getItem('adminMode') === '1';
-      if (isPWA && savedAdmin && !p.get('admin')) {
-        var base = location.pathname.replace(/\/index\.html$/, '/');
-        location.replace(base + '?admin=1&r=' + encodeURIComponent(ROOM_LOCK));
-      }
-    } catch(e) {}
-  })();
+        var isPWA = (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) || (navigator.standalone === true);
+        var savedAdmin = localStorage.getItem('adminMode') === '1';
+        if (isPWA && savedAdmin && !p.get('admin')) {
+          var base = location.pathname.replace(/\/index\.html$/, '/');
+          location.replace(base + '?admin=1&r=' + encodeURIComponent(ROOM_LOCK));
+        }
+      } catch (e) {}
+    })();
   </script>
 
   <style>
     :root{
       --bg:#0c0c0f;--panel:#121218;--text:#e9e9f2;--muted:#98a0be;
       --brand:#7c5cff;--brand2:#3dd9b2;--accent:#ffd166;
-      --safe:max(env(safe-area-inset-left),16px);--safeTop:env(safe-area-inset-top,0px)
+      --safe:max(env(safe-area-inset-left),16px);
+      --safeTop:env(safe-area-inset-top,0px)
     }
     *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
     body{
@@ -44,10 +45,11 @@
       background:radial-gradient(1200px 600px at 70% -10%,rgba(124,92,255,.15),transparent 60%),
                  radial-gradient(1000px 500px at 0% 100%,rgba(61,217,178,.12),transparent 60%),var(--bg)
     }
-    /* 管理员顶部安全区 + 与下方间距（避免状态栏重叠） */
-    body.admin-on{padding-top:calc(var(--safeTop)+10px)}
-    #admin{margin-bottom:14px;}
-    body.admin-on header{margin-top:8px;}
+
+    /* 顶部留白：PWA 与 管理员分别设置；管理员比普通 PWA 再多 */
+    body.pwa-on header{ padding-top: calc(var(--safeTop) + 10px); }
+    body.admin-on header{ padding-top: calc(var(--safeTop) + 22px); margin-top:0; }
+    body.pwa-on.admin-on header{ padding-top: calc(var(--safeTop) + 26px); }
 
     header{position:sticky;top:0;z-index:20;background:rgba(12,12,15,.85);backdrop-filter:blur(8px)}
     .topbar{display:grid;grid-template-columns:1fr auto;gap:12px;align-items:center;padding:18px var(--safe) 10px}
@@ -58,15 +60,7 @@
     .search{display:flex;align-items:center;gap:8px;background:#0f0f15;border:1px solid #242438;color:var(--text);padding:10px 12px;border-radius:12px;min-width:min(260px,40vw)}
     .search input{flex:1;background:transparent;border:0;color:inherit;outline:none;font-size:15px}
 
-    /* 管理员按钮区：默认隐藏；admin 模式仅显示“退出” */
-    .admin-actions{display:none;gap:8px}
-    body.admin-on .admin-actions{display:flex}
-    #btnAdminOn{display:none}
-    #btnAdminOff{display:none}
-    body.admin-on #btnAdminOff{display:inline-block}
-    .btn{background:#161622;border:1px solid #2a2a44;color:#fff;border-radius:12px;padding:12px 14px;cursor:pointer;font-size:15px}
-
-    /* Tabs（本版保持你原样，不做细分逻辑切换） */
+    /* Tabs（保持上一版逻辑：不做细分，只渲染两列大图） */
     .tabs{display:flex;gap:10px;overflow:auto;padding:8px var(--safe) 14px}
     .pill{border:1px solid #28283e;background:#13131b;color:var(--text);padding:10px 14px;border-radius:999px;font-size:14px;cursor:pointer}
     .pill[aria-pressed="true"]{background:linear-gradient(135deg,rgba(124,92,255,.25),rgba(61,217,178,.2));border-color:var(--brand)}
@@ -83,7 +77,7 @@
     .thumb.loaded{opacity:1;animation:none;transition:opacity .4s}
     @keyframes pulse{0%{opacity:.4}50%{opacity:.9}100%{opacity:.4}}
 
-    /* 购物车按钮 / 抽屉 —— 保持你确认OK的放大样式；自定义在上，提交在下 */
+    /* 购物车按钮 / 抽屉 —— 放大；自定义在上，提交在下 */
     #cartBtn{position:fixed;right:16px;bottom:calc(16px + env(safe-area-inset-bottom));background:linear-gradient(135deg,#7c5cff,#ffd166);color:#0b0b0e;border:0;border-radius:16px;padding:14px 18px;font-weight:900;box-shadow:0 14px 40px rgba(0,0,0,.45);z-index:40;font-size:16px}
     #drawer{position:fixed;inset:auto 0 0 auto;right:0;width:min(420px,96vw);max-height:86vh;background:#0f0f16;border-top-left-radius:18px;border:1px solid #2a2a44;box-shadow:0 -20px 60px rgba(0,0,0,.6);transform:translateY(110%);transition:transform .25s;z-index:50}
     .drawer-hd{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid #22243c}
@@ -91,6 +85,7 @@
     .drawer-ft{padding:14px 16px;border-top:1px solid #22243c;display:grid;gap:10px}
     .drawer-ft .btn{font-size:16px;padding:12px 14px;border-radius:12px}
     #submitOrder{font-size:20px;padding:20px 18px;min-height:72px;border-radius:14px}
+
     /* 管理员页面按钮放大（约2x） */
     #admin .btn{font-size:16px;padding:12px 14px;border-radius:12px}
 
@@ -135,6 +130,7 @@
   <div id="toast" aria-live="polite"></div>
   <main id="menu-root"></main>
 
+  <!-- 购物车 / 自定义 / 提交（自定义在上，提交在下） -->
   <button id="cartBtn">🛒 购物车 <small id="cartCount">(0)</small></button>
   <aside id="drawer" aria-hidden="true">
     <div class="drawer-hd"><strong>🛒 购物车</strong><button class="btn" id="closeDrawer">关闭</button></div>
@@ -155,19 +151,21 @@
   <footer>© 2025 深夜食堂 · 安装到主屏幕后离线可用。</footer>
 
   <script>
-    /* 固定菜单 URL */
+    /* —— 固定菜单 URL —— */
     var MENU_URL = 'https://linshizhanghao00.github.io/shenyeshitang/menu.json';
 
-    /* 房间与管理员状态 */
+    /* —— 房间与管理员状态 —— */
     var ROOM_LOCK = '家庭聚餐';
     var qs = new URLSearchParams(location.search);
     var isPWA = (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) || (navigator.standalone === true);
-    var savedAdmin = localStorage.getItem('adminMode')==='1';
-    var ADMIN = qs.get('admin')==='1' || (isPWA && savedAdmin);
+    var savedAdmin = localStorage.getItem('adminMode') === '1';
+    var ADMIN = (qs.get('admin') === '1') || (isPWA && savedAdmin);
     var ROOM_EFFECTIVE = ROOM_LOCK;
-    if (ADMIN) document.body.classList.add('admin-on');
 
-    /* DOM */
+    if (ADMIN) document.body.classList.add('admin-on');
+    if (isPWA) document.body.classList.add('pwa-on'); /* PWA 环境（含非管理员）留白 */
+
+    /* —— DOM —— */
     var root=document.getElementById('menu-root');
     var pills=document.querySelectorAll('.pill');
     var searchInput=document.getElementById('search');
@@ -200,7 +198,6 @@
     function mediaFor(item){ return iconSVG(item.emoji,item.name_cn); }
 
     var MENU=[];
-
     function gridAll(items){
       var grid=document.createElement('div'); grid.className='grid-all';
       var q=(searchInput.value||'').trim().toLowerCase();
@@ -217,23 +214,11 @@
       });
       return grid;
     }
-
-    function renderMenu(){
-      // 保持“你在用”的逻辑：四个 Tab 都显示两列大图
-      root.innerHTML='';
-      root.appendChild(gridAll(MENU));
-    }
-
-    pills.forEach(function(btn){
-      btn.addEventListener('click', function(){
-        pills.forEach(function(b){ b.setAttribute('aria-pressed','false'); });
-        btn.setAttribute('aria-pressed','true');
-        renderMenu();
-      });
-    });
+    function renderMenu(){ root.innerHTML=''; root.appendChild(gridAll(MENU)); }
+    pills.forEach(function(btn){ btn.addEventListener('click', function(){ pills.forEach(function(b){ b.setAttribute('aria-pressed','false'); }); btn.setAttribute('aria-pressed','true'); renderMenu(); }); });
     searchInput.addEventListener('input', renderMenu);
 
-    /* 购物车 */
+    /* —— 购物车 —— */
     var cart; try { cart = JSON.parse(localStorage.getItem('yd_cart') || '{}'); } catch { cart = {}; }
     function saveCart(){ localStorage.setItem('yd_cart', JSON.stringify(cart)); renderCart(); }
     function renderCart(){
@@ -263,18 +248,13 @@
     };
     renderCart();
 
-    /* 加载菜单（固定使用你的线上 URL） */
+    /* —— 加载菜单 —— */
     fetch(MENU_URL, { cache:'no-store' })
       .then(function(r){ if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); })
-      .then(function(d){
-        if (!Array.isArray(d)) { alert('menu.json 格式错误'); return; }
-        MENU = d; renderMenu();
-      })
+      .then(function(d){ if(!Array.isArray(d)){ alert('menu.json 格式错误'); return; } MENU=d; renderMenu(); })
       .catch(function(e){ console.error('加载菜单失败：', e); alert('菜单加载失败'); });
 
-    /* ================= 管理员实时订单 + 提交订单（v10 模块化） ================= */
-
-    // 通用 Firestore 初始化：admin/非admin 共用
+    /* ================= 通用 Firestore 初始化 ================= */
     const _firebaseConfig = {
       apiKey: "AIzaSyA45H7MVPejI-09EmX3Y9RP0G-BzxKUA0M",
       authDomain: "shenyeshitang-9a3c2.firebaseapp.com",
@@ -283,134 +263,81 @@
       messagingSenderId: "293937999981",
       appId: "1:293937999981:web:364b69c1ea61b48e8acf64"
     };
-    async function ensureDb() {
+    async function ensureDb(){
       if (window.__fs && window.__db) return { fs: window.__fs, db: window.__db };
       const appMod = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js');
       const fsMod  = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js');
       const app    = appMod.initializeApp(_firebaseConfig);
       const db     = fsMod.getFirestore(app);
-      window.__fs = fsMod; window.__db = db;
-      return { fs: fsMod, db };
+      window.__fs = fsMod; window.__db = db; return { fs: fsMod, db };
     }
 
-    // 1) 管理员：把面板插到页面最上方，然后订阅
+    /* ================= 管理员：插入面板并订阅 ================= */
     (function(){
       if (!ADMIN) return;
 
-      try {
+      try{
         var adminSection = document.getElementById('admin');
         if (adminSection) {
-          adminSection.style.display = 'block';
+          adminSection.style.display='block';
           var headerEl = document.querySelector('header');
           if (headerEl && adminSection.previousElementSibling !== headerEl) {
             document.body.insertBefore(adminSection, headerEl);
           }
         }
         document.body.classList.add('admin-on');
-      } catch(e) {}
+      }catch(e){}
 
       (async function(){
         try{
           const { fs, db } = await ensureDb();
 
-          // 提醒按钮
-          var enableBtn = document.getElementById('enableNotify');
-          if (enableBtn) {
-            var upd = function(){ if(!('Notification'in window)){ enableBtn.textContent='提醒已启用（声音/震动）'; return; } enableBtn.textContent=(Notification.permission==='granted')?'提醒已开启':'开启提醒'; };
-            upd();
-            enableBtn.onclick = async function(){ try { await Notification.requestPermission(); } catch(e){} upd(); };
-          }
-
-          // 订阅“家庭聚餐”的逐行订单
-          const qLines = fs.query(fs.collection(db, 'yd_order_lines'), fs.where('room', '==', ROOM_EFFECTIVE));
+          // 订阅“家庭聚餐”逐行订单
+          const qLines = fs.query(fs.collection(db,'yd_order_lines'), fs.where('room','==',ROOM_EFFECTIVE));
           var firstLoad = true;
           fs.onSnapshot(qLines, function(snap){
-            var tbody = document.getElementById('adminRows'); if (!tbody) return;
-            tbody.innerHTML = '';
-            var rows = [];
-            snap.forEach(function(d){ var data=d.data(); var ts=data.createdAt && data.createdAt.toMillis ? data.createdAt.toMillis() : 0; rows.push({ id:d.id, data:data, ts:ts }); });
-            rows.sort(function(a,b){ return b.ts - a.ts; });
-
-            var showPendingOnly = document.getElementById('showPendingOnly');
+            var tbody=document.getElementById('adminRows'); if(!tbody) return;
+            tbody.innerHTML='';
+            var rows=[]; snap.forEach(function(d){ var data=d.data(); var ts=data.createdAt&&data.createdAt.toMillis?data.createdAt.toMillis():0; rows.push({id:d.id,data:data,ts:ts}); });
+            rows.sort(function(a,b){return b.ts-a.ts;});
+            var showPendingOnly=document.getElementById('showPendingOnly');
             rows.forEach(function(row){
-              var data=row.data; var isDone = data.status === 'done';
-              if (showPendingOnly && showPendingOnly.checked && isDone) return;
-
-              var when = (data.createdAt && data.createdAt.toDate) ? data.createdAt.toDate().toLocaleString() : '';
-              var tr = document.createElement('tr'); tr.style.opacity = isDone ? '0.55' : '1';
-              tr.innerHTML = '<td>'+when+'</td><td>'+(data.nick||'-')+'</td><td>'+data.name+'</td><td>'+data.qty+'</td>';
-              var tdOp = document.createElement('td'); var btn = document.createElement('button'); btn.className='btn'; btn.textContent = isDone ? '撤销' : '完成';
-              btn.onclick = async function(){
-                try{
-                  await fs.updateDoc(fs.doc(db, 'yd_order_lines', row.id), { status: isDone ? 'pending' : 'done', doneAt: isDone ? null : new Date()});
-                }catch(e){ alert('更新失败：'+e.message); }
-              };
+              var data=row.data; var isDone=data.status==='done';
+              if(showPendingOnly && showPendingOnly.checked && isDone) return;
+              var when=(data.createdAt && data.createdAt.toDate)? data.createdAt.toDate().toLocaleString(): '';
+              var tr=document.createElement('tr'); tr.style.opacity=isDone?'0.55':'1';
+              tr.innerHTML='<td>'+when+'</td><td>'+(data.nick||'-')+'</td><td>'+data.name+'</td><td>'+data.qty+'</td>';
+              var tdOp=document.createElement('td'); var btn=document.createElement('button'); btn.className='btn'; btn.textContent=isDone?'撤销':'完成';
+              btn.onclick=async function(){ try{ await fs.updateDoc(fs.doc(db,'yd_order_lines',row.id),{status:isDone?'pending':'done',doneAt:isDone?null:new Date()}); }catch(e){ alert('更新失败：'+e.message); } };
               tdOp.appendChild(btn); tr.appendChild(tdOp); tbody.appendChild(tr);
             });
-
-            if (!firstLoad) {
-              snap.docChanges().forEach(function(ch){
-                if (ch.type === 'added') {
-                  var d = ch.doc.data();
-                  if (d.status !== 'done') {
-                    try{ if('Notification'in window && Notification.permission==='granted'){ new Notification('新订单 · '+d.name+' × '+d.qty); } }catch(e){}
-                  }
-                }
-              });
+            if(!firstLoad){
+              snap.docChanges().forEach(function(ch){ if(ch.type==='added'){ var d=ch.doc.data(); if(d.status!=='done'){ try{ if('Notification'in window && Notification.permission==='granted'){ new Notification('新订单 · '+d.name+' × '+d.qty); } }catch(e){} } }});
             }
-            firstLoad = false;
+            firstLoad=false;
           }, function(err){
             console.error('实时订单监听失败：', err);
-            var roomInfo = document.getElementById('roomInfo'); if (roomInfo) roomInfo.textContent = '实时订单监听失败：'+err.message;
+            var roomInfo=document.getElementById('roomInfo'); if(roomInfo) roomInfo.textContent='实时订单监听失败：'+err.message;
             alert('实时订单监听失败：'+err.message);
           });
 
           // 批量完成
-          var markAllBtn = document.getElementById('markAllDone');
-          if (markAllBtn) {
-            markAllBtn.onclick = async function(){
-              if (!confirm('将当前显示的订单全部标记为完成？')) return;
+          var markAllBtn=document.getElementById('markAllDone');
+          if(markAllBtn){
+            markAllBtn.onclick=async function(){
+              if(!confirm('将当前显示的订单全部标记为完成？')) return;
               try{
                 const snap2 = await fs.getDocs(qLines);
-                const ops = [];
-                const onlyPending = document.getElementById('showPendingOnly')?.checked;
-                snap2.forEach(function(d){
-                  var data=d.data();
-                  if (onlyPending && data.status === 'done') return;
-                  if (data.status !== 'done') ops.push(fs.updateDoc(fs.doc(db, 'yd_order_lines', d.id), { status: 'done', doneAt: new Date() }));
-                });
+                const ops=[];
+                const onlyPending=document.getElementById('showPendingOnly')?.checked;
+                snap2.forEach(function(d){ var data=d.data(); if(onlyPending && data.status==='done') return; if(data.status!=='done') ops.push(fs.updateDoc(fs.doc(db,'yd_order_lines',d.id),{status:'done',doneAt:new Date()})); });
                 await Promise.all(ops); alert('已标记完成');
               }catch(e){ alert('批量完成失败：'+e.message); }
             };
           }
 
-          var info = document.getElementById('roomInfo');
-          if (info) info.textContent = '房间：'+ROOM_EFFECTIVE+'（固定）';
-
-          // 2) 提交按钮（admin/非admin 共用）
-          submitOrder.onclick = async function () {
-            if (Object.keys(cart).length === 0) { alert('请先加入菜品'); return; }
-            try {
-              const nick = (nickname && nickname.value ? nickname.value.trim() : '');
-              const items = Object.entries(cart).map(function([name, qty]){ return { name:name, qty:qty }; });
-
-              const headerRef = await fs.addDoc(fs.collection(db, "yd_orders"), {
-                room: ROOM_EFFECTIVE, nick: nick, items: items,
-                status: "pending", doneAt: null, createdAt: fs.serverTimestamp()
-              });
-
-              await Promise.all(items.map(function(it){
-                return fs.addDoc(fs.collection(db, "yd_order_lines"), {
-                  room: ROOM_EFFECTIVE, nick: nick, orderId: headerRef.id,
-                  name: it.name, qty: it.qty, status: "pending", doneAt: null, createdAt: fs.serverTimestamp()
-                });
-              }));
-
-              cart = {}; saveCart(); drawer.style.transform = "translateY(110%)"; alert("✅ 已提交成功");
-            } catch (e) {
-              console.error("提交失败：", e); alert("提交失败：" + e.message);
-            }
-          };
+          var info=document.getElementById('roomInfo');
+          if(info) info.textContent='房间：'+ROOM_EFFECTIVE+'（固定）';
 
         }catch(e){
           console.warn('Firebase 初始化失败：', e);
@@ -419,13 +346,14 @@
       })();
     })();
 
-    // 普通用户也能提交（若上面 admin 分支未覆盖，则用通用 ensureDb 绑定一次）
-    submitOrder.onclick = submitOrder.onclick || (async function () {
+    /* ================= 提交订单：admin/非 admin 通用 ================= */
+    submitOrder.onclick = async function () {
       if (Object.keys(cart).length === 0) { alert('请先加入菜品'); return; }
       try {
         const { fs, db } = await ensureDb();
         const nick = (nickname && nickname.value ? nickname.value.trim() : '');
         const items = Object.entries(cart).map(([name, qty]) => ({ name, qty }));
+
         const headerRef = await fs.addDoc(fs.collection(db, "yd_orders"), {
           room: ROOM_EFFECTIVE, nick, items,
           status: "pending", doneAt: null, createdAt: fs.serverTimestamp()
@@ -434,13 +362,12 @@
           room: ROOM_EFFECTIVE, nick, orderId: headerRef.id,
           name: it.name, qty: it.qty, status: "pending", doneAt: null, createdAt: fs.serverTimestamp()
         })));
+
         cart = {}; saveCart(); drawer.style.transform = "translateY(110%)"; alert("✅ 已提交成功");
       } catch (e) {
         console.error("提交失败：", e); alert("提交失败：" + e.message);
       }
-    });
-
-    /* ================= /管理员实时订单 + 提交订单 ================= */
+    };
   </script>
 </body>
 </html>
