@@ -9,25 +9,22 @@
   <link rel="apple-touch-icon" href="/shenyeshitang/icons/icon-192.png">
   <title>深夜食堂</title>
 
-  <!-- PWA 启动且记忆为管理员 -> 进入 ?admin=1&r=家庭聚餐；本次是 admin 链接则记忆 -->
+  <!-- PWA 启动且记忆为管理员 -> 跳到 ?admin=1&r=家庭聚餐；本次是 admin 链接则记忆 -->
   <script>
   (function () {
     try {
       const ROOM_LOCK = '家庭聚餐';
       const p = new URLSearchParams(location.search);
 
-      // 本次就是管理员链接：记住并返回（保证“从此链接添加到主屏”后默认管理员）
       if (p.get('admin') === '1') {
         localStorage.setItem('adminMode','1');
         localStorage.setItem('adminRoom', ROOM_LOCK);
         return;
       }
-      // PWA 检测
       const isPWA = (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches)
                  || (navigator.standalone === true);
       const savedAdmin = localStorage.getItem('adminMode') === '1';
 
-      // PWA 启动且记忆为管理员 -> 首时刻跳管理员页
       if (isPWA && savedAdmin && !p.get('admin')) {
         const base = location.pathname.replace(/\/index\.html$/, '/');
         location.replace(base + '?admin=1&r=' + encodeURIComponent(ROOM_LOCK));
@@ -38,16 +35,16 @@
 
   <style>
     :root{
-      --bg:#0c0c0f;--panel:#121218;--text:#e9e9f2;--muted:#98a0be;--brand:#7c5cff;--brand2:#3dd9b2;--accent:#ffd166;
+      --bg:#0c0c0f;--panel:#121218;--text:#e9e9f2;--muted:#98a0be;
+      --brand:#7c5cff;--brand2:#3dd9b2;--accent:#ffd166;
       --safe:max(env(safe-area-inset-left),16px);--safeTop:env(safe-area-inset-top,0px)
     }
     *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
     body{
       margin:0;font-family:ui-sans-serif,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;letter-spacing:.2px;color:var(--text);
-      background:radial-gradient(1200px 600px at 70% -10%,rgba(124,92,255,.15),transparent 60%),
-                 radial-gradient(1000px 500px at 0% 100%,rgba(61,217,178,.12),transparent 60%),var(--bg)
+      background:radial-gradient(1200px 600px at 70% -10%,rgba(124,92,255,.15),transparent 60%),radial-gradient(1000px 500px at 0% 100%,rgba(61,217,178,.12),transparent 60%),var(--bg)
     }
-    /* 管理员顶部安全区 + 与下方间距（避免状态栏重叠） */
+    /* 管理员顶部安全区 + 与下方间距 */
     body.admin-on{padding-top:calc(var(--safeTop)+10px)}
     #admin{margin-bottom:14px;}
     body.admin-on header{margin-top:8px;}
@@ -61,20 +58,12 @@
     .search{display:flex;align-items:center;gap:8px;background:#0f0f15;border:1px solid #242438;color:var(--text);padding:10px 12px;border-radius:12px;min-width:min(260px,40vw)}
     .search input{flex:1;background:transparent;border:0;color:inherit;outline:none;font-size:15px}
 
-    /* 管理员按钮：默认隐藏；admin 模式仅显示“退出” */
-    .admin-actions{display:none;gap:8px}
-    body.admin-on .admin-actions{display:flex}
-    #btnAdminOn{display:none}
-    #btnAdminOff{display:none}
-    body.admin-on #btnAdminOff{display:inline-block}
-    .btn{background:#161622;border:1px solid #2a2a44;color:#fff;border-radius:10px;padding:8px 10px;cursor:pointer}
-
     /* Tabs */
     .tabs{display:flex;gap:10px;overflow:auto;padding:8px var(--safe) 14px}
     .pill{border:1px solid #28283e;background:#13131b;color:var(--text);padding:10px 14px;border-radius:999px;font-size:14px;cursor:pointer}
     .pill[aria-pressed="true"]{background:linear-gradient(135deg,rgba(124,92,255,.25),rgba(61,217,178,.2));border-color:var(--brand)}
 
-    /* 全部：两列大图 + 骨架屏（图像尺寸/位置已修正为填满卡片） */
+    /* 全部：两列大图 + 骨架屏 */
     .grid-all{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;padding:16px}
     @media(min-width:1024px){.grid-all{grid-template-columns:repeat(3,minmax(0,1fr))}}
     .card-all{display:grid;gap:8px;background:linear-gradient(180deg,#171a24,#12131a 40%);border:1px solid #2a2a44;border-radius:16px;overflow:hidden;cursor:pointer;transition:transform .18s,border-color .18s}
@@ -86,7 +75,7 @@
     .thumb.loaded{opacity:1;animation:none;transition:opacity .4s}
     @keyframes pulse{0%{opacity:.4}50%{opacity:.9}100%{opacity:.4}}
 
-    /* 详情分组（热菜/主食/凉拌菜） */
+    /* 详情分组（热菜/主食/凉拌） */
     .section{margin:18px var(--safe)}
     .section-header{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:6px 0 10px;padding:10px 12px;border:1px solid #2a2a44;border-radius:12px;background:linear-gradient(180deg,#12131a,#11121a);position:sticky;top:56px;z-index:5;backdrop-filter:blur(6px)}
     .section-title{display:flex;gap:10px;align-items:center;font-weight:900}
@@ -158,21 +147,21 @@
   <div id="toast" aria-live="polite"></div>
   <main id="menu-root"></main>
 
-  <!-- 购物车 / 自定义 / 提交 （已将“自定义点菜”与“提交订单”位置对调） -->
+  <!-- 购物车 / 自定义 / 提交（已交换位置：自定义在上，提交在下） -->
   <button id="cartBtn">🛒 购物车 <small id="cartCount">(0)</small></button>
   <aside id="drawer" aria-hidden="true">
     <div class="drawer-hd"><strong>🛒 购物车</strong><button class="btn" id="closeDrawer">关闭</button></div>
     <div class="drawer-ct" id="cartList"></div>
     <div class="drawer-ft">
       <input id="nickname" placeholder="备注 / 桌号 (选填)" class="btn" style="padding:10px;border-radius:10px;background:#161622" />
-      <!-- ① 自定义点菜（上移到提交订单之上） -->
+      <!-- 自定义点菜（上） -->
       <div style="display:grid;gap:8px;margin-top:8px">
         <div style="font-weight:700;opacity:.9">✍️ 自定义点菜</div>
         <input id="cName" placeholder="菜名（必填）" class="btn" style="padding:10px;border-radius:10px;background:#161622">
         <input id="cIngs" placeholder="食材（可选，逗号分隔）" class="btn" style="padding:10px;border-radius:10px;background:#161622">
         <button id="addCustom" class="btn">加入购物车（自定义）</button>
       </div>
-      <!-- ② 提交订单（下移） -->
+      <!-- 提交订单（下） -->
       <button class="btn" id="submitOrder" style="background:linear-gradient(135deg,#7c5cff,#ffd166);color:#0b0b0e">提交订单</button>
       <button class="btn" id="clearCart">清空</button>
     </div>
@@ -182,12 +171,12 @@
 
   <script>
     const BASE = '/shenyeshitang';
-    const ROOM_LOCK    = '家庭聚餐';  // 固定房间（管理员 & 用户）
+    const ROOM_LOCK    = '家庭聚餐';
     const qs           = new URLSearchParams(location.search);
     const isPWA        = (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) || (navigator.standalone === true);
     const savedAdmin   = localStorage.getItem('adminMode') === '1';
     const ADMIN        = qs.get('admin') === '1' || (isPWA && savedAdmin);
-    const ROOM_EFFECTIVE = ROOM_LOCK; // 全站统一
+    const ROOM_EFFECTIVE = ROOM_LOCK;
     if (ADMIN) document.body.classList.add('admin-on');
 
     /* ===== DOM ===== */
@@ -206,7 +195,7 @@
     const cIngs=document.getElementById('cIngs');
     const addCustom=document.getElementById('addCustom');
 
-    /* ===== Emoji 盘子（保持 v35：可替换为图片优先） ===== */
+    /* Emoji → <img> */
     function iconSVG(e,label){
       const svg=encodeURIComponent(`<?xml version='1.0'?>\n<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 220 220'>\n<defs><linearGradient id='g' x1='0' y1='0' x2='1' y2='1'><stop offset='0%' stop-color='#7c5cff'/><stop offset='100%' stop-color='#3dd9b2'/></linearGradient></defs>\n<rect width='220' height='220' rx='28' fill='url(#g)'/>\n<circle cx='110' cy='118' r='72' fill='white'/><circle cx='110' cy='118' r='58' fill='#f4f4f4'/>\n<text x='110' y='124' font-size='72' text-anchor='middle'>${e||'🍽️'}</text>\n<rect x='60' y='168' width='100' height='28' rx='14' fill='rgba(0,0,0,.45)'/>\n<text x='110' y='184' font-size='14' text-anchor='middle' fill='white' font-weight='700'>${label}</text>\n</svg>`);
       const im=new Image(); im.className='thumb loaded'; im.alt=label; im.src='data:image/svg+xml;utf8,'+svg; return im;
@@ -215,8 +204,31 @@
 
     /* ===== 菜单渲染 ===== */
     let MENU=[];
+    // 详细卡片小组（可折叠）
+    function renderGroupSection(title, items, expanded=true){
+      const sec=document.createElement('section'); sec.className='section'; sec.setAttribute('aria-expanded', expanded?'true':'false');
+      const header=document.createElement('div'); header.className='section-header';
+      const left=document.createElement('div'); left.className='section-title';
+      left.innerHTML=`<span>${title}</span><span class="section-sub">共 ${items.length} 道</span>`;
+      const btn=document.createElement('button'); btn.type='button'; btn.className='section-toggle'; btn.textContent=expanded?'收起':'展开';
+      btn.addEventListener('click',(ev)=>{ev.stopPropagation(); const now=sec.getAttribute('aria-expanded')==='true'; sec.setAttribute('aria-expanded',now?'false':'true'); btn.textContent=now?'展开':'收起';});
+      header.addEventListener('click',()=>btn.click());
+      const grid=document.createElement('div'); grid.className='grid';
+      items.forEach(it=>{
+        const card=document.createElement('article'); card.className='card';
+        const imgbox=document.createElement('div'); imgbox.className='imgbox small'; imgbox.appendChild(mediaFor(it));
+        const content=document.createElement('div'); content.className='content';
+        content.innerHTML=`<h3 class="name">${it.name_cn}${it.name_en?' · '+it.name_en:''}</h3>
+          <p class="desc">${it.desc||''}</p>
+          <div class="tags">${(it.tags||[]).map(t=>`<span class="tag">${t}</span>`).join('')}</div>
+          <button class="add" data-item="${it.name_cn}">加入</button>`;
+        content.querySelector('.add').addEventListener('click',()=>{ cart[it.name_cn]=(cart[it.name_cn]||0)+1; saveCart(); });
+        card.append(imgbox,content); grid.append(card);
+      });
+      sec.append(header,grid); return sec;
+    }
+
     function gridAll(items){
-      // 两列大图（全部页）
       const grid=document.createElement('div'); grid.className='grid-all';
       const q=(searchInput?.value||'').trim().toLowerCase();
       items.filter(it=>{
@@ -232,51 +244,50 @@
       });
       return grid;
     }
-    function gridDetailed(items, titleText){
-      // 详细卡片（热菜 / 主食 / 凉拌菜）
-      const sec=document.createElement('section'); sec.className='section'; sec.setAttribute('aria-expanded','true');
-      const header=document.createElement('div'); header.className='section-header';
-      header.innerHTML=`<div class="section-title"><span>${titleText}</span><span class="section-sub">共 ${items.length} 道</span></div>`;
-      const grid=document.createElement('div'); grid.className='grid';
-      items.forEach(it=>{
-        const card=document.createElement('article'); card.className='card';
-        const imgbox=document.createElement('div'); imgbox.className='imgbox small'; imgbox.appendChild(mediaFor(it));
-        const content=document.createElement('div'); content.className='content';
-        content.innerHTML=`<h3 class="name">${it.name_cn}${it.name_en?' · '+it.name_en:''}</h3>
-          <p class="desc">${it.desc||''}</p>
-          <div class="tags">${(it.tags||[]).map(t=>`<span class="tag">${t}</span>`).join('')}</div>
-          <button class="add" data-item="${it.name_cn}">加入</button>`;
-        content.querySelector('.add').addEventListener('click',()=>{ cart[it.name_cn]=(cart[it.name_cn]||0)+1; saveCart(); });
-        card.append(imgbox,content); grid.append(card);
-      });
-      sec.append(header,grid); return sec;
-    }
+
     function renderMenu(){
       root.innerHTML='';
       const q=(searchInput?.value||'').trim().toLowerCase();
       const filter = document.querySelector('.pill[aria-pressed="true"]')?.dataset.filter || 'all';
 
-      if (filter === 'all') {
-        root.append(gridAll(MENU));
+      if (filter === 'all') { root.append(gridAll(MENU)); return; }
+
+      // 分类筛选
+      const byQ = it => {
+        const hay=(it.name_cn+' '+(it.name_en||'')+' '+(it.tags||[]).join(' ')).toLowerCase();
+        return !q || hay.includes(q);
+      };
+
+      if (filter === 'Main') {
+        // 三个小组：🔥 热菜 / 🥦 素菜 / 🍲 汤类
+        const hot  = MENU.filter(it => byQ(it) && it.category==='Main' && !(it.tags||[]).includes('Soup'));
+        const veg  = MENU.filter(it => byQ(it) && it.category==='Veg'  && !(it.tags||[]).includes('Cold'));
+        const soup = MENU.filter(it => byQ(it) && (it.tags||[]).includes('Soup'));
+        if (hot.length)  root.append(renderGroupSection('🔥 热菜',  hot,  true));
+        if (veg.length)  root.append(renderGroupSection('🥦 素菜',  veg,  true));
+        if (soup.length) root.append(renderGroupSection('🍲 汤类',  soup, true));
         return;
       }
-      let pred, titleText = '菜单';
-      if (filter === 'Main') { pred = it => it.category === 'Main'; titleText = '🔥 热菜'; }
-      if (filter === 'Rice') { pred = it => it.category === 'Rice'; titleText = '🍚 主食'; }
-      if (filter === 'Cold') { pred = it => (it.tags||[]).includes('Cold'); titleText = '🥒 凉拌菜'; }
 
-      const list = MENU.filter(it=>{
-        const hay=(it.name_cn+' '+(it.name_en||'')+' '+(it.tags||[]).join(' ')).toLowerCase();
-        return (!q || hay.includes(q)) && (pred ? pred(it) : true);
-      });
-      root.append(gridDetailed(list, titleText));
+      if (filter === 'Rice') {
+        const list = MENU.filter(it => byQ(it) && it.category==='Rice');
+        root.append(renderGroupSection('🍚 主食', list, true));
+        return;
+      }
+
+      if (filter === 'Cold') {
+        const list = MENU.filter(it => byQ(it) && (it.tags||[]).includes('Cold'));
+        root.append(renderGroupSection('🥒 凉拌菜', list, true));
+        return;
+      }
     }
+
     pills.forEach(btn=>btn.addEventListener('click',()=>{
       pills.forEach(b=>b.setAttribute('aria-pressed','false')); btn.setAttribute('aria-pressed','true'); renderMenu();
     }));
     searchInput?.addEventListener('input', renderMenu);
 
-    /* ===== 购物车 ===== */
+    /* ===== 购物车（保持 v35，不改逻辑） ===== */
     let cart; try { cart = JSON.parse(localStorage.getItem('yd_cart') || '{}'); } catch { cart = {}; }
     function saveCart(){ localStorage.setItem('yd_cart', JSON.stringify(cart)); renderCart(); }
     function renderCart(){
@@ -295,10 +306,10 @@
       });
       count.textContent=`(${total})`;
     }
-    cartBtn.onclick=()=>{ drawer.style.transform='translateY(0)'; drawer.setAttribute('aria-hidden','false'); };
-    closeDrawer.onclick=()=>{ drawer.style.transform='translateY(110%)'; drawer.setAttribute('aria-hidden','true'); };
-    clearCart.onclick=()=>{ cart={}; saveCart(); };
-    addCustom.onclick=()=>{ const name=(cName.value||'').trim(); const ings=(cIngs.value||'').trim(); if(!name){alert('请先输入菜名');return;} const display=ings?`自定义 · ${name}（${ings}）`:`自定义 · ${name}`; cart[display]=(cart[display]||0)+1; saveCart(); };
+    document.getElementById('cartBtn').onclick=()=>{ drawer.style.transform='translateY(0)'; drawer.setAttribute('aria-hidden','false'); };
+    document.getElementById('closeDrawer').onclick=()=>{ drawer.style.transform='translateY(110%)'; drawer.setAttribute('aria-hidden','true'); };
+    document.getElementById('clearCart').onclick=()=>{ cart={}; saveCart(); };
+    document.getElementById('addCustom').onclick=()=>{ const name=(cName.value||'').trim(); const ings=(cIngs.value||'').trim(); if(!name){alert('请先输入菜名');return;} const display=ings?`自定义 · ${name}（${ings}）`:`自定义 · ${name}`; cart[display]=(cart[display]||0)+1; saveCart(); };
     renderCart();
 
     /* ===== 加载菜单 ===== */
@@ -307,7 +318,7 @@
       .then(d=>{ MENU=d; renderMenu(); })
       .catch(e=>{ console.error('加载菜单失败：',e); alert('加载菜单失败：请检查 menu.json 路径'); });
 
-    /* ===== Firestore + 提醒（保持 v35 逻辑，仅把房间改为 ROOM_EFFECTIVE） ===== */
+    /* ===== Firestore + 提醒（保持 v35，仅统一 ROOM_EFFECTIVE） ===== */
     const firebaseConfig = {
       apiKey: "AIzaSyA45H7MVPejI-09EmX3Y9RP0G-BzxKUA0M",
       authDomain: "shenyeshitang-9a3c2.firebaseapp.com",
@@ -336,7 +347,7 @@
         const app=appMod.initializeApp(firebaseConfig);
         db=fsMod.getFirestore(app); fbReady=true;
 
-        if (ADMIN) {
+        if (qs.get('admin') === '1' || (isPWA && localStorage.getItem('adminMode')==='1')) {
           document.body.classList.add('admin-on');
           const adminSection=document.getElementById('admin'); adminSection.style.display='block';
           const headerEl=document.querySelector('header'); document.body.insertBefore(adminSection, headerEl);
@@ -388,12 +399,11 @@
     /* ===== 提交订单（头档 + 逐行）=> 一律写入“家庭聚餐” ===== */
     submitOrder.onclick=async()=>{
       if(Object.keys(cart).length===0){ alert('请先加入菜品'); return; }
-      if(!db){ alert('Firebase 未配置或不可用。'); return; }
+      if(!fbReady){ alert('Firebase 未配置或不可用。'); return; }
       const items=Object.entries(cart).map(([name,qty])=>({name,qty}));
       try{
         const { addDoc, collection, serverTimestamp } =
           await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js');
-
         const headerRef=await addDoc(collection(db,'yd_orders'), {
           room: ROOM_EFFECTIVE, nick:(nickname?.value||''),
           items, status:'pending', doneAt:null, createdAt: serverTimestamp()
