@@ -1,7 +1,7 @@
-// sw.js — 深夜食堂 v3 （GitHub Pages 子路径：/shenyeshitang）
-// 目标：PWA 在线优先；gstatic(Firebase SDK) 永远直连网络；静态资源离线可用
+// sw.js — 深夜食堂 v5（GitHub Pages 子路径：/shenyeshitang）
+// 策略：在线优先；gstatic(Firebase SDK) 永远直连网络；静态资源离线可用
 
-const CACHE = "deepnight-v3-ghpages";
+const CACHE = "deepnight-v5-ghpages";
 const CORE = [
   "/shenyeshitang/",
   "/shenyeshitang/index.html",
@@ -28,11 +28,11 @@ self.addEventListener("activate", (e) => {
   self.clients.claim();
 });
 
-// 获取：gstatic 永远直连；其它 网络优先→缓存；失败回退缓存
+// 获取：gstatic 永远直连；其它 网络优先→写入缓存；失败回退缓存
 self.addEventListener("fetch", (e) => {
   const url = new URL(e.request.url);
 
-  // 1) Firebase SDK 不缓存
+  // 1) Firebase SDK 不缓存，避免 PWA 卡旧版本
   if (url.origin === "https://www.gstatic.com") {
     e.respondWith(fetch(e.request));
     return;
@@ -50,7 +50,7 @@ self.addEventListener("fetch", (e) => {
   );
 });
 
-// （可选）后台 Web Push 兼容：若未来接入 VAPID，可复用
+// （可选）后台 Web Push：未来若接 VAPID/FCM，可直接使用
 self.addEventListener("push", (event) => {
   try {
     const data = event.data ? event.data.json() : {};
@@ -75,7 +75,11 @@ self.addEventListener("notificationclick", (event) => {
   event.waitUntil(
     clients.matchAll({ type: "window", includeUncontrolled: true }).then((list) => {
       for (const c of list) {
-        if ("focus" in c) { c.focus(); c.navigate(url); return; }
+        if ("focus" in c) {
+          c.focus();
+          c.navigate(url);
+          return;
+        }
       }
       if (clients.openWindow) return clients.openWindow(url);
     })
