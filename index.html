@@ -8,6 +8,40 @@
   <link rel="manifest" href="/shenyeshitang/manifest.webmanifest">
   <link rel="apple-touch-icon" href="/shenyeshitang/icons/icon-192.png">
   <title>深夜食堂</title>
+
+  <!-- v34.2 早期重定向：PWA 启动时若记忆为管理员则立刻跳到 ?admin=1&r=... -->
+  <script>
+  (function () {
+    try {
+      var params = new URLSearchParams(location.search);
+      var today = new Date().toLocaleDateString('sv-SE');
+
+      // 这次若 URL 本身就是 admin=1，则记忆管理员与房间（用于下次 PWA 启动）
+      if (params.get('admin') === '1') {
+        var rNow = params.get('r') || today;
+        localStorage.setItem('adminMode', '1');
+        localStorage.setItem('adminRoom', rNow);
+        return; // 本次已经是管理员视图，不跳转
+      }
+
+      // PWA 检测（iOS & 其它）
+      var isPWA = (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches)
+                  || (navigator.standalone === true);
+
+      var savedAdmin = localStorage.getItem('adminMode') === '1';
+      var savedRoom  = localStorage.getItem('adminRoom') || '';
+
+      // 若 PWA 启动且记忆为管理员，则在首时刻跳到管理员视图
+      if (isPWA && savedAdmin) {
+        var r = savedRoom || today;
+        var base = location.pathname.replace(/\/index\.html$/, '/');
+        var url  = base + '?admin=1&r=' + encodeURIComponent(r);
+        if (!params.get('admin')) location.replace(url);
+      }
+    } catch (e) {/* 忽略 */}
+  })();
+  </script>
+
   <style>
     :root{ --bg:#0c0c0f;--panel:#121218;--muted:#8a8fa3;--text:#e9e9f2;--brand:#7c5cff;--brand2:#3dd9b2;--accent:#ffd166;--radius:18px;--shadow:0 10px 30px rgba(0,0,0,.35);--safe:max(env(safe-area-inset-left),16px); }
     *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -89,7 +123,7 @@
   </style>
 </head>
 <body>
-  <!-- 管理员面板 -->
+  <!-- 管理员面板（admin=1 时顶部展示） -->
   <section id="admin" style="display:none;padding:14px var(--safe)">
     <h3>📟 实时订单</h3>
     <div class="toolbar">
@@ -117,8 +151,14 @@
 
   <header>
     <div class="topbar">
-      <div class="brand"><div class="logo" aria-label="moon"></div><div><div class="title">深夜食堂</div></div></div>
-      <div class="search" role="search"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M21 21l-4.35-4.35M10.5 18a7.5 7.5 0 1 1 0-15 7.5 7.5 0 0 1 0 15z" stroke="#8086a3" stroke-width="2" stroke-linecap="round"/></svg><input id="search" type="search" placeholder="搜索菜名/标签…" aria-label="搜索菜单" /></div>
+      <div class="brand">
+        <div class="logo" aria-label="moon"></div>
+        <div><div class="title">深夜食堂</div></div>
+      </div>
+      <div class="search" role="search">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M21 21l-4.35-4.35M10.5 18a7.5 7.5 0 1 1 0-15 7.5 7.5 0 0 1 0 15z" stroke="#8086a3" stroke-width="2" stroke-linecap="round"/></svg>
+        <input id="search" type="search" placeholder="搜索菜名/标签…" aria-label="搜索菜单" />
+      </div>
     </div>
     <div class="tabs" role="tablist" aria-label="分类筛选">
       <button class="pill" data-filter="all" aria-pressed="true">全部</button>
@@ -153,33 +193,19 @@
   <script>
     const BASE = '/shenyeshitang';
 
-    // ---- URL & 记忆：计算 ROOM_EFFECTIVE，自动进入 admin（PWA）----
+    // URL / 记忆 / PWA 环境
     const qs = new URLSearchParams(location.search);
     const TODAY = new Date().toLocaleDateString('sv-SE');
-
-    // 如果这次是 admin 链接，记住身份和房间
-    if (qs.get('admin') === '1') {
-      const rNow = qs.get('r') || TODAY;
-      localStorage.setItem('adminMode', '1');
-      localStorage.setItem('adminRoom', rNow);
-    }
-
     const savedAdmin = localStorage.getItem('adminMode') === '1';
     const savedRoom  = localStorage.getItem('adminRoom') || '';
-    const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+    const isPWA = (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) || (navigator.standalone === true);
 
-    // 最终房间：URL r > 记忆 r > 当天
+    // 最终房间：URL r > 记忆 r > 今天
     const ROOM_EFFECTIVE = qs.get('r') || (savedAdmin && savedRoom ? savedRoom : TODAY);
+    // 最终管理员：URL admin=1 或（PWA 且记忆 admin）
+    const ADMIN = qs.get('admin') === '1' || (isPWA && savedAdmin);
 
-    // PWA 启动且没有 admin 参数，但记忆是 admin → 自动跳转
-    if (isStandalone && !qs.get('admin') && savedAdmin) {
-      location.replace(`${location.pathname}?admin=1&r=${encodeURIComponent(ROOM_EFFECTIVE)}`);
-    }
-
-    // 最终是否 Admin（含记忆 + PWA 场景）
-    const ADMIN = qs.get('admin') === '1' || (isStandalone && savedAdmin);
-
-    // === 顶部/通用元素 ===
+    // 顶部/通用元素
     const root = document.getElementById('menu-root');
     const pills = document.querySelectorAll('.pill');
     const searchInput = document.getElementById('search');
@@ -199,6 +225,7 @@
     let MENU = [];
     let cart; try { cart = JSON.parse(localStorage.getItem('yd_cart') || '{}'); } catch { cart = {}; }
 
+    // Emoji 盘子（emoji 视为已加载）
     const iconSVG = (emoji, label) => {
       const svg = encodeURIComponent(`<?xml version='1.0' encoding='UTF-8'?>
 <svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 220 220'>
@@ -226,14 +253,14 @@
       const wrap = document.createElement('div'); wrap.innerHTML = iconSVG(item.emoji, item.name_cn); return wrap.firstChild;
     }
 
-    // 子分组
+    // 分组定义（热菜页三分组 + 主食 + 凉拌）
     const groupHotHot  = { key:'hot-hot',  title:'🔥 热菜',  filter: it => it.category === 'Main' && !(it.tags||[]).includes('Soup') };
     const groupHotVeg  = { key:'hot-veg',  title:'🥦 素菜',  filter: it => it.category === 'Veg' && !(it.tags||[]).includes('Cold') };
     const groupHotSoup = { key:'hot-soup', title:'🍲 汤类',  filter: it => (it.tags||[]).includes('Soup') };
     const groupStaple  = { key:'staple',   title:'🍚 主食',  filter: it => it.category === 'Rice' };
     const groupCold    = { key:'cold',     title:'🥒 凉拌菜', filter: it => (it.tags||[]).includes('Cold') };
 
-    // 详细分组卡片
+    // 分组渲染（热菜/主食/凉拌）
     function renderSection(title, items, expanded = true){
       const sec = document.createElement('section'); sec.className='section'; sec.setAttribute('aria-expanded', expanded?'true':'false');
       const header = document.createElement('div'); header.className='section-header';
@@ -343,14 +370,18 @@
     const firebaseConfig = { apiKey:"AIzaSyA45H7MVPejI-09EmX3Y9RP0G-BzxKUA0M", authDomain:"shenyeshitang-9a3c2.firebaseapp.com", projectId:"shenyeshitang-9a3c2", storageBucket:"shenyeshitang-9a3c2.firebasestorage.app", messagingSenderId:"293937999981", appId:"1:293937999981:web:364b69c1ea61b48e8acf64" };
     let db=null; let fbReady=false;
 
-    // toast & 叮声
-    function showToast(msg){ const wrap=document.getElementById('toast'); const el=document.createElement('div'); el.className='toast'; el.textContent=msg; wrap.appendChild(el); setTimeout(()=>{el.style.opacity='0'; el.style.transition='opacity .4s';},2600); setTimeout(()=>{wrap.removeChild(el);},3000); }
+    function showToast(msg){
+      const wrap=document.getElementById('toast'); const el=document.createElement('div');
+      el.className='toast'; el.textContent=msg; wrap.appendChild(el);
+      setTimeout(()=>{ el.style.opacity='0'; el.style.transition='opacity .4s'; }, 2600);
+      setTimeout(()=>{ wrap.removeChild(el); }, 3000);
+    }
     const ding = new Audio("data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEAESsAACJWAAACABYAAAAgAAAASAAAAGZmZmZmZmZmZmY=");
     function softAlert(title, body){ try{ ding.currentTime=0; ding.play().catch(()=>{});}catch{} if(navigator.vibrate){ try{navigator.vibrate(120);}catch{} } showToast(`${title} · ${body}`); }
 
     async function requestNotify(){ if(!('Notification'in window)) return false; if(Notification.permission==='granted') return true; if(Notification.permission==='denied') return false; return (await Notification.requestPermission())==='granted'; }
     function systemNotify(title, body){ if(!('Notification'in window)||Notification.permission!=='granted') return false; new Notification(title,{body}); return true; }
-    function alertNewLine(d){ const title=`新订单 · ${d.name} × ${d.qty}`; const body=`${d.nick||'-'} · 房间 ${ROOM_EFFECTIVE}`; if(!systemNotify(title,body)) softAlert(title,body); }
+    function alertNewLine(d){ const title=`新订单 · ${d.name} × ${d.qty}`; const body=`${d.nick||'-'} · 房间 ${ROOM_EFFECTIVE}`; if(!systemNotify(title, body)) softAlert(title, body); }
 
     (async () => {
       try{
@@ -380,7 +411,7 @@
 
           onSnapshot(qLines, snap => {
             const tbody = document.getElementById('adminRows'); tbody.innerHTML='';
-            const rows = []; snap.forEach(d => { const data=d.data(); const ts=data.createdAt?.toMillis?.()?data.createdAt.toMillis():0; rows.push({id:d.id,data,ts}); });
+            const rows = []; snap.forEach(d => { const data=d.data(); const ts=d.createdAt?.toMillis?.()?d.createdAt.toMillis():0; rows.push({id:d.id,data,ts}); });
             rows.sort((a,b)=>b.ts-a.ts);
             rows.forEach(({id,data})=>{
               const isDone = data.status==='done'; if(document.getElementById('showPendingOnly').checked && isDone) return;
@@ -431,18 +462,18 @@
 
         const linesCol = collection(db,'yd_order_lines');
         await Promise.all(items.map(it => addDoc(linesCol, {
-          room: ROOM_EFFECTIVE, nick: nickname.value.trim(), orderId: headerRef.id,
-          name: it.name, qty: it.qty, status: 'pending', doneAt: null, createdAt: serverTimestamp()
+          room: ROOM_EFFECTIVE, nick: nickname.value.trim(),
+          orderId: headerRef.id, name: it.name, qty: it.qty,
+          status: 'pending', doneAt: null, createdAt: serverTimestamp()
         })));
 
         cart = {}; saveCart(); drawer.classList.remove('open'); showToast('已提交');
       }catch(err){ alert('提交失败：'+err.message); }
     };
 
-    // 事件绑定
-    const pillsAll = document.querySelectorAll('.pill');
-    pillsAll.forEach(btn => btn.addEventListener('click', () => {
-      pillsAll.forEach(b => b.setAttribute('aria-pressed','false'));
+    // 事件绑定（只声明一次）
+    pills.forEach(btn => btn.addEventListener('click', () => {
+      pills.forEach(b => b.setAttribute('aria-pressed','false'));
       btn.setAttribute('aria-pressed','true'); activeFilter = btn.dataset.filter; renderMenu();
     }));
     searchInput?.addEventListener('input', renderMenu);
@@ -450,17 +481,6 @@
     closeDrawer.onclick = ()=>{ drawer.classList.remove('open'); drawer.setAttribute('aria-hidden','true'); };
     clearCart.onclick = ()=>{ cart = {}; saveCart(); };
     renderCart();
-
-    // toast 容器
-    function showToast(msg){
-      const wrap = document.getElementById('toast');
-      const el = document.createElement('div');
-      el.className = 'toast';
-      el.textContent = msg;
-      wrap.appendChild(el);
-      setTimeout(()=>{ el.style.opacity='0'; el.style.transition='opacity .4s'; }, 2600);
-      setTimeout(()=>{ wrap.removeChild(el); }, 3000);
-    }
   </script>
 </body>
 </html>
