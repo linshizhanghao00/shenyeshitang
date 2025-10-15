@@ -71,7 +71,7 @@
     .pill{border:1px solid #28283e;background:#13131b;color:var(--text);padding:10px 14px;border-radius:999px;font-size:14px;cursor:pointer}
     .pill[aria-pressed="true"]{background:linear-gradient(135deg,rgba(124,92,255,.25),rgba(61,217,178,.2));border-color:var(--brand)}
 
-    /* 全部/分类：两列大图（与你在用版本一致） */
+    /* 两列大图 */
     .grid-all{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;padding:16px}
     @media(min-width:1024px){.grid-all{grid-template-columns:repeat(3,minmax(0,1fr))}}
     .card-all{display:grid;gap:8px;background:linear-gradient(180deg,#171a24,#12131a 40%);border:1px solid #2a2a44;border-radius:16px;overflow:hidden;cursor:pointer;transition:transform .18s,border-color .18s}
@@ -274,6 +274,25 @@
 
     /* ================= 管理员实时订单 + 提交订单（v10 模块化） ================= */
 
+    // 通用 Firestore 初始化：admin/非admin 共用
+    const _firebaseConfig = {
+      apiKey: "AIzaSyA45H7MVPejI-09EmX3Y9RP0G-BzxKUA0M",
+      authDomain: "shenyeshitang-9a3c2.firebaseapp.com",
+      projectId: "shenyeshitang-9a3c2",
+      storageBucket: "shenyeshitang-9a3c2.firebasestorage.app",
+      messagingSenderId: "293937999981",
+      appId: "1:293937999981:web:364b69c1ea61b48e8acf64"
+    };
+    async function ensureDb() {
+      if (window.__fs && window.__db) return { fs: window.__fs, db: window.__db };
+      const appMod = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js');
+      const fsMod  = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js');
+      const app    = appMod.initializeApp(_firebaseConfig);
+      const db     = fsMod.getFirestore(app);
+      window.__fs = fsMod; window.__db = db;
+      return { fs: fsMod, db };
+    }
+
     // 1) 管理员：把面板插到页面最上方，然后订阅
     (function(){
       if (!ADMIN) return;
@@ -290,21 +309,9 @@
         document.body.classList.add('admin-on');
       } catch(e) {}
 
-      var firebaseConfig = {
-        apiKey: "AIzaSyA45H7MVPejI-09EmX3Y9RP0G-BzxKUA0M",
-        authDomain: "shenyeshitang-9a3c2.firebaseapp.com",
-        projectId: "shenyeshitang-9a3c2",
-        storageBucket: "shenyeshitang-9a3c2.firebasestorage.app",
-        messagingSenderId: "293937999981",
-        appId: "1:293937999981:web:364b69c1ea61b48e8acf64"
-      };
-
       (async function(){
         try{
-          const appMod = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js');
-          const fsMod  = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js');
-          const app    = appMod.initializeApp(firebaseConfig);
-          const db     = fsMod.getFirestore(app);
+          const { fs, db } = await ensureDb();
 
           // 提醒按钮
           var enableBtn = document.getElementById('enableNotify');
@@ -315,13 +322,9 @@
           }
 
           // 订阅“家庭聚餐”的逐行订单
-          const qLines = fsMod.query(
-            fsMod.collection(db, 'yd_order_lines'),
-            fsMod.where('room', '==', ROOM_EFFECTIVE)
-          );
-
+          const qLines = fs.query(fs.collection(db, 'yd_order_lines'), fs.where('room', '==', ROOM_EFFECTIVE));
           var firstLoad = true;
-          fsMod.onSnapshot(qLines, function(snap){
+          fs.onSnapshot(qLines, function(snap){
             var tbody = document.getElementById('adminRows'); if (!tbody) return;
             tbody.innerHTML = '';
             var rows = [];
@@ -339,7 +342,7 @@
               var tdOp = document.createElement('td'); var btn = document.createElement('button'); btn.className='btn'; btn.textContent = isDone ? '撤销' : '完成';
               btn.onclick = async function(){
                 try{
-                  await fsMod.updateDoc(fsMod.doc(db, 'yd_order_lines', row.id), { status: isDone ? 'pending' : 'done', doneAt: isDone ? null : new Date()});
+                  await fs.updateDoc(fs.doc(db, 'yd_order_lines', row.id), { status: isDone ? 'pending' : 'done', doneAt: isDone ? null : new Date()});
                 }catch(e){ alert('更新失败：'+e.message); }
               };
               tdOp.appendChild(btn); tr.appendChild(tdOp); tbody.appendChild(tr);
@@ -368,13 +371,13 @@
             markAllBtn.onclick = async function(){
               if (!confirm('将当前显示的订单全部标记为完成？')) return;
               try{
-                const snap2 = await fsMod.getDocs(qLines);
+                const snap2 = await fs.getDocs(qLines);
                 const ops = [];
                 const onlyPending = document.getElementById('showPendingOnly')?.checked;
                 snap2.forEach(function(d){
                   var data=d.data();
                   if (onlyPending && data.status === 'done') return;
-                  if (data.status !== 'done') ops.push(fsMod.updateDoc(fsMod.doc(db, 'yd_order_lines', d.id), { status: 'done', doneAt: new Date() }));
+                  if (data.status !== 'done') ops.push(fs.updateDoc(fs.doc(db, 'yd_order_lines', d.id), { status: 'done', doneAt: new Date() }));
                 });
                 await Promise.all(ops); alert('已标记完成');
               }catch(e){ alert('批量完成失败：'+e.message); }
@@ -384,22 +387,25 @@
           var info = document.getElementById('roomInfo');
           if (info) info.textContent = '房间：'+ROOM_EFFECTIVE+'（固定）';
 
-          // 提交按钮：真正写入 Firestore（头档+逐行）
-          submitOrder.onclick = async function() {
+          // 2) 提交按钮（admin/非admin 共用）
+          submitOrder.onclick = async function () {
             if (Object.keys(cart).length === 0) { alert('请先加入菜品'); return; }
             try {
-              const nick = nickname?.value?.trim() || '';
-              const items = Object.entries(cart).map(([name, qty]) => ({ name, qty }));
-              const headerRef = await fsMod.addDoc(fsMod.collection(db, "yd_orders"), {
-                room: ROOM_EFFECTIVE, nick, items,
-                status: "pending", doneAt: null, createdAt: fsMod.serverTimestamp()
+              const nick = (nickname && nickname.value ? nickname.value.trim() : '');
+              const items = Object.entries(cart).map(function([name, qty]){ return { name:name, qty:qty }; });
+
+              const headerRef = await fs.addDoc(fs.collection(db, "yd_orders"), {
+                room: ROOM_EFFECTIVE, nick: nick, items: items,
+                status: "pending", doneAt: null, createdAt: fs.serverTimestamp()
               });
-              await Promise.all(
-                items.map(it => fsMod.addDoc(fsMod.collection(db, "yd_order_lines"), {
-                  room: ROOM_EFFECTIVE, nick, orderId: headerRef.id,
-                  name: it.name, qty: it.qty, status: "pending", doneAt: null, createdAt: fsMod.serverTimestamp()
-                }))
-              );
+
+              await Promise.all(items.map(function(it){
+                return fs.addDoc(fs.collection(db, "yd_order_lines"), {
+                  room: ROOM_EFFECTIVE, nick: nick, orderId: headerRef.id,
+                  name: it.name, qty: it.qty, status: "pending", doneAt: null, createdAt: fs.serverTimestamp()
+                });
+              }));
+
               cart = {}; saveCart(); drawer.style.transform = "translateY(110%)"; alert("✅ 已提交成功");
             } catch (e) {
               console.error("提交失败：", e); alert("提交失败：" + e.message);
@@ -412,6 +418,28 @@
         }
       })();
     })();
+
+    // 普通用户也能提交（若上面 admin 分支未覆盖，则用通用 ensureDb 绑定一次）
+    submitOrder.onclick = submitOrder.onclick || (async function () {
+      if (Object.keys(cart).length === 0) { alert('请先加入菜品'); return; }
+      try {
+        const { fs, db } = await ensureDb();
+        const nick = (nickname && nickname.value ? nickname.value.trim() : '');
+        const items = Object.entries(cart).map(([name, qty]) => ({ name, qty }));
+        const headerRef = await fs.addDoc(fs.collection(db, "yd_orders"), {
+          room: ROOM_EFFECTIVE, nick, items,
+          status: "pending", doneAt: null, createdAt: fs.serverTimestamp()
+        });
+        await Promise.all(items.map(it => fs.addDoc(fs.collection(db, "yd_order_lines"), {
+          room: ROOM_EFFECTIVE, nick, orderId: headerRef.id,
+          name: it.name, qty: it.qty, status: "pending", doneAt: null, createdAt: fs.serverTimestamp()
+        })));
+        cart = {}; saveCart(); drawer.style.transform = "translateY(110%)"; alert("✅ 已提交成功");
+      } catch (e) {
+        console.error("提交失败：", e); alert("提交失败：" + e.message);
+      }
+    });
+
     /* ================= /管理员实时订单 + 提交订单 ================= */
   </script>
 </body>
