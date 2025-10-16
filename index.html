@@ -413,6 +413,61 @@ thead{ background:#f2e8d9 !important; }
   transform: translateY(1px);
   box-shadow: 0 1px 2px rgba(0,0,0,.18) inset !important;
 }
+/* 统一 “加入” 按钮配色为浅鼠尾草绿 */
+.card .add,
+.card .btn.add {
+  background: linear-gradient(180deg, #cfd8cf, #bfc9c0) !important;
+  border: 1px solid #aebaaf !important;
+  color: #3d413b !important;          /* 深一点的灰，不是黑 */
+  font-weight: 700 !important;
+  font-size: 14px !important;
+  padding: 8px 18px !important;
+  border-radius: 8px !important;
+  box-shadow: 0 2px 3px rgba(0,0,0,.12) !important;
+  transition: all .15s ease;
+}
+.card .add:hover,
+.card .btn.add:hover {
+  background: linear-gradient(180deg, #d8e0d8, #c8d2c8) !important;
+}
+.card .add:active,
+.card .btn.add:active {
+  background: linear-gradient(180deg, #b8c2b8, #aeb8ae) !important;
+  transform: translateY(1px);
+  box-shadow: 0 1px 2px rgba(0,0,0,.18) inset !important;
+}
+/* 抽屉改为三段式：头部固定 + 中间滚动 + 底部固定 */
+#drawer{
+  display: flex !important;
+  flex-direction: column !important;
+  max-height: calc(100vh - 20px) !important;   /* 更贴近全屏 */
+}
+.drawer-ct{
+  flex: 1 1 auto !important;
+  overflow: auto !important;
+  -webkit-overflow-scrolling: touch !important; /* iOS 惯性滚动 */
+  overscroll-behavior: contain !important;      /* 防止穿透到底层页面 */
+}
+.drawer-ft{
+  position: sticky;
+  bottom: 0;
+  background: inherit;    /* 视觉连贯 */
+  padding-bottom: calc(14px + env(safe-area-inset-bottom, 0px)) !important;
+}
+/* 购物车“清空”按钮（轻量外观） */
+.btn.ghost{
+  background: linear-gradient(180deg, #fbfaf7, #f3eee6) !important;
+  border: 1px solid #cfc5b3 !important;
+  color: #6a655b !important;
+  box-shadow: 0 1px 2px rgba(0,0,0,.08) !important;
+  font-weight: 700 !important;
+}
+.btn.ghost:hover{
+  background: linear-gradient(180deg, #ffffff, #f7f2ea) !important;
+}
+.btn.ghost:active{
+  background: linear-gradient(180deg, #f0e9df, #e7dfd3) !important;
+}
   </style>
 </head>
 <body>
@@ -460,7 +515,7 @@ thead{ background:#f2e8d9 !important; }
     <div class="drawer-hd"><strong>🛒 购物车</strong><button class="btn" id="closeDrawer">关闭</button></div>
     <div class="drawer-ct" id="cartList"></div>
     <div class="drawer-ft">
-      <input id="nickname" placeholder="备注 / 桌号 (选填)" class="btn" />
+      <button id="clearCart" class="btn ghost">清空</button>
       <div style="display:grid;gap:8px;margin-top:8px">
         <div style="font-weight:700;opacity:.9">✍️ 自定义点菜</div>
         <input id="cName" placeholder="菜名（必填）" class="btn">
@@ -468,7 +523,7 @@ thead{ background:#f2e8d9 !important; }
         <button id="addCustom" class="btn">加入购物车（自定义）</button>
       </div>
       <button class="btn" id="submitOrder" style="background:linear-gradient(135deg,#7c5cff,#ffd166);color:#0b0b0e">提交订单</button>
-      <button class="btn" id="clearCart">清空</button>
+      
     </div>
   </aside>
 
