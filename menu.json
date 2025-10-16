@@ -2,7 +2,7 @@
   { "name_cn": "酸汤肥牛", "name_en": "Beef Slices in Sour Broth", "category": "Main", "tags": ["Beef","Sour-Spicy"], "emoji": "🍲", "desc": "开胃酸辣，鲜嫩肥牛片配金针菇、酸汤。" },
   { "name_cn": "青椒肉丝", "name_en": "Shredded Pork with Green Pepper", "category": "Main", "tags": ["Pork","Pepper"], "emoji": "🫑", "desc": "脆嫩青椒配滑嫩肉丝，酱香下饭。" },
   { "name_cn": "洋葱炒肉", "name_en": "Pork with Onion", "category": "Main", "tags": ["Pork","Homestyle"], "emoji": "🧅", "desc": "洋葱焦香与肉片酱香融合，米饭杀手。" },
-  { "name_cn": "辣椒醋炒蛋", "name_en": "Chili-Vinegar Scrambled Egg", "category": "Main", "tags": ["Egg","Chili"], "emoji": "🌶️", "desc": "酸辣提味，鸡蛋松软多汁，风味独特。" },
+  { "name_cn": "辣椒醋炒蛋", "name_en": "Chili-Vinegar Scrambled Egg", "category": "Veg", "tags": ["Egg","Chili"], "emoji": "🌶️", "desc": "酸辣提味，鸡蛋松软多汁，风味独特。" },
   { "name_cn": "咖喱", "name_en": "Curry", "category": "Main", "tags": ["Comfort"], "emoji": "🍛", "desc": "温和辛香，土豆与胡萝卜的软糯与咖喱香融合。" },
 
   { "name_cn": "蒜油意面", "name_en": "Aglio e Olio Pasta", "category": "Rice", "tags": ["Pasta","Garlic","Noodle"], "emoji": "🍝", "desc": "橄榄油与蒜香融合，简单又经典。" },
