@@ -2,7 +2,7 @@
   "name": "深夜食堂 · 点单",
   "short_name": "深夜食堂",
   "id": "/shenyeshitang/user",
-  "start_url": "/shenyeshitang/index.html?v=v6",
+  "start_url": "/shenyeshitang/index.html?v=v7",
   "scope": "/shenyeshitang/",
   "display": "standalone",
   "background_color": "#0c0c0f",
