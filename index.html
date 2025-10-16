@@ -491,6 +491,20 @@ function iconSVG(e, label){
       var btn=document.createElement('button'); btn.className='section-toggle'; btn.textContent='收起';
       btn.onclick=function(){ var now=sec.getAttribute('aria-expanded')==='true'; sec.setAttribute('aria-expanded',now?'false':'true'); btn.textContent=now?'展开':'收起'; };
       header.appendChild(btn);
+      
+        // ===== 改为：整条标题栏都可收起展开 =====
+  function toggle(){
+    var open = sec.getAttribute('aria-expanded') !== 'false';
+    sec.setAttribute('aria-expanded', open ? 'false' : 'true');
+    btn.textContent = open ? '展开' : '收起';
+  }
+  // 点击按钮
+  btn.addEventListener('click', function(e){ e.stopPropagation(); toggle(); });
+  // 点击整条 header 也可触发（除按钮本身外）
+  header.addEventListener('click', function(e){
+    if (e.target === btn) return; // 避免重复触发
+    toggle();
+  });
       var grid=document.createElement('div'); grid.className='grid';
       items.forEach(function(it){
         var card=document.createElement('article'); card.className='card';
