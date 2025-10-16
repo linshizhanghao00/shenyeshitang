@@ -557,6 +557,13 @@ thead{ background:#f2e8d9 !important; }
   -webkit-overflow-scrolling: touch !important;
   overscroll-behavior: contain !important;
 }
+/* 只允许头/尾承载下拉手势，且自身不触发页面滚动 */
+#drawer .drawer-hd,
+#drawer .drawer-ft{
+  touch-action: none;                 /* 避免顶部位移（过度下拉时不“拽”头部） */
+  -webkit-user-select: none;
+  user-select: none;
+}
   </style>
 </head>
 <body>
@@ -822,8 +829,7 @@ function iconSVG(e, label){
   drawer.style.transform = 'translateY(0) translateZ(0)';     // 👈
   drawer.setAttribute('aria-hidden', 'false');
 };
-// ============================================
-   /* ============================================
+
    
 
 /* 关闭抽屉 */
@@ -832,24 +838,19 @@ function iconSVG(e, label){
   drawer.setAttribute('aria-hidden', 'true');
 };
 /* ============================================
-   Bottom Sheet 两档（full/peek）拖拽 v5（列表未到顶也可下拉）
-   - 打开默认 peek（自适应内容高度，上限 full）
-   - 手势只在结束时切档（不卡顿）
-   - full ↔ peek ↔ close 三态
-   - 列表区域：下拉时当 scrollTop 到 0 会“接管手势”（edge absorb）
+   Bottom Sheet 两档（full/peek）拖拽 v6（头/尾可下拉；列表仅滚）
+   - 打开默认 peek（自适应内容，上限 full）
+   - 只在手势结束时切档：full ↔ peek ↔ close（不卡顿）
+   - 头/尾可下拉；中部列表只滚动（任何时刻）
+   - 清空/减少后：打开状态自动回到 peek，并根据内容自适应高度
 ============================================ */
 (function(){
-  var SHEET_FULL = 0;      // 全屏高度
-  var SHEET_PEEK = 0;      // 中档高度（随内容变化）
-  var MODE = 'closed';     // 'closed' | 'peek' | 'full'
+  var SHEET_FULL = 0;   // 全屏高度
+  var SHEET_PEEK = 0;   // 中档高度（随内容）
+  var MODE = 'closed';  // 'closed' | 'peek' | 'full'
 
-  var dragging = false;        // 是否有手势
-  var headerDrag = false;      // 从头部开始
-  var listDrag   = false;      // 从列表开始
-  var captured   = false;      // 列表下拉接管（到顶后才算）
-  var startY = 0;              // 手势起点
-  var anchorY = 0;             // 接管起点（列表到顶的那一刻）
-  var startTime = 0;
+  var dragging = false, fromHeader = false, fromFooter = false;
+  var startY = 0, startTime = 0;
 
   var hd = document.querySelector('#drawer .drawer-hd');
   var ct = document.querySelector('#drawer .drawer-ct');
@@ -861,93 +862,71 @@ function iconSVG(e, label){
 
   function computeHeights(){
     var vh = window.innerHeight || document.documentElement.clientHeight || 800;
-    SHEET_FULL = px(Math.min(vh * 0.92, vh - 16));
+    SHEET_FULL = px(Math.min(vh * 0.92, vh - 16));                 // full ≈ 92vh
 
     var headH = hd ? hd.offsetHeight : 48;
     var footH = ft ? ft.offsetHeight  : 140;
-    var contentMax = Math.max(0, SHEET_FULL - headH - footH - 8);
+    var contentMax = Math.max(0, SHEET_FULL - headH - footH - 8);  // 中部能用的空间
     var contentH = ct ? Math.min(ct.scrollHeight, contentMax) : 0;
 
-    SHEET_PEEK = px(headH + contentH + footH + 8);
-    SHEET_PEEK = Math.max(SHEET_PEEK, px(headH + footH + 8)); // 至少显示头+尾
+    SHEET_PEEK = px(headH + contentH + footH + 8);                  // 自适应中档
+    SHEET_PEEK = Math.max(SHEET_PEEK, px(headH + footH + 8));       // 至少显示头+尾
   }
 
   function applyMode(next){
     computeHeights();
-    if (next === 'full'){ setHeight(SHEET_FULL); MODE = 'full'; }
-    else if (next === 'peek'){ setHeight(SHEET_PEEK); MODE = 'peek'; }
-    else { drawer.style.height = ''; MODE = 'closed'; }
+    if (next === 'full'){ setHeight(SHEET_FULL); MODE='full'; }
+    else if (next === 'peek'){ setHeight(SHEET_PEEK); MODE='peek'; }
+    else { drawer.style.height=''; MODE='closed'; }
   }
 
-  /* ---- 增强 open/close，不改你的显示/隐藏 ---- */
+  /* ---- 增强 open/close（不改你的显示/隐藏） ---- */
   var _openOrig  = cartBtn.onclick;
   var _closeOrig = closeDrawer.onclick;
 
   cartBtn.onclick = function(){
     computeHeights();
-    setHeight(SHEET_PEEK);            // 打开默认 peek
+    setHeight(SHEET_PEEK);                 // ✅ 默认 peek
     MODE = 'peek';
     if (typeof _openOrig === 'function') _openOrig();
   };
   closeDrawer.onclick = function(){
-    drawer.style.height = '';         // 还原 auto
+    drawer.style.height = '';              // 归位
     MODE = 'closed';
     if (typeof _closeOrig === 'function') _closeOrig();
   };
 
-  // 渲染购物车后：若在 peek，跟随内容自适应高度
+  /* 购物车渲染后：若打开，则回到 peek 并自适应高度（满足 3 & 4） */
   var _renderCartOrig = renderCart;
   renderCart = function(){
     _renderCartOrig();
-    if (isOpen() && MODE === 'peek'){ computeHeights(); setHeight(SHEET_PEEK); }
+    if (isOpen()){
+      applyMode('peek');                   // 打开状态统一回到 peek（高度随菜多少变化）
+    }
   };
 
-  /* ---------- 拖拽：支持列表未到顶也能下拉 ----------
-     规则：
-     - 头部任意时刻可拖；
-     - 列表区域：向下滑，如果此时 scrollTop>0 → 正常滚动；当 scrollTop==0 时开始“接管”手势；
-     - 过程不改高度；只在 end 根据阈值切换档位（不卡顿）
-  -------------------------------------------------- */
+  /* ---------- 拖拽（只有头/尾能触发；列表只滚动） ---------- */
+  function inHeader(t){ return hd && (t===hd || hd.contains(t)); }
+  function inFooter(t){ return ft && (t===ft || ft.contains(t)); }
+
   function onStart(e){
     var t = e.touches ? e.touches[0] : e;
     var target = e.target;
-    dragging = true;
-    startY = t.clientY; startTime = Date.now();
-    headerDrag = (hd && (target === hd || hd.contains(target)));
-    listDrag   = (ct && (target === ct || ct.contains(target)));
-    captured   = headerDrag ? true : false; // 头部立即接管；列表需要到顶再接管
-    anchorY    = startY;                    // 接管起点（列表到顶的那一刻）
+    fromHeader = inHeader(target);
+    fromFooter = inFooter(target);
+    dragging   = fromHeader || fromFooter;            // 只允许头/尾启动手势
+    if (!dragging) return;
+
+    startY = t.clientY;
+    startTime = Date.now();
+    // 防误触橡皮筋：锁住头/尾默认滚动
+    if (e.cancelable) e.preventDefault();
   }
 
   function onMove(e){
     if (!dragging) return;
-    var t = e.touches ? e.touches[0] : e;
-    var dy = t.clientY - startY;
-
-    if (headerDrag){
-      // 头部开始：允许任意方向，过程不变高
-      return;
-    }
-
-    if (listDrag){
-      // 向上滑：让列表正常滚动
-      if (dy < 0) return;
-
-      // 向下滑：当列表到顶时开始接管
-      if (!captured){
-        if (ct.scrollTop <= 0){
-          captured = true;
-          anchorY = t.clientY; // 从到顶这一刻开始计算有效位移
-          // 防止 iOS 橡皮筋穿透
-          if (e.cancelable) e.preventDefault();
-        } else {
-          return; // 仍让列表滚
-        }
-      } else {
-        // 已接管：避免页面回弹
-        if (e.cancelable) e.preventDefault();
-      }
-    }
+    // 不改 height，保持头部“锁在上沿”；允许中部列表自己滚动
+    if (e.cancelable) e.preventDefault();
   }
 
   function onEnd(e){
@@ -955,20 +934,19 @@ function iconSVG(e, label){
     dragging = false;
 
     var t  = (e.changedTouches && e.changedTouches[0]) ? e.changedTouches[0] : e;
-    var dyRaw = t.clientY - startY;
-    var dy = headerDrag ? dyRaw : (captured ? (t.clientY - anchorY) : 0); // 列表只有接管后才有有效位移
+    var dy = t.clientY - startY;                           // >0 向下 <0 向上
     var dt = Math.max(1, Date.now() - startTime);
-    var v  = dy / dt; // px/ms，向下为正
+    var v  = dy / dt;                                      // px/ms
 
-    if (!isOpen()){ return; } // 已被关闭
+    if (!isOpen()) return;
+
+    // 阈值（更稳的两档）
+    var DOWN_TO_CLOSE_FROM_PEEK = 160;   // peek 下拉关闭（手感可微调）
+    var UP_TO_FULL_FROM_PEEK    =  80;   // peek 上推全屏
+    var DOWN_TO_PEEK_FROM_FULL  =  60;   // full 下拉回 peek
+    var FAST_SWIPE              = 1.0;   // 快速滑动
 
     computeHeights();
-
-    // 阈值（可按手感微调）
-    var DOWN_TO_CLOSE_FROM_PEEK = 160;  // peek 下拉关闭（调小一些更好关）
-    var UP_TO_FULL_FROM_PEEK    =  80;  // peek 上推全屏
-    var DOWN_TO_PEEK_FROM_FULL  =  60;  // full 下拉回 peek
-    var FAST_SWIPE              = 1.0;  // 快速滑动阈值
 
     if (MODE === 'peek'){
       if (dy < -UP_TO_FULL_FROM_PEEK || v < -FAST_SWIPE){ applyMode('full'); return; }
@@ -981,10 +959,9 @@ function iconSVG(e, label){
     }
   }
 
-  // 绑定
-  drawer.addEventListener('touchstart', onStart, {passive:true});
+  // 绑定（头/尾触发；列表不拦截）
+  drawer.addEventListener('touchstart', onStart, {passive:false});
   drawer.addEventListener('mousedown',  onStart);
-  // move: 仅在需要时阻止默认，避免滚动冲突
   drawer.addEventListener('touchmove',  onMove,  {passive:false});
   drawer.addEventListener('mousemove',  onMove);
   ['touchend','mouseup','mouseleave','touchcancel'].forEach(function(ev){
@@ -997,6 +974,7 @@ function iconSVG(e, label){
     var keep = MODE; computeHeights(); applyMode(keep);
   });
 })();
+
     clearCart.onclick=function(){ cart={}; saveCart(); };
     addCustom.onclick=function(){
       var name=(cName.value||'').trim(); var ings=(cIngs.value||'').trim();
