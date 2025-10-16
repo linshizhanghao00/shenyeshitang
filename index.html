@@ -287,6 +287,56 @@ thead{ background:#f2e8d9 !important; }
 /* 顶部再略微紧凑点 */
 .topbar{ padding:14px var(--safe) 8px !important; }
 .tabs{ padding:10px var(--safe) 12px !important; }
+/* ========== 微调修正版（emoji 居中 + 描述加深 + 输入框灰色强化） ========== */
+
+/* 1️⃣ emoji 居中对齐 */
+.imgbox > img.thumb {
+  object-fit: contain !important;
+  display: block !important;
+  margin: 0 auto !important;
+  filter: saturate(1.05) brightness(1.05) !important;
+  mix-blend-mode: normal !important;
+  padding: 12px 0 !important; /* 让emoji上下留白相等 */
+}
+
+/* 2️⃣ 菜品描述文字、tag 颜色加深 */
+.desc {
+  color: #5e5a54 !important;     /* 柔和深灰（比原色略深） */
+  font-weight: 500 !important;
+}
+.tag {
+  border: 1px dashed #a49d8e !important;
+  color: #5c5851 !important;
+  background: rgba(255,255,255,0.6) !important;
+}
+
+/* 3️⃣ 购物车输入区文字与占位符颜色加深 */
+.drawer-ft input.btn,
+.drawer-ft input.btn:focus {
+  color: #4f4a44 !important;
+  border-color: #bfb4a1 !important;
+  background: #fffdfa !important;
+}
+.drawer-ft input.btn::placeholder {
+  color: #857e72 !important; /* 深灰米色 */
+  opacity: 1 !important;
+}
+
+/* 抽屉整体文字稍加深（购物车标题等） */
+#drawer {
+  color: #4a463f !important;
+}
+
+/* “购物车”主按钮字体颜色统一 */
+#cartBtn {
+  color: #3e3b35 !important;
+  font-weight: 800 !important;
+}
+
+/* 提交按钮文字颜色保持暖灰 */
+#submitOrder {
+  color: #3c372f !important;
+}
   </style>
 </head>
 <body>
