@@ -337,6 +337,22 @@ thead{ background:#f2e8d9 !important; }
 #submitOrder {
   color: #3c372f !important;
 }
+/* 收起/展开：当 aria-expanded="false" 时隐藏列表 */
+.section[aria-expanded="false"] .grid{
+  display: none !important;
+}
+
+/* 收起时的外观微调（可改/可删） */
+.section[aria-expanded="false"]{
+  margin-bottom: 10px;
+}
+.section[aria-expanded="false"] .section-header{
+  border-bottom-left-radius: 12px;
+  border-bottom-right-radius: 12px;
+}
+.section .section-header{
+  cursor: pointer; /* 提示可点 */
+}
   </style>
 </head>
 <body>
