@@ -468,6 +468,28 @@ thead{ background:#f2e8d9 !important; }
 .btn.ghost:active{
   background: linear-gradient(180deg, #f0e9df, #e7dfd3) !important;
 }
+/* ===== 优化购物车高度，避免与状态栏重叠 ===== */
+#drawer {
+  top: calc(env(safe-area-inset-top, 0px) + 12px) !important; /* 整体下移一点 */
+  max-height: calc(90vh - env(safe-area-inset-top, 0px)) !important; /* 保留顶部留白 */
+  border-top-left-radius: 18px !important;
+  border-top-right-radius: 18px !important;
+  overflow: hidden !important;
+}
+
+/* 调整抽屉内部布局：保持可滚动区域和底部按钮稳定 */
+.drawer-ct {
+  flex: 1 1 auto !important;
+  overflow: auto !important;
+  -webkit-overflow-scrolling: touch !important;
+  overscroll-behavior: contain !important;
+}
+.drawer-ft {
+  position: sticky !important;
+  bottom: 0 !important;
+  background: inherit !important;
+  padding-bottom: calc(14px + env(safe-area-inset-bottom, 0px)) !important;
+}
   </style>
 </head>
 <body>
