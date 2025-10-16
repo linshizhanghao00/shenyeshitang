@@ -1,0 +1,22 @@
+{
+  "name": "深夜食堂",
+  "short_name": "深夜食堂",
+  "start_url": "/shenyeshitang/?r=%E5%AE%B6%E5%BA%AD%E8%81%9A%E9%A4%90",
+  "scope": "/shenyeshitang/",
+  "display": "standalone",
+  "background_color": "#0c0c0f",
+  "theme_color": "#7c5cff",
+  "icons": [
+    { "src": "/shenyeshitang/icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/shenyeshitang/icons/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "/shenyeshitang/icons/maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    {
+      "name": "厨房屏（管理员）",
+      "short_name": "厨房屏",
+      "url": "/shenyeshitang/?admin=1&r=%E5%AE%B6%E5%BA%AD%E8%81%9A%E9%A4%90",
+      "icons": [{ "src": "/shenyeshitang/icons/icon-192.png", "sizes": "192x192" }]
+    }
+  ]
+}
