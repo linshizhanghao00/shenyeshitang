@@ -823,15 +823,18 @@ function iconSVG(e, label){
   drawer.setAttribute('aria-hidden', 'false');
 };
 /* ============================================
-   Bottom Sheet 两档（full/peek）拖拽增强
+   /* ============================================
+   Bottom Sheet 两档（full/peek）拖拽增强 · v2
+   - 打开默认 peek
+   - peek 高度按内容自适应（上限 full）
+   - 拖拽更易吸附，不易误关
    依赖 DOM: #drawer, .drawer-hd, .drawer-ct, .drawer-ft
-   不改你现有 open/close，只做“打开后”的高度调整/拖拽
 ============================================ */
 (function(){
-  var SHEET_FULL = null;  // 像素值，打开时计算
-  var SHEET_PEEK = null;  // 像素值，打开时计算
-  var MIN_CLOSE_TRIGGER = 120; // 下拉超过此距离直接关闭
-  var dragging = false, startY = 0, startH = 0;
+  var SHEET_FULL = 0;   // 全屏高度（运行时计算）
+  var SHEET_PEEK = 0;   // 中档高度（运行时计算，基于内容）
+  var MODE = 'closed';  // 'closed' | 'peek' | 'full'
+  var dragging = false, startY = 0, startH = 0, startTime = 0;
 
   var hd = document.querySelector('#drawer .drawer-hd');
   var ct = document.querySelector('#drawer .drawer-ct');
@@ -839,113 +842,140 @@ function iconSVG(e, label){
 
   function px(n){ return Math.max(0, Math.round(n)); }
   function setHeight(h){ drawer.style.height = px(h) + 'px'; }
+  function isOpen(){ return drawer.getAttribute('aria-hidden') === 'false'; }
 
+  // 计算两档高度
   function computeHeights(){
-    // full: 贴近视口可用高度（预留顶部状态栏空间）
     var vh = window.innerHeight || document.documentElement.clientHeight || 800;
-    SHEET_FULL = px(Math.min(vh * 0.92, vh - 16)); // 92vh 上限
 
-    // peek: 只露出 “头+尾” 让用户可以看菜单
-    // 头 = drawer-hd，高度；尾 = drawer-ft，高度
-    // + 8/16 的间距更舒适
+    // full：约 92vh（保留一点顶部空间）
+    SHEET_FULL = px(Math.min(vh * 0.92, vh - 16));
+
+    // peek：头 + 内容（自适应）+ 尾，上限 full；内容最小值 0（可空）
     var headH = hd ? hd.offsetHeight : 48;
     var footH = ft ? ft.offsetHeight : 140;
-    SHEET_PEEK = px(headH + footH + 16); // 只保留头和尾
+
+    // 内容高度：以实际 scrollHeight 为准，预留 8px 间距更舒适
+    var contentMax = Math.max(0, SHEET_FULL - headH - footH - 8);
+    var contentH = ct ? Math.min(ct.scrollHeight, contentMax) : 0;
+
+    SHEET_PEEK = px(headH + contentH + footH + 8);
+    // 避免太矮：至少头+尾+8
+    SHEET_PEEK = Math.max(SHEET_PEEK, px(headH + footH + 8));
   }
 
-  // 打开时：设为 FULL
+  function applyMode(next){
+    computeHeights();
+    if (next === 'full'){ setHeight(SHEET_FULL); MODE = 'full'; }
+    else if (next === 'peek'){ setHeight(SHEET_PEEK); MODE = 'peek'; }
+    else { drawer.style.height = ''; MODE = 'closed'; }
+  }
+
+  // ---- 覆盖你的打开/关闭逻辑（只增强高度，不改显示/隐藏） ----
   var _openOrig = cartBtn.onclick;
   cartBtn.onclick = function(){
     computeHeights();
-    setHeight(SHEET_FULL);
-    // 继续你的原始打开逻辑（贴底展开）
+    setHeight(SHEET_PEEK);                 // ✅ 默认中间档
+    MODE = 'peek';
     if (typeof _openOrig === 'function') _openOrig();
   };
 
-  // 关闭时：恢复自动高度
   var _closeOrig = closeDrawer.onclick;
   closeDrawer.onclick = function(){
-    drawer.style.height = ''; // 让它回到 auto（下次重新计算）
+    drawer.style.height = '';              // 还原 auto
+    MODE = 'closed';
     if (typeof _closeOrig === 'function') _closeOrig();
   };
 
-  // ===== 拖拽开始：在“头部”随时可拖；在“中部”仅当列表已滚到顶部时可拖 =====
+  // 内容变化时（加减菜/清空/自定义），若处于 peek 就跟随自适应
+  function adjustIfPeek(){
+    if (isOpen() && MODE === 'peek'){
+      var prev = SHEET_PEEK;
+      computeHeights();
+      if (Math.abs(SHEET_PEEK - prev) > 1) setHeight(SHEET_PEEK);
+    }
+  }
+  // 挂到你已有的渲染逻辑后
+  var _renderCartOrig = renderCart;
+  renderCart = function(){
+    _renderCartOrig();
+    adjustIfPeek();
+  };
+
+  // ---------- 拖拽 ----------
+  var CLOSE_TRIGGER = 220;   // 向下拖超过此距离且接近 peek 才关闭
+  var SNAP_GAP      = 64;    // 贴近档位阈值（更容易吸附）
+  var VELOCITY_TO_CLOSE = 1.2; // 向下手势速度阈值（px/ms），很快就当作关闭
+
   function canDragFrom(target){
     if (!target) return false;
-    if (hd && (target === hd || hd.contains(target))) return true;
-    if (ct && (target === ct || ct.contains(target)) && ct.scrollTop <= 0) return true;
+    if (hd && (target === hd || hd.contains(target))) return true;               // 头部随时可拖
+    if (ct && (target === ct || ct.contains(target)) && ct.scrollTop <= 0) return true; // 中部仅在滚到顶部时可拖
     return false;
   }
 
-  function onStart(clientY, target){
-    if (!canDragFrom(target)) return;
-    dragging = true; startY = clientY;
-    // 当前高度作为基准
+  function onStart(e){
+    var t = e.touches ? e.touches[0] : e;
+    if (!canDragFrom(e.target)) return;
+    dragging = true;
+    startY = t.clientY;
+    startTime = Date.now();
     var h = drawer.getBoundingClientRect().height;
-    startH = isNaN(h) ? SHEET_FULL : h;
-    // 防止 Safari 选择文字
+    startH = isNaN(h) ? SHEET_PEEK : h;
     document.body.style.userSelect = 'none';
   }
-  function onMove(clientY){
+
+  function onMove(e){
     if (!dragging) return;
-    var dy = clientY - startY; // >0 向下
-    var next = startH - dy;    // 向下拉 → 高度变小
-    // 限制在 peek..full 之间
+    var t = e.touches ? e.touches[0] : e;
+    var dy = t.clientY - startY;          // >0 向下
+    var next = startH - dy;               // 向下拉 → 高度减小
+    // 限制在 [peek, full] 区间
+    computeHeights();
     next = Math.max(SHEET_PEEK, Math.min(SHEET_FULL, next));
     setHeight(next);
+    if (e.cancelable) e.preventDefault(); // 阻止默认，避免页面选择/回弹
   }
-  function onEnd(clientY){
+
+  function onEnd(e){
     if (!dragging) return;
-    dragging = false;
-    document.body.style.userSelect = '';
+    dragging = false; document.body.style.userSelect = '';
+    var t = (e.changedTouches && e.changedTouches[0]) ? e.changedTouches[0] : e;
+    var dy = t.clientY - startY;
+    var dt = Math.max(1, Date.now() - startTime);
+    var v = dy / dt; // 向下为正，px/ms
 
-    var dy = clientY - startY;
+    computeHeights();
+    var nowH = drawer.getBoundingClientRect().height;
+    var closeZone = (nowH <= SHEET_PEEK + SNAP_GAP); // 只有在接近 peek 时才考虑关闭
 
-    // 大幅向下 → 关闭
-    if (dy > MIN_CLOSE_TRIGGER){
-      closeDrawer.onclick();
-      return;
+    // 2.1 快速下拉 或 大幅下拉（接近 peek 时）→ 关闭
+    if ((v > VELOCITY_TO_CLOSE && closeZone) || (dy > CLOSE_TRIGGER && closeZone)){
+      closeDrawer.onclick(); return;
     }
 
-    // 否则根据中值回弹到最近档位
-    var nowH = drawer.getBoundingClientRect().height;
-    var mid = (SHEET_FULL + SHEET_PEEK)/2;
-    if (nowH < mid) setHeight(SHEET_PEEK); else setHeight(SHEET_FULL);
+    // 2.2 否则吸附到离得更近的档位（更易进入 peek，不误关）
+    var distToPeek = Math.abs(nowH - SHEET_PEEK);
+    var distToFull = Math.abs(nowH - SHEET_FULL);
+    if (distToPeek <= distToFull + SNAP_GAP){ applyMode('peek'); }
+    else { applyMode('full'); }
   }
 
-  // 绑定 touch / mouse
-  ['touchstart','mousedown'].forEach(function(ev){
-    drawer.addEventListener(ev, function(e){
-      var t = (ev==='touchstart') ? e.touches[0] : e;
-      onStart(t.clientY, e.target);
-    }, {passive:true});
-  });
-  ['touchmove','mousemove'].forEach(function(ev){
-    drawer.addEventListener(ev, function(e){
-      if (!dragging) return;
-      var t = (ev==='touchmove') ? e.touches[0] : e;
-      onMove(t.clientY);
-      if (ev==='touchmove') e.preventDefault(); // 防止穿透
-    }, {passive:false});
-  });
+  // 绑定事件（加在 drawer 上即可）
+  drawer.addEventListener('touchstart', onStart, {passive:true});
+  drawer.addEventListener('mousedown',  onStart);
+  drawer.addEventListener('touchmove',  onMove,  {passive:false});
+  drawer.addEventListener('mousemove',  onMove);
   ['touchend','mouseup','mouseleave','touchcancel'].forEach(function(ev){
-    drawer.addEventListener(ev, function(e){
-      var y;
-      if (e.changedTouches && e.changedTouches[0]) y = e.changedTouches[0].clientY;
-      else y = (e.clientY || startY);
-      onEnd(y);
-    });
+    drawer.addEventListener(ev, onEnd);
   });
 
-  // 旋转/尺寸变化时重算（比如刘海机）
+  // 屏幕旋转/尺寸变化时，维持当前档位
   window.addEventListener('resize', function(){
-    if (drawer.getAttribute('aria-hidden') === 'false'){
-      computeHeights();
-      // 按当前档位回设
-      var nowH = drawer.getBoundingClientRect().height;
-      var mid = (SHEET_FULL + SHEET_PEEK)/2;
-      if (nowH < mid) setHeight(SHEET_PEEK); else setHeight(SHEET_FULL);
-    }
+    if (!isOpen()) return;
+    var keep = MODE;
+    computeHeights();
+    applyMode(keep);
   });
 })();
 
