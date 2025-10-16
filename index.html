@@ -56,16 +56,7 @@
     body.pwa-on header{ padding-top: calc(var(--safeTop) + 10px); }
     body.admin-on header{ padding-top: calc(var(--safeTop) + 22px); }
     body.pwa-on.admin-on header{ padding-top: calc(var(--safeTop) + 26px); }
-/* 你已有：
-body.pwa-on header{ padding-top: calc(var(--safeTop) + 10px); }
-body.admin-on header{ padding-top: calc(var(--safeTop) + 22px); }
-body.pwa-on.admin-on header{ padding-top: calc(var(--safeTop) + 26px); }
-*/
 
-    /* ✅ 新增：管理员面板位于 header 之前，单独给 #admin 顶部留白 */
-    /* 管理员区在 header 前面，单独补安全区留白 + 避免首元素外边距塌陷 */
-
-    
     header{position:sticky;top:0;z-index:20;background:rgba(12,12,15,.85);backdrop-filter:blur(8px)}
     .topbar{display:grid;grid-template-columns:1fr auto auto;gap:12px;align-items:center;padding:18px var(--safe) 10px}
     .brand{display:flex;gap:14px;align-items:center}
@@ -129,24 +120,15 @@ body.pwa-on.admin-on header{ padding-top: calc(var(--safeTop) + 26px); }
     footer{margin:28px 0 120px;text-align:center;color:#98a0be;font-size:12px}
     #toast{position:fixed;top:14px;right:14px;z-index:60;display:grid;gap:8px}
     .toast{background:rgba(20,22,30,.95);border:1px solid #2a2a44;color:#e9e9f2;padding:10px 12px;border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,.45);font-size:14px}
-    /* 在 body 最前面制造一个“真实的顶部占位块”，彻底避免被吃掉 */
-body.admin-on::before{
-  content:"";
-  display:block;
-  height: calc(env(safe-area-inset-top, 0px) + 22px);  /* 管理员留白 */
-}
 
-/* 如果是 PWA（A2HS）再多给一点，和你 header 的策略一致 */
-body.pwa-on.admin-on::before{
-  height: calc(env(safe-area-inset-top, 0px) + 26px);
-}
+    /* 顶部占位，避免刘海遮挡 */
+    body.admin-on::before{content:"";display:block;height:calc(env(safe-area-inset-top,0px)+22px)}
+    body.pwa-on.admin-on::before{content:"";display:block;height:calc(env(safe-area-inset-top,0px)+26px)}
+    body.pwa-on:not(.admin-on)::before{content:"";display:block;height:calc(env(safe-area-inset-top,0px)+10px)}
 
-/* 仅 PWA 但非 admin 的情况（以防以后需要，也能统一） */
-body.pwa-on:not(.admin-on)::before{
-  content:"";
-  display:block;
-  height: calc(env(safe-area-inset-top, 0px) + 10px);
-}
+    /* 新增：危险按钮样式（清空数据） */
+    .btn.danger{ background:#2b1214; border-color:#5e1a1f; color:#ffb7bf; }
+    .btn.danger:hover{ border-color:#e74856; color:#ffdbe0; }
   </style>
 </head>
 <body>
@@ -157,6 +139,8 @@ body.pwa-on:not(.admin-on)::before{
       <label style="display:flex;align-items:center;gap:8px;cursor:pointer"><input id="showPendingOnly" type="checkbox" checked><span>只看未做</span></label>
       <button id="markAllDone" class="btn">标记完成</button>
       <button id="enableNotify" class="btn">开启提醒</button>
+      <!-- 新增：默认隐藏的清空按钮 -->
+      <button id="purgeAll" class="btn danger" style="display:none">🗑️ 清空本房间订单</button>
     </div>
     <div id="roomInfo" style="color:#c7cbe0;margin:8px 0"></div>
     <table style="width:100%;border-collapse:collapse;border:1px solid #2a2a44">
@@ -430,6 +414,48 @@ body.pwa-on:not(.admin-on)::before{
           const { fs, db } = await ensureDb();
           const qLines = fs.query(fs.collection(db,'yd_order_lines'), fs.where('room','==', window.ROOM_LOCK));
           var firstLoad = true;
+
+          /* ===== 新增：隐藏按钮显示（长按标题 5000ms） ===== */
+          (function revealPurgeButton(){
+            var title = document.querySelector('#admin h3');
+            var purgeBtn = document.getElementById('purgeAll');
+            if(!title || !purgeBtn) return;
+            var t=null, shown=false;
+            function show(){ if(!shown){ purgeBtn.style.display='inline-block'; shown=true; } }
+            function start(){ clearTimeout(t); t=setTimeout(show, 5000); } // 5s
+            function cancel(){ clearTimeout(t); }
+            title.addEventListener('mousedown', start);
+            title.addEventListener('touchstart', start, {passive:true});
+            ['mouseup','mouseleave','touchend','touchcancel'].forEach(function(ev){ title.addEventListener(ev, cancel); });
+          })();
+
+          /* ===== 新增：清空本房间订单（需输入 DELETE） ===== */
+          (function bindPurgeHandler(){
+            var purgeBtn = document.getElementById('purgeAll');
+            if(!purgeBtn) return;
+            purgeBtn.onclick = async function(){
+              try{
+                if(!confirm('⚠️ 确认清空房间《'+window.ROOM_LOCK+'》所有订单与明细？此操作不可恢复。')) return;
+                var code = prompt('请输入 DELETE 以确认：');
+                if(code!=='DELETE'){ alert('已取消'); return; }
+
+                // 先删行明细
+                const qL = fs.query(fs.collection(db,'yd_order_lines'), fs.where('room','==', window.ROOM_LOCK));
+                const sL = await fs.getDocs(qL);
+                await Promise.all(sL.docs.map(function(d){ return fs.deleteDoc(d.ref); }));
+
+                // 再删订单头
+                const qO = fs.query(fs.collection(db,'yd_orders'), fs.where('room','==', window.ROOM_LOCK));
+                const sO = await fs.getDocs(qO);
+                await Promise.all(sO.docs.map(function(d){ return fs.deleteDoc(d.ref); }));
+
+                alert('✅ 已清空：订单 '+sO.size+' 单，明细 '+sL.size+' 行');
+              }catch(e){
+                console.error('清空失败：', e);
+                alert('清空失败：'+(e && e.message ? e.message : e));
+              }
+            };
+          })();
 
           fs.onSnapshot(qLines, function(snap){
             var tbody=document.getElementById('adminRows'); if(!tbody) return;
