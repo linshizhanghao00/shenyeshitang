@@ -116,7 +116,7 @@
 
   /* 你原来的视觉可以继续保留（我只保留必要项，剩下你已有的浅色风格样式不改） */
   transform: translateY(110%);               /* 默认收起，由 JS 展开 */
-  transition: transform .28s cubic-bezier(.2,.8,.2,1);
+  transition: transform .25s ease;
   z-index: 50;
 
   /* iOS 抖动/回弹保护 */
@@ -541,29 +541,6 @@ thead{ background:#f2e8d9 !important; }
   padding-bottom: env(safe-area-inset-bottom, 0px) !important;
   border-top: 1px solid #d4cdbf;
 }
-/* ======= Bottom Sheet 两档：高度/动画（不改你已有的贴底定位） ======= */
-#drawer{
-  /* 维持你现有的 transform 动画 + 贴底定位 */
-  transition:
-    transform .28s cubic-bezier(.2,.8,.2,1),
-    height .28s cubic-bezier(.2,.8,.2,1);
-  height: auto;                /* 默认自动高度；JS 打开后会设置具体高度 */
-  will-change: transform, height;
-}
-
-/* 中部列表可滚；吸顶按钮区固定（你已有，这里仅确保不被覆盖） */
-.drawer-ct{
-  overflow: auto !important;
-  -webkit-overflow-scrolling: touch !important;
-  overscroll-behavior: contain !important;
-}
-/* 只允许头/尾承载下拉手势，且自身不触发页面滚动 */
-#drawer .drawer-hd,
-#drawer .drawer-ft{
-  touch-action: none;                 /* 避免顶部位移（过度下拉时不“拽”头部） */
-  -webkit-user-select: none;
-  user-select: none;
-}
   </style>
 </head>
 <body>
@@ -824,157 +801,8 @@ function iconSVG(e, label){
       });
       count.textContent='('+total+')';
     }
-    /* 打开抽屉 */
-  cartBtn.onclick = function () {
-  drawer.style.transform = 'translateY(0) translateZ(0)';     // 👈
-  drawer.setAttribute('aria-hidden', 'false');
-};
-
-   
-
-/* 关闭抽屉 */
-  closeDrawer.onclick = function () {
-  drawer.style.transform = 'translateY(110%) translateZ(0)';  // 👈
-  drawer.setAttribute('aria-hidden', 'true');
-};
-/* ============================================
-   Bottom Sheet 两档（full/peek）拖拽 v6（头/尾可下拉；列表仅滚）
-   - 打开默认 peek（自适应内容，上限 full）
-   - 只在手势结束时切档：full ↔ peek ↔ close（不卡顿）
-   - 头/尾可下拉；中部列表只滚动（任何时刻）
-   - 清空/减少后：打开状态自动回到 peek，并根据内容自适应高度
-============================================ */
-(function(){
-  var SHEET_FULL = 0;   // 全屏高度
-  var SHEET_PEEK = 0;   // 中档高度（随内容）
-  var MODE = 'closed';  // 'closed' | 'peek' | 'full'
-
-  var dragging = false, fromHeader = false, fromFooter = false;
-  var startY = 0, startTime = 0;
-
-  var hd = document.querySelector('#drawer .drawer-hd');
-  var ct = document.querySelector('#drawer .drawer-ct');
-  var ft = document.querySelector('#drawer .drawer-ft');
-
-  function px(n){ return Math.max(0, Math.round(n)); }
-  function setHeight(h){ drawer.style.height = px(h) + 'px'; }
-  function isOpen(){ return drawer.getAttribute('aria-hidden') === 'false'; }
-
-  function computeHeights(){
-    var vh = window.innerHeight || document.documentElement.clientHeight || 800;
-    SHEET_FULL = px(Math.min(vh * 0.92, vh - 16));                 // full ≈ 92vh
-
-    var headH = hd ? hd.offsetHeight : 48;
-    var footH = ft ? ft.offsetHeight  : 140;
-    var contentMax = Math.max(0, SHEET_FULL - headH - footH - 8);  // 中部能用的空间
-    var contentH = ct ? Math.min(ct.scrollHeight, contentMax) : 0;
-
-    SHEET_PEEK = px(headH + contentH + footH + 8);                  // 自适应中档
-    SHEET_PEEK = Math.max(SHEET_PEEK, px(headH + footH + 8));       // 至少显示头+尾
-  }
-
-  function applyMode(next){
-    computeHeights();
-    if (next === 'full'){ setHeight(SHEET_FULL); MODE='full'; }
-    else if (next === 'peek'){ setHeight(SHEET_PEEK); MODE='peek'; }
-    else { drawer.style.height=''; MODE='closed'; }
-  }
-
-  /* ---- 增强 open/close（不改你的显示/隐藏） ---- */
-  var _openOrig  = cartBtn.onclick;
-  var _closeOrig = closeDrawer.onclick;
-
-  cartBtn.onclick = function(){
-    computeHeights();
-    setHeight(SHEET_PEEK);                 // ✅ 默认 peek
-    MODE = 'peek';
-    if (typeof _openOrig === 'function') _openOrig();
-  };
-  closeDrawer.onclick = function(){
-    drawer.style.height = '';              // 归位
-    MODE = 'closed';
-    if (typeof _closeOrig === 'function') _closeOrig();
-  };
-
-  /* 购物车渲染后：若打开，则回到 peek 并自适应高度（满足 3 & 4） */
-  var _renderCartOrig = renderCart;
-  renderCart = function(){
-    _renderCartOrig();
-    if (isOpen()){
-      applyMode('peek');                   // 打开状态统一回到 peek（高度随菜多少变化）
-    }
-  };
-
-  /* ---------- 拖拽（只有头/尾能触发；列表只滚动） ---------- */
-  function inHeader(t){ return hd && (t===hd || hd.contains(t)); }
-  function inFooter(t){ return ft && (t===ft || ft.contains(t)); }
-
-  function onStart(e){
-    var t = e.touches ? e.touches[0] : e;
-    var target = e.target;
-    fromHeader = inHeader(target);
-    fromFooter = inFooter(target);
-    dragging   = fromHeader || fromFooter;            // 只允许头/尾启动手势
-    if (!dragging) return;
-
-    startY = t.clientY;
-    startTime = Date.now();
-    // 防误触橡皮筋：锁住头/尾默认滚动
-    if (e.cancelable) e.preventDefault();
-  }
-
-  function onMove(e){
-    if (!dragging) return;
-    // 不改 height，保持头部“锁在上沿”；允许中部列表自己滚动
-    if (e.cancelable) e.preventDefault();
-  }
-
-  function onEnd(e){
-    if (!dragging) return;
-    dragging = false;
-
-    var t  = (e.changedTouches && e.changedTouches[0]) ? e.changedTouches[0] : e;
-    var dy = t.clientY - startY;                           // >0 向下 <0 向上
-    var dt = Math.max(1, Date.now() - startTime);
-    var v  = dy / dt;                                      // px/ms
-
-    if (!isOpen()) return;
-
-    // 阈值（更稳的两档）
-    var DOWN_TO_CLOSE_FROM_PEEK = 160;   // peek 下拉关闭（手感可微调）
-    var UP_TO_FULL_FROM_PEEK    =  80;   // peek 上推全屏
-    var DOWN_TO_PEEK_FROM_FULL  =  60;   // full 下拉回 peek
-    var FAST_SWIPE              = 1.0;   // 快速滑动
-
-    computeHeights();
-
-    if (MODE === 'peek'){
-      if (dy < -UP_TO_FULL_FROM_PEEK || v < -FAST_SWIPE){ applyMode('full'); return; }
-      if (dy >  DOWN_TO_CLOSE_FROM_PEEK || v >  FAST_SWIPE){ closeDrawer.onclick(); return; }
-      applyMode('peek'); return;
-    }
-    if (MODE === 'full'){
-      if (dy > DOWN_TO_PEEK_FROM_FULL || v > FAST_SWIPE){ applyMode('peek'); return; }
-      applyMode('full'); return;
-    }
-  }
-
-  // 绑定（头/尾触发；列表不拦截）
-  drawer.addEventListener('touchstart', onStart, {passive:false});
-  drawer.addEventListener('mousedown',  onStart);
-  drawer.addEventListener('touchmove',  onMove,  {passive:false});
-  drawer.addEventListener('mousemove',  onMove);
-  ['touchend','mouseup','mouseleave','touchcancel'].forEach(function(ev){
-    drawer.addEventListener(ev, onEnd);
-  });
-
-  // 旋转/尺寸变化：维持当前档位并重算
-  window.addEventListener('resize', function(){
-    if (!isOpen()) return;
-    var keep = MODE; computeHeights(); applyMode(keep);
-  });
-})();
-
+    cartBtn.onclick=function(){ drawer.style.transform='translateY(0)'; drawer.setAttribute('aria-hidden','false'); };
+    closeDrawer.onclick=function(){ drawer.style.transform='translateY(110%)'; drawer.setAttribute('aria-hidden','true'); };
     clearCart.onclick=function(){ cart={}; saveCart(); };
     addCustom.onclick=function(){
       var name=(cName.value||'').trim(); var ings=(cIngs.value||'').trim();
