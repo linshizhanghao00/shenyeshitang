@@ -541,6 +541,29 @@ thead{ background:#f2e8d9 !important; }
   padding-bottom: env(safe-area-inset-bottom, 0px) !important;
   border-top: 1px solid #d4cdbf;
 }
+/* 禁用整页顶部/底部橡皮筋回弹（仍可正常滚动） */
+html, body {
+  height: 100%;
+  overscroll-behavior-y: none;   /* 顶/底不被“拉开” */
+}
+
+/* 主内容作为可滚容器，防止“整页拉扯” */
+main {
+  overscroll-behavior: contain;  /* 向上/向下的滚动不会传递到外层产生回弹 */
+}
+
+/* 管理员表格区域也避免回弹 */
+#admin {
+  overscroll-behavior: contain;
+}
+
+/* 购物车头、尾避免触发默认回弹（你已贴底固定） */
+#drawer .drawer-hd,
+#drawer .drawer-ft{
+  touch-action: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
   </style>
 </head>
 <body>
