@@ -126,7 +126,7 @@
     body.pwa-on.admin-on::before{content:"";display:block;height:calc(env(safe-area-inset-top,0px)+26px)}
     body.pwa-on:not(.admin-on)::before{content:"";display:block;height:calc(env(safe-area-inset-top,0px)+10px)}
 
-    /* 新增：危险按钮样式（清空数据） */
+    /* 危险按钮样式（清空数据） */
     .btn.danger{ background:#2b1214; border-color:#5e1a1f; color:#ffb7bf; }
     .btn.danger:hover{ border-color:#e74856; color:#ffdbe0; }
   </style>
@@ -139,7 +139,7 @@
       <label style="display:flex;align-items:center;gap:8px;cursor:pointer"><input id="showPendingOnly" type="checkbox" checked><span>只看未做</span></label>
       <button id="markAllDone" class="btn">标记完成</button>
       <button id="enableNotify" class="btn">开启提醒</button>
-      <!-- 新增：默认隐藏的清空按钮 -->
+      <!-- 默认隐藏的清空按钮 -->
       <button id="purgeAll" class="btn danger" style="display:none">🗑️ 清空本房间订单</button>
     </div>
     <div id="roomInfo" style="color:#c7cbe0;margin:8px 0"></div>
@@ -237,7 +237,7 @@
 
     /* SVG 占位图 */
     function iconSVG(e,label){
-      var svg=encodeURIComponent("<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 220 220'><defs><linearGradient id='g' x1='0' y1='0' x2='1' y2='1'><stop offset='0%' stop-color='#7c5cff'/><stop offset='100%' stop-color='#3dd9b2'/></linearGradient></defs><rect width='220' height='220' rx='28' fill='url(#g)'/><circle cx='110' cy='118' r='72' fill='white'/><circle cx='110' cy='118' r='58' fill='#f4f4f4'/><text x='110' y='124' font-size='72' text-anchor='middle'>"+(e||'🍽️')+"</text><rect x='60' y='168' width='100' height='28' rx='14' fill='rgba(0,0,0,.45)'/><text x='110' y='184' font-size='14' text-anchor='middle' fill='white' font-weight='700'>"+label+"</text></svg>");
+      var svg=encodeURIComponent("<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 220 220'><defs><linearGradient id='g' x1='0' y1='0' x2='1' y2='1'><stop offset='0%' stop-color='#7c5cff'/><stop offset='100%' stop-color='#3dd9b2'/></linearGradient></defs><rect width='220' height='220' rx='28' fill='url(#g)'/><circle cx='110' cy='118' r='72' fill='white'/><circle cx='110' cy='118' r='58' fill='#f4f4f4'/><text x='110' y='124' font-size='72' text-anchor='middle'>"+(e||'🍽️')+"</text><rect x='60' y='168' width='100' height='28' rx='14' fill='rgba(0,0,0,.45)'/><text x='110' y='184' font-size='14' text-anchor='middle' fill='white' font-weight='700'>"+label+'</text></svg>');
       var im=new Image(); im.className='thumb loaded'; im.alt=label; im.src='data:image/svg+xml;utf8,'+svg; return im;
     }
     function mediaFor(item){ return iconSVG(item.emoji,item.name_cn); }
@@ -415,21 +415,39 @@
           const qLines = fs.query(fs.collection(db,'yd_order_lines'), fs.where('room','==', window.ROOM_LOCK));
           var firstLoad = true;
 
-          /* ===== 新增：隐藏按钮显示（长按标题 5000ms） ===== */
+          /* ===== 改为：双击 显示隐藏按钮 ===== */
           (function revealPurgeButton(){
             var title = document.querySelector('#admin h3');
             var purgeBtn = document.getElementById('purgeAll');
             if(!title || !purgeBtn) return;
-            var t=null, shown=false;
-            function show(){ if(!shown){ purgeBtn.style.display='inline-block'; shown=true; } }
-            function start(){ clearTimeout(t); t=setTimeout(show, 5000); } // 5s
-            function cancel(){ clearTimeout(t); }
-            title.addEventListener('mousedown', start);
-            title.addEventListener('touchstart', start, {passive:true});
-            ['mouseup','mouseleave','touchend','touchcancel'].forEach(function(ev){ title.addEventListener(ev, cancel); });
+
+            var shown = false;
+            function show(){
+              if (!shown) { purgeBtn.style.display = 'inline-block'; shown = true; }
+            }
+
+            // 鼠标/触控板：双击
+            title.addEventListener('dblclick', show);
+
+            // 触屏双击（两次 tap 间隔与位移阈值）
+            var lastTapTime = 0, lastX = 0, lastY = 0;
+            var TAP_MS = 320, TAP_DIST = 24;
+            title.addEventListener('touchend', function(e){
+              var t = e.changedTouches[0];
+              var now = Date.now();
+              var dt = now - lastTapTime;
+              var dx = Math.abs(t.clientX - lastX);
+              var dy = Math.abs(t.clientY - lastY);
+              if (dt < TAP_MS && dx < TAP_DIST && dy < TAP_DIST) {
+                show();
+                lastTapTime = 0;
+              } else {
+                lastTapTime = now; lastX = t.clientX; lastY = t.clientY;
+              }
+            }, { passive: true });
           })();
 
-          /* ===== 新增：清空本房间订单（需输入 DELETE） ===== */
+          /* ===== 清空本房间订单（需输入 DELETE） ===== */
           (function bindPurgeHandler(){
             var purgeBtn = document.getElementById('purgeAll');
             if(!purgeBtn) return;
@@ -439,7 +457,7 @@
                 var code = prompt('请输入 DELETE 以确认：');
                 if(code!=='DELETE'){ alert('已取消'); return; }
 
-                // 先删行明细
+                // 先删明细
                 const qL = fs.query(fs.collection(db,'yd_order_lines'), fs.where('room','==', window.ROOM_LOCK));
                 const sL = await fs.getDocs(qL);
                 await Promise.all(sL.docs.map(function(d){ return fs.deleteDoc(d.ref); }));
