@@ -6,149 +6,513 @@
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 
-  <!-- manifest / touch icon -->
+  <!-- 默认用户 manifest；运行时按管理员切换 -->
   <link id="manifestLink" rel="manifest" href="/shenyeshitang/manifest.webmanifest?iv=v7">
   <link rel="apple-touch-icon" sizes="180x180" href="/shenyeshitang/icons/moon-180.png?v=99">
   <title>深夜食堂</title>
 
+  <!-- 全局：房间 & 版本（用于 PWA 强制刷新） -->
   <script>
-    /* 全局 */
     window.ROOM_LOCK = '家庭聚餐';
     window.__APP_VERSION__ = 'v3';
+  </script>
 
-    /* 管理员 manifest 切换 / A2HS 丢 query 兜底 */
-    (function () {
-      try {
-        var p = new URLSearchParams(location.search);
-        var isPWA = (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) || (navigator.standalone === true);
-        var savedAdmin = localStorage.getItem('adminMode') === '1';
-        if (p.get('admin') === '1' || savedAdmin) {
-          localStorage.setItem('adminMode','1');
-          localStorage.setItem('adminRoom', window.ROOM_LOCK);
-          var link = document.getElementById('manifestLink');
-          if (link) link.setAttribute('href','/shenyeshitang/manifest.admin.webmanifest?v='+(window.__APP_VERSION__||''));
-        } else if (isPWA && savedAdmin) {
+  <!-- 管理员记忆 + iOS A2HS 丢 query 兜底 + manifest 切换 -->
+  <script>
+  (function () {
+    try {
+      var p = new URLSearchParams(location.search);
+      var isPWA = (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) || (navigator.standalone === true);
+      var savedAdmin = localStorage.getItem('adminMode') === '1';
+
+      if (p.get('admin') === '1' || savedAdmin) {
+        localStorage.setItem('adminMode','1');
+        localStorage.setItem('adminRoom', window.ROOM_LOCK);
+        var link = document.getElementById('manifestLink');
+        if (link) link.setAttribute('href','/shenyeshitang/manifest.admin.webmanifest?v='+(window.__APP_VERSION__||''));
+      } else {
+        if (isPWA && savedAdmin) {
           var base = location.pathname.replace(/\/index\.html$/, '/');
           location.replace(base + '?admin=1&r=' + encodeURIComponent(window.ROOM_LOCK) + '&v=' + (window.__APP_VERSION__||''));
           return;
         }
-      } catch(e) {}
-    })();
+      }
+    } catch(e) {}
+  })();
   </script>
 
   <style>
     :root{
-      --paper:#f6f3ea; --ink:#2b2b2b;
-      --sage-0:#cfd8cf; --sage-1:#bfc9c0; --sage-2:#aebaaf; --sage-3:#3d413b;
-      --beige-bd:#cfc5b3; --beige-tab:#c5baa8;
-      --warm-0:#f4d089; --warm-1:#e6bb6a; --warm-bd:#d1ac67;
-      --safe:max(env(safe-area-inset-left),16px); --safeTop:env(safe-area-inset-top,0px)
+      --bg:#0c0c0f;--panel:#121218;--text:#e9e9f2;--muted:#98a0be;
+      --brand:#7c5cff;--brand2:#3dd9b2;--accent:#ffd166;
+      --safe:max(env(safe-area-inset-left),16px);--safeTop:env(safe-area-inset-top,0px)
     }
-    *{ box-sizing:border-box; -webkit-tap-highlight-color:transparent }
-
-    /* ===== 浅色手绘风主底 clean ===== */
+    *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
     body{
-      margin:0; font-family:ui-sans-serif,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif; letter-spacing:.2px;
-      background:var(--paper) !important; color:var(--ink) !important;
+      margin:0;font-family:ui-sans-serif,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;letter-spacing:.2px;color:var(--text);
+      background:radial-gradient(1200px 600px at 70% -10%,rgba(124,92,255,.15),transparent 60%),
+                 radial-gradient(1000px 500px at 0% 100%,rgba(61,217,178,.12),transparent 60%),var(--bg)
     }
+    body.pwa-on header{ padding-top: calc(var(--safeTop) + 10px); }
+    body.admin-on header{ padding-top: calc(var(--safeTop) + 22px); }
+    body.pwa-on.admin-on header{ padding-top: calc(var(--safeTop) + 26px); }
 
-    /* PWA 顶部安全留白（管理员） */
+    header{position:sticky;top:0;z-index:20;background:rgba(12,12,15,.85);backdrop-filter:blur(8px)}
+    .topbar{display:grid;grid-template-columns:1fr auto auto;gap:12px;align-items:center;padding:18px var(--safe) 10px}
+    .brand{display:flex;gap:14px;align-items:center}
+    .logo{width:46px;height:46px;border-radius:14px;display:grid;place-items:center;background:linear-gradient(135deg,var(--brand),var(--brand2));color:#fff;font-size:24px}
+    .logo::after{content:none !important;}
+    .title{font-size:26px;font-weight:800}
+
+    .search{display:flex;align-items:center;gap:8px;background:#0f0f15;border:1px solid #242438;color:var(--text);padding:10px 12px;border-radius:12px;min-width:min(260px,40vw)}
+    .search input{flex:1;background:transparent;border:0;color:inherit;outline:none;font-size:15px}
+
+    .adminToggle{display:none}
+    body.pwa-on .adminToggle{display:inline-flex}
+    .adminToggle .btn{background:#1a1b26;border:1px solid #2a2a44;color:#e9e9f2;padding:10px 12px;border-radius:12px;cursor:pointer;font-size:14px}
+
+    .tabs{display:flex;gap:10px;overflow:auto;padding:8px var(--safe) 14px}
+    .pill{border:1px solid #28283e;background:#13131b;color:var(--text);padding:10px 14px;border-radius:999px;font-size:14px;cursor:pointer}
+    .pill[aria-pressed="true"]{background:linear-gradient(135deg,rgba(124,92,255,.25),rgba(61,217,178,.2));border-color:var(--brand)}
+
+    /* 分组卡片（默认展开，可折叠） */
+    .section{margin:18px var(--safe)}
+    .section-header{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:6px 0 10px;padding:10px 12px;border:1px solid #2a2a44;border-radius:12px;background:linear-gradient(180deg,#12131a,#11121a);position:sticky;top:56px;z-index:5;backdrop-filter:blur(6px)}
+    .section-title{display:flex;gap:10px;align-items:center;font-weight:900}
+    .section-sub{color:#98a0be;font-size:12px}
+    .section-toggle{background:#161622;border:1px solid #2a2a44;color:#fff;border-radius:10px;padding:8px 10px;cursor:pointer}
+    .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:22px}
+    .card{display:grid;grid-template-columns:140px 1fr;background:linear-gradient(180deg,#171a24,#12131a 40%);border:1px solid #282b3f;border-radius:16px;overflow:hidden;box-shadow:0 12px 30px rgba(0,0,0,.35)}
+    .imgbox.small{aspect-ratio:4/3;background:#0a0b10}
+    .imgbox.small > img.thumb{width:100%;height:100%;object-fit:cover;display:block}
+    .content{padding:14px 14px 16px;display:grid;gap:8px}
+    .name{font-size:18px;font-weight:900;margin:2px 0 0;color:#fff}
+    .desc{font-size:13px;color:#98a0be;min-height:34px}
+    .tags{display:flex;flex-wrap:wrap;gap:8px}
+    .tag{font-size:12px;color:#c7cbe0;border:1px dashed #2a2a44;padding:4px 8px;border-radius:999px}
+    .add{margin-top:2px;background:#1a1a28;border:1px solid #2a2a44;color:#fff;border-radius:10px;padding:10px 14px;font-weight:700;cursor:pointer;justify-self:start}
+
+    /* “全部”网格 */
+    .grid-all{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;padding:16px}
+    @media(min-width:1024px){.grid-all{grid-template-columns:repeat(3,minmax(0,1fr))}}
+    .card-all{display:grid;gap:8px;background:linear-gradient(180deg,#171a24,#12131a 40%);border:1px solid #2a2a44;border-radius:16px;overflow:hidden;cursor:pointer}
+    .imgbox{aspect-ratio:4/3;display:block;background:#0a0a10}
+    .imgbox > img.thumb{width:100%;height:100%;object-fit:cover;display:block}
+    .title-only{padding:0 10px 12px;font-weight:900;font-size:16px;color:#fff;text-align:center}
+
+    /* 购物车与输入 UI 修复 */
+    #cartBtn{position:fixed;right:16px;bottom:calc(16px + env(safe-area-inset-bottom));background:linear-gradient(135deg,#7c5cff,#ffd166);color:#0b0b0e;border:0;border-radius:16px;padding:14px 18px;font-weight:900;box-shadow:0 14px 40px rgba(0,0,0,.45);z-index:40;font-size:16px}
+    #drawer{position:fixed;inset:auto 0 0 auto;right:0;width:min(420px,96vw);max-height:86vh;background:#0f0f16;border-top-left-radius:18px;border:1px solid #2a2a44;box-shadow:0 -20px 60px rgba(0,0,0,.6);transform:translateY(110%);transition:transform .25s;z-index:50}
+    .drawer-hd{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid #22243c}
+    .drawer-ct{padding:12px 16px;max-height:60vh;overflow:auto}
+    .drawer-ft{padding:14px 16px;border-top:1px solid #22243c;display:grid;gap:10px}
+    .drawer-ft .btn{font-size:16px;padding:12px 14px;border-radius:12px}
+    #submitOrder{font-size:20px;padding:20px 18px;min-height:72px;border-radius:14px}
+    .drawer-ft input.btn,.drawer-ft input.btn:focus{color:#fff !important;background:#161622 !important;border:1px solid #2a2a44 !important}
+    .drawer-ft input.btn::placeholder{color:#c7cbe0;opacity:.85}
+    .btn{background:#1a1b26;border:1px solid #2a2a44;color:#e9e9f2;padding:10px 12px;border-radius:10px;cursor:pointer}
+    .btn:active{transform:scale(.98)}
+    #clearCart{font-size:18px;padding:14px 16px;border-radius:12px}
+    .qty .btn{font-size:20px;line-height:1;padding:10px 14px;min-width:44px}
+    #cartList .row-name{font-size:18px;font-weight:800}
+    #cartList .row-qty{font-size:18px;font-weight:800}
+
+    footer{margin:28px 0 120px;text-align:center;color:#98a0be;font-size:12px}
+    #toast{position:fixed;top:14px;right:14px;z-index:60;display:grid;gap:8px}
+    .toast{background:rgba(20,22,30,.95);border:1px solid #2a2a44;color:#e9e9f2;padding:10px 12px;border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,.45);font-size:14px}
+
+    /* 顶部占位，避免刘海遮挡 */
     body.admin-on::before{content:"";display:block;height:calc(env(safe-area-inset-top,0px)+22px)}
     body.pwa-on.admin-on::before{content:"";display:block;height:calc(env(safe-area-inset-top,0px)+26px)}
     body.pwa-on:not(.admin-on)::before{content:"";display:block;height:calc(env(safe-area-inset-top,0px)+10px)}
 
-    /* 顶栏 clean */
-    header{
-      position:sticky; top:0; z-index:20;
-      background:rgba(255,255,255,.78) !important;
-      -webkit-backdrop-filter:blur(14px) saturate(150%) !important;
-      backdrop-filter:blur(14px) saturate(150%) !important;
-      border-bottom:2px solid #d7d0c1 !important;
-      box-shadow:0 3px 6px rgba(0,0,0,.08) !important;
-    }
-    .topbar{ display:grid; grid-template-columns:auto 1fr auto; gap:12px; align-items:center; padding:14px var(--safe) 8px !important }
+    /* 危险按钮样式（清空数据） */
+    .btn.danger{ background:#2b1214; border-color:#5e1a1f; color:#ffb7bf; }
+    .btn.danger:hover{ border-color:#e74856; color:#ffdbe0; }
+    /* —— 兜底：管理员区本身再加安全区顶部留白 —— */
+body.admin-on #admin{
+  padding-top: calc(env(safe-area-inset-top, 0px) + 22px) !important;
+}
+body.pwa-on.admin-on #admin{
+  padding-top: calc(env(safe-area-inset-top, 0px) + 26px) !important;
+}
+/* 防止 h3 默认 margin-top 把 padding 吃掉（外边距塌陷） */
+#admin > *:first-child{ margin-top: 0 !important; }
+/* ===== 顶部品牌区：横排 + 自动换行 ===== */
+.brand {
+  display: flex;
+  flex-direction: row;       /* 横向排列 logo 与标题 */
+  align-items: center;       /* 垂直居中 */
+  flex-wrap: wrap;           /* 允许换行，形成两行结构 */
+  gap: 6px;                  /* logo 与文字之间的间距 */
+  max-width: 120px;          /* 控制品牌区总宽度，防止过宽 */
+  line-height: 1.1;
+  margin-bottom: 2px;
+}
 
-    /* 品牌两行（贴纸月亮） clean */
-    .brand{ display:flex; flex-wrap:wrap; align-items:center; gap:6px; max-width:120px; line-height:1.1; margin-bottom:2px }
-    .logo{ width:32px; height:32px; border-radius:8px; background:url('/shenyeshitang/icons/moon-180.png?v=99') center/cover no-repeat; border:2px solid #d3c8b6; box-shadow:0 2px 2px rgba(0,0,0,.10) }
-    .logo::after{ content:none !important; } /* 移除重复emoji */
-    .title{ font-size:20px; font-weight:800; color:#2b2b2b !important; white-space:normal; word-break:keep-all; text-align:left; line-height:1.15; text-shadow:0 1px 0 rgba(255,255,255,.55) }
-    @media (max-width:420px){ .brand{max-width:100px; gap:4px} .logo{width:28px; height:28px} .title{font-size:18px} }
+/* logo：缩小尺寸，让整体紧凑 */
+.logo {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: url('/shenyeshitang/icons/moon-180.png?v=99') center/cover no-repeat;
+}
 
-    /* 搜索栏纸条 clean */
-    .search{ display:flex; align-items:center; gap:8px; background:linear-gradient(180deg,#fdfcf9,#f4efe5 85%) !important; border:2px solid #cec5b4 !important; color:var(--ink); padding:8px 12px !important; border-radius:12px !important; box-shadow:0 2px 0 #c0b6a3, 0 2px 6px rgba(0,0,0,.08) !important; min-width:min(260px,40vw) }
-    .search input{ flex:1; background:transparent; border:0; outline:none; color:#2b2b2b !important; font-size:15px }
-    .search input::placeholder{ color:#8d8678 !important }
+/* 标题：允许换行，字体放大一点确保可读 */
+.title {
+  font-size: 20px;
+  font-weight: 800;
+  color: #fff;
+  white-space: normal;       /* 允许自动换行 */
+  word-break: keep-all;
+  text-align: left;
+  line-height: 1.15;
+}
 
-    /* 分组/胶囊 clean */
-    .tabs{ display:flex; gap:10px; overflow:auto; padding:10px var(--safe) 12px !important }
-    .pill{ border:2px solid var(--beige-tab) !important; border-radius:16px !important; background:linear-gradient(180deg,#fbfaf7,#efe6db) !important; color:#343434 !important; font-weight:700 !important; padding:8px 12px !important; box-shadow:0 2px 0 var(--beige-tab) !important; cursor:pointer }
-    .pill[aria-pressed="true"]{ background:linear-gradient(180deg,var(--sage-0),#b8c6b9) !important; border-color:var(--sage-2) !important; color:#1f1f1f !important; box-shadow:0 2px 0 var(--sage-2) !important }
+/* 小屏时稍微再紧凑一点 */
+@media (max-width: 420px) {
+  .brand { max-width: 100px; gap: 4px; }
+  .logo { width: 28px; height: 28px; }
+  .title { font-size: 18px; }
+}
+/* ================== Light Sage 手绘系覆盖（与图标同系） ================== */
+/* 参考色系：鼠尾草绿 #8fa394 / 米色纸面 #f6f3ea / 低饱和白 #f7f5f0 */
 
-    /* 分组条 clean */
-    .section{ margin:18px var(--safe) }
-    .section-header{ display:flex; align-items:center; justify-content:space-between; gap:10px; margin:6px 0 10px; padding:10px 12px; background:linear-gradient(180deg,#fff,#f6efe4) !important; border:2px solid var(--beige-bd) !important; border-radius:12px; position:sticky; top:56px; z-index:5; cursor:pointer }
-    .section-title{ display:flex; gap:10px; align-items:center; font-weight:900; color:#2b2b2b }
-    .section-sub{ color:#5e5a54; font-size:12px }
-    /* 收起/展开视觉与逻辑 */
-    .section[aria-expanded="false"] .grid{ display:none !important }
-    .section[aria-expanded="false"]{ margin-bottom:10px }
-    .section[aria-expanded="false"] .section-header{ border-bottom-left-radius:12px; border-bottom-right-radius:12px }
+body{
+  background:#f6f3ea !important;
+  color:#2b2b2b !important;
+}
 
-    /* 卡片（浅米 + 细描边） clean */
-    .grid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(320px,1fr)); gap:22px }
-    .card{ display:grid; grid-template-columns:140px 1fr; background:linear-gradient(145deg,#ffffff,#fbf6ee 70%), radial-gradient(420px 260px at 80% 0%,rgba(203,216,206,.35),transparent 60%) !important; border:2px solid var(--beige-bd) !important; border-radius:14px; overflow:hidden; box-shadow:0 3px 0 var(--beige-bd), 0 1px 10px rgba(0,0,0,.08) }
-    .content{ padding:14px 14px 16px; display:grid; gap:8px }
-    .name{ font-size:18px; font-weight:900; margin:2px 0 0; color:#2b2b2b }
-    .desc{ font-size:13px; color:#5e5a54 !important; min-height:34px; font-weight:500 }
-    .tags{ display:flex; flex-wrap:wrap; gap:8px }
-    .tag{ font-size:12px; color:#5c5851 !important; border:1px dashed #a49d8e !important; background:rgba(255,255,255,.6) !important; padding:4px 8px; border-radius:999px }
+/* 顶栏浅色毛玻璃 + 纸面描边 */
+header{
+  background:rgba(255,255,255,.78) !important;
+  -webkit-backdrop-filter:blur(14px) saturate(150%) !important;
+  backdrop-filter:blur(14px) saturate(150%) !important;
+  border-bottom:2px solid #d7d0c1 !important;
+  box-shadow:0 3px 6px rgba(0,0,0,.08) !important;
+}
 
-    /* 缩略图：鼠尾草绿渐变底 + 居中 emoji clean */
-    .imgbox.small, .imgbox{ aspect-ratio:4/3; display:block; background:linear-gradient(160deg,#96a99a 0%, #c7d1c8 100%) !important; border-bottom:1px solid rgba(0,0,0,.04) }
-    .imgbox > img.thumb{ width:100%; height:100%; object-fit:contain !important; display:block !important; margin:0 auto !important; filter:saturate(1.04) brightness(1.05) !important; mix-blend-mode:normal !important; padding:12px 0 !important }
+/* 品牌两行（保留你已有的结构），颜色同系 */
+.title{ color:#2b2b2b !important; text-shadow:0 1px 0 rgba(255,255,255,.55); }
+.logo{
+  border:2px solid #d3c8b6;               /* 轻描边，贴纸感 */
+  box-shadow:0 2px 2px rgba(0,0,0,.10);
+}
 
-    /* 购物车按钮 & 提交按钮（暖色） clean */
-    #cartBtn{ position:fixed; right:16px; bottom:calc(16px + env(safe-area-inset-bottom)); background:linear-gradient(180deg,var(--warm-0),var(--warm-1)) !important; color:#1a1a1a !important; border:2px solid var(--warm-bd) !important; border-radius:16px; padding:14px 18px; font-weight:900; box-shadow:0 3px 0 var(--warm-bd) !important; z-index:40; font-size:16px }
-    #submitOrder{ font-size:20px; padding:20px 18px; min-height:72px; border-radius:14px; background:linear-gradient(180deg,var(--warm-0),var(--warm-1)) !important; color:#3c372f !important; border:2px solid var(--warm-bd) !important }
-    #cartBtn{ color:#3e3b35 !important; font-weight:800 !important }
+/* 搜索栏：纸条质感（同系米白） */
+.search{
+  background:linear-gradient(180deg,#fdfcf9,#f4efe5 85%) !important;
+  border:2px solid #cec5b4 !important;
+  border-radius:12px !important;
+  box-shadow:0 2px 0 #c0b6a3, 0 2px 6px rgba(0,0,0,.08) !important;
+  padding:8px 12px !important;
+}
+.search input{ color:#2b2b2b !important; }
+.search input::placeholder{ color:#8d8678 !important; }
 
-    /* 通用按钮（米白） + 清空（ghost） clean */
-    .btn{ border:2px solid var(--beige-tab) !important; border-radius:12px !important; background:linear-gradient(180deg,#fff,#f4ece1) !important; color:#2b2b2b !important; font-weight:800 !important; box-shadow:0 2px 0 var(--beige-tab) !important }
-    .btn.ghost{ background:linear-gradient(180deg,#fbfaf7,#f3eee6) !important; border:1px solid var(--beige-bd) !important; color:#6a655b !important; box-shadow:0 1px 2px rgba(0,0,0,.08) !important; font-weight:700 !important }
+/* 分类胶囊：米白/米杏，选中用鼠尾草绿 */
+.pill{
+  border:2px solid #c5baa8 !important;
+  border-radius:16px !important;
+  background:linear-gradient(180deg,#fbfaf7,#efe6db) !important;
+  color:#343434 !important; font-weight:700 !important;
+  box-shadow:0 2px 0 #c5baa8 !important;
+  padding:8px 12px !important;
+}
+.pill[aria-pressed="true"]{
+  background:linear-gradient(180deg,#cfd8cf,#b8c6b9) !important; /* sage 明度梯度 */
+  color:#1f1f1f !important; border-color:#aebaaf !important;
+  box-shadow:0 2px 0 #aebaaf !important;
+}
 
-    /* “收起”按钮保留你的现状（不改） */
-    .section-toggle{ padding:6px 12px; border-radius:10px; font-weight:700 }
+/* 分组条：浅米纸面 + 细描边 */
+.section-header{
+  background:linear-gradient(180deg,#fff,#f6efe4) !important;
+  border:2px solid #cfc5b3 !important;
+  color:#2b2b2b !important;
+}
 
-    /* 仅“加入”按钮：浅鼠尾草绿（与收起一致系） clean */
-    .card .btn.add, .card .add{
-      background:linear-gradient(180deg,var(--sage-0),var(--sage-1)) !important;
-      border:1px solid var(--sage-2) !important; color:var(--sage-3) !important;
-      font-weight:700 !important; font-size:14px !important; padding:8px 18px !important; border-radius:8px !important; box-shadow:0 2px 3px rgba(0,0,0,.12) !important; transition:all .15s ease
-    }
-    .card .btn.add:hover, .card .add:hover{ background:linear-gradient(180deg,#d8e0d8,#c8d2c8) !important }
-    .card .btn.add:active, .card .add:active{ background:linear-gradient(180deg,#b8c2b8,#aeb8ae) !important; transform:translateY(1px); box-shadow:0 1px 2px rgba(0,0,0,.18) inset !important }
+/* 卡片：去深色，改成浅米 + 细描边 + 柔和投影 */
+.card-all,.card{
+  background:linear-gradient(145deg,#ffffff,#fbf6ee 70%),
+             radial-gradient(420px 260px at 80% 0%,rgba(203,216,206,.35),transparent 60%) !important;
+  border:2px solid #cfc5b3 !important;
+  border-radius:14px !important;
+  box-shadow:0 3px 0 #cfc5b3, 0 1px 10px rgba(0,0,0,.08) !important;
+}
+.name,.title-only{ color:#2b2b2b !important; }
 
-    /* 抽屉贴底 + 三段式 + 可滚动 clean（合并唯一版本） */
-    #drawer{
-      position:fixed !important; inset:auto 0 0 0 !important; width:100% !important;
-      /* 默认由 JS 设为 translateY(110%) 收起；展开时 JS 设为 translateY(0) */
-      max-height:calc(92vh - env(safe-area-inset-top,0px)) !important;
-      margin:0 !important; border-top-left-radius:18px !important; border-top-right-radius:18px !important;
-      border-bottom-left-radius:0 !important; border-bottom-right-radius:0 !important;
-      background:#fbf6ee !important; border:2px solid var(--beige-bd) !important; box-shadow:0 -4px 12px rgba(0,0,0,.10) !important; color:#4a463f !important; overflow:hidden !important; z-index:50
-    }
-    .drawer-hd{ display:flex; align-items:center; justify-content:space-between; padding:14px 16px; border-bottom:1px solid #d4cdbf }
-    .drawer-ct{ flex:1 1 auto !important; padding:12px 16px; overflow:auto !important; -webkit-overflow-scrolling:touch !important; overscroll-behavior:contain !important }
-    .drawer-ft{ position:sticky !important; bottom:0 !important; background:inherit !important; padding:14px 16px calc(14px + env(safe-area-inset-bottom,0px)) !important; border-top:1px solid #d4cdbf }
+/* —— 缩略图容器：与图标同系的鼠尾草绿渐变；不再有白色圆盘 —— */
+.imgbox{
+  background:linear-gradient(160deg,#96a99a 0%, #c7d1c8 100%) !important; /* sage 系列 */
+  border-bottom:1px solid rgba(0,0,0,.04);
+}
+.imgbox > img.thumb{
+  filter:saturate(1.04) brightness(1.05) !important;
+  mix-blend-mode:normal !important;
+}
 
-    /* 列表网格（全部视图） */
-    .grid-all{ display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px; padding:16px }
-    @media(min-width:1024px){ .grid-all{ grid-template-columns:repeat(3,minmax(0,1fr)) } }
+/* 购物车/主操作：米杏暖色，统一视觉 */
+#submitOrder,
+#cartBtn{
+  background:linear-gradient(180deg,#f4d089,#e6bb6a) !important;
+  color:#1a1a1a !important;
+  border:2px solid #d1ac67 !important;
+  box-shadow:0 3px 0 #d1ac67 !important;
+}
 
-    footer{ margin:28px 0 120px; text-align:center; color:#847c6b; font-size:12px }
-    #toast{ position:fixed; top:14px; right:14px; z-index:60; display:grid; gap:8px }
-    .toast{ background:rgba(20,22,30,.95); border:1px solid #2a2a44; color:#e9e9f2; padding:10px 12px; border-radius:12px; box-shadow:0 8px 24px rgba(0,0,0,.45); font-size:14px }
+/* 通用按钮：低饱和米白 */
+.btn{
+  border:2px solid #c5baa8 !important;
+  border-radius:12px !important;
+  background:linear-gradient(180deg,#fff,#f4ece1) !important;
+  color:#2b2b2b !important; font-weight:800 !important;
+  box-shadow:0 2px 0 #c5baa8 !important;
+}
+.drawer-ft input.btn,.drawer-ft input.btn:focus{
+  background:#fff !important; color:#2b2b2b !important;
+  border:2px solid #cfc5b3 !important;
+}
+
+/* 抽屉与表格：浅米纸面 + 浅墨线 */
+#drawer{
+  background:#fbf6ee !important;
+  border:2px solid #cfc5b3 !important;
+  box-shadow:0 -4px 12px rgba(0,0,0,.10) !important;
+  color:#2b2b2b !important;
+}
+table, th, td{ border-color:#cfc5b3 !important; color:#2b2b2b !important; }
+thead{ background:#f2e8d9 !important; }
+
+/* 顶部再略微紧凑点 */
+.topbar{ padding:14px var(--safe) 8px !important; }
+.tabs{ padding:10px var(--safe) 12px !important; }
+/* ========== 微调修正版（emoji 居中 + 描述加深 + 输入框灰色强化） ========== */
+
+/* 1️⃣ emoji 居中对齐 */
+.imgbox > img.thumb {
+  object-fit: contain !important;
+  display: block !important;
+  margin: 0 auto !important;
+  filter: saturate(1.05) brightness(1.05) !important;
+  mix-blend-mode: normal !important;
+  padding: 12px 0 !important; /* 让emoji上下留白相等 */
+}
+
+/* 2️⃣ 菜品描述文字、tag 颜色加深 */
+.desc {
+  color: #5e5a54 !important;     /* 柔和深灰（比原色略深） */
+  font-weight: 500 !important;
+}
+.tag {
+  border: 1px dashed #a49d8e !important;
+  color: #5c5851 !important;
+  background: rgba(255,255,255,0.6) !important;
+}
+
+/* 3️⃣ 购物车输入区文字与占位符颜色加深 */
+.drawer-ft input.btn,
+.drawer-ft input.btn:focus {
+  color: #4f4a44 !important;
+  border-color: #bfb4a1 !important;
+  background: #fffdfa !important;
+}
+.drawer-ft input.btn::placeholder {
+  color: #857e72 !important; /* 深灰米色 */
+  opacity: 1 !important;
+}
+
+/* 抽屉整体文字稍加深（购物车标题等） */
+#drawer {
+  color: #4a463f !important;
+}
+
+/* “购物车”主按钮字体颜色统一 */
+#cartBtn {
+  color: #3e3b35 !important;
+  font-weight: 800 !important;
+}
+
+/* 提交按钮文字颜色保持暖灰 */
+#submitOrder {
+  color: #3c372f !important;
+}
+/* 收起/展开：当 aria-expanded="false" 时隐藏列表 */
+.section[aria-expanded="false"] .grid{
+  display: none !important;
+}
+
+/* 收起时的外观微调（可改/可删） */
+.section[aria-expanded="false"]{
+  margin-bottom: 10px;
+}
+.section[aria-expanded="false"] .section-header{
+  border-bottom-left-radius: 12px;
+  border-bottom-right-radius: 12px;
+}
+.section .section-header{
+  cursor: pointer; /* 提示可点 */
+}
+/* ===== 浅鼠尾草绿按钮风格（加入 & 收起） ===== */
+
+/* 主按钮底色浅绿，配合当前主题 */
+.btn,
+.section-toggle {
+  background: linear-gradient(180deg,#cfd8cf,#bfc9c0) !important; /* 浅鼠尾草绿 */
+  border: 1px solid #aebaaf !important;
+  color: #3d413b !important;  /* 深灰文字，不是黑 */
+  box-shadow: 0 2px 3px rgba(0,0,0,.12) !important;
+  transition: all .15s ease;
+}
+
+/* hover 和 active 状态 */
+.btn:hover,
+.section-toggle:hover {
+  background: linear-gradient(180deg,#d8e0d8,#c8d2c8) !important;
+}
+.btn:active,
+.section-toggle:active {
+  background: linear-gradient(180deg,#b8c2b8,#aeb8ae) !important;
+  transform: translateY(1px);
+  box-shadow: 0 1px 2px rgba(0,0,0,.18) inset !important;
+}
+
+/* 收起按钮：更轻、更小圆角 */
+.section-toggle {
+  padding: 6px 12px !important;
+  border-radius: 10px !important;
+  font-weight: 700 !important;
+}
+
+/* 加入按钮：卡片比例适配 */
+.card .btn.add {
+  font-size: 14px !important;
+  padding: 8px 18px !important;
+  border-radius: 8px !important;
+  background: linear-gradient(180deg,#cfd8cf,#bfc9c0) !important;
+}
+/* ===== 仅调整 “加入” 按钮配色，保持与收起一致但更小巧 ===== */
+.card .btn.add {
+  background: linear-gradient(180deg, #cfd8cf, #bfc9c0) !important; /* 浅鼠尾草绿 */
+  border: 1px solid #aebaaf !important;
+  color: #3d413b !important;  /* 深灰文字 */
+  font-weight: 700 !important;
+  font-size: 14px !important;
+  padding: 8px 18px !important;
+  border-radius: 8px !important;
+  box-shadow: 0 2px 3px rgba(0,0,0,.12) !important;
+  transition: all .15s ease;
+}
+
+/* hover / active 状态 */
+.card .btn.add:hover {
+  background: linear-gradient(180deg, #d8e0d8, #c8d2c8) !important;
+}
+.card .btn.add:active {
+  background: linear-gradient(180deg, #b8c2b8, #aeb8ae) !important;
+  transform: translateY(1px);
+  box-shadow: 0 1px 2px rgba(0,0,0,.18) inset !important;
+}
+/* 统一 “加入” 按钮配色为浅鼠尾草绿 */
+.card .add,
+.card .btn.add {
+  background: linear-gradient(180deg, #cfd8cf, #bfc9c0) !important;
+  border: 1px solid #aebaaf !important;
+  color: #3d413b !important;          /* 深一点的灰，不是黑 */
+  font-weight: 700 !important;
+  font-size: 14px !important;
+  padding: 8px 18px !important;
+  border-radius: 8px !important;
+  box-shadow: 0 2px 3px rgba(0,0,0,.12) !important;
+  transition: all .15s ease;
+}
+.card .add:hover,
+.card .btn.add:hover {
+  background: linear-gradient(180deg, #d8e0d8, #c8d2c8) !important;
+}
+.card .add:active,
+.card .btn.add:active {
+  background: linear-gradient(180deg, #b8c2b8, #aeb8ae) !important;
+  transform: translateY(1px);
+  box-shadow: 0 1px 2px rgba(0,0,0,.18) inset !important;
+}
+/* 抽屉改为三段式：头部固定 + 中间滚动 + 底部固定 */
+#drawer{
+  display: flex !important;
+  flex-direction: column !important;
+  max-height: calc(100vh - 20px) !important;   /* 更贴近全屏 */
+}
+.drawer-ct{
+  flex: 1 1 auto !important;
+  overflow: auto !important;
+  -webkit-overflow-scrolling: touch !important; /* iOS 惯性滚动 */
+  overscroll-behavior: contain !important;      /* 防止穿透到底层页面 */
+}
+.drawer-ft{
+  position: sticky;
+  bottom: 0;
+  background: inherit;    /* 视觉连贯 */
+  padding-bottom: calc(14px + env(safe-area-inset-bottom, 0px)) !important;
+}
+/* 购物车“清空”按钮（轻量外观） */
+.btn.ghost{
+  background: linear-gradient(180deg, #fbfaf7, #f3eee6) !important;
+  border: 1px solid #cfc5b3 !important;
+  color: #6a655b !important;
+  box-shadow: 0 1px 2px rgba(0,0,0,.08) !important;
+  font-weight: 700 !important;
+}
+.btn.ghost:hover{
+  background: linear-gradient(180deg, #ffffff, #f7f2ea) !important;
+}
+.btn.ghost:active{
+  background: linear-gradient(180deg, #f0e9df, #e7dfd3) !important;
+}
+/* ===== 优化购物车高度，避免与状态栏重叠 ===== */
+#drawer {
+  top: calc(env(safe-area-inset-top, 0px) + 12px) !important; /* 整体下移一点 */
+  max-height: calc(90vh - env(safe-area-inset-top, 0px)) !important; /* 保留顶部留白 */
+  border-top-left-radius: 18px !important;
+  border-top-right-radius: 18px !important;
+  overflow: hidden !important;
+}
+
+/* 调整抽屉内部布局：保持可滚动区域和底部按钮稳定 */
+.drawer-ct {
+  flex: 1 1 auto !important;
+  overflow: auto !important;
+  -webkit-overflow-scrolling: touch !important;
+  overscroll-behavior: contain !important;
+}
+.drawer-ft {
+  position: sticky !important;
+  bottom: 0 !important;
+  background: inherit !important;
+  padding-bottom: calc(14px + env(safe-area-inset-bottom, 0px)) !important;
+}
+/* ===== 修正购物车抽屉底部悬空问题 ===== */
+#drawer {
+  position: fixed !important;
+  inset: auto 0 0 0 !important;        /* 贴合屏幕底部 */
+  width: 100% !important;
+  max-height: calc(92vh - env(safe-area-inset-top, 0px)) !important;
+  margin: 0 !important;
+  border-top-left-radius: 18px !important;
+  border-top-right-radius: 18px !important;
+  border-bottom-left-radius: 0 !important;
+  border-bottom-right-radius: 0 !important;
+  bottom: 0 !important;
+  transform: translateY(0);            /* 确保展开后贴底 */
+}
+
+/* 底部区域贴合安全区，消除额外空隙 */
+.drawer-ft {
+  position: sticky !important;
+  bottom: 0 !important;
+  background: inherit !important;
+  padding-bottom: env(safe-area-inset-bottom, 0px) !important;
+  border-top: 1px solid #d4cdbf;
+}
   </style>
 </head>
 <body>
@@ -159,10 +523,11 @@
       <label style="display:flex;align-items:center;gap:8px;cursor:pointer"><input id="showPendingOnly" type="checkbox" checked><span>只看未做</span></label>
       <button id="markAllDone" class="btn">标记完成</button>
       <button id="enableNotify" class="btn">开启提醒</button>
+      <!-- 默认隐藏的清空按钮 -->
       <button id="purgeAll" class="btn danger" style="display:none">🗑️ 清空本房间订单</button>
     </div>
-    <div id="roomInfo" style="color:#666;margin:8px 0"></div>
-    <table style="width:100%;border-collapse:collapse;border:1px solid #d4cdbf">
+    <div id="roomInfo" style="color:#c7cbe0;margin:8px 0"></div>
+    <table style="width:100%;border-collapse:collapse;border:1px solid #2a2a44">
       <thead><tr><th>时间</th><th>来源</th><th>菜品</th><th>数量</th><th>操作</th></tr></thead>
       <tbody id="adminRows"></tbody>
     </table>
@@ -177,6 +542,7 @@
       </div>
       <div class="adminToggle"><button id="toggleAdmin" class="btn">👨‍🍳 厨房屏</button></div>
     </div>
+
     <div class="tabs">
       <button class="pill" data-filter="all" aria-pressed="true">全部</button>
       <button class="pill" data-filter="Main">热菜</button>
@@ -190,7 +556,7 @@
 
   <!-- 购物车 -->
   <button id="cartBtn">🛒 购物车 <small id="cartCount">(0)</small></button>
-  <aside id="drawer" aria-hidden="true" style="transform:translateY(110%);">
+  <aside id="drawer" aria-hidden="true">
     <div class="drawer-hd"><strong>🛒 购物车</strong><button class="btn" id="closeDrawer">关闭</button></div>
     <div class="drawer-ct" id="cartList"></div>
     <div class="drawer-ft">
@@ -201,14 +567,15 @@
         <input id="cIngs" placeholder="食材（可选，逗号分隔）" class="btn">
         <button id="addCustom" class="btn">加入购物车（自定义）</button>
       </div>
-      <button class="btn" id="submitOrder">提交订单</button>
+      <button class="btn" id="submitOrder" style="background:linear-gradient(135deg,#7c5cff,#ffd166);color:#0b0b0e">提交订单</button>
+      
     </div>
   </aside>
 
   <footer>© 2025 深夜食堂 · 安装到主屏幕后离线可用。</footer>
 
   <script>
-    /* 菜单 JSON */
+    /* 菜单 JSON（统一线上路径） */
     var MENU_URL = 'https://linshizhanghao00.github.io/shenyeshitang/menu.json';
 
     /* 状态判定 */
@@ -226,59 +593,78 @@
     var cartBtn=document.getElementById('cartBtn');
     var drawer=document.getElementById('drawer');
     var cartList=document.getElementById('cartList');
+    // 确保购物车默认关闭状态
+    drawer.style.transform='translateY(110%)';
+    drawer.setAttribute('aria-hidden','true');
     var cartCount=document.getElementById('cartCount');
     var closeDrawer=document.getElementById('closeDrawer');
     var submitOrder=document.getElementById('submitOrder');
     var clearCart=document.getElementById('clearCart');
+    var nickname=document.getElementById('nickname');
     var cName=document.getElementById('cName');
     var cIngs=document.getElementById('cIngs');
     var addCustom=document.getElementById('addCustom');
     var toggleAdmin=document.getElementById('toggleAdmin');
 
-    /* 初始强制收起购物车（默认关闭） */
-    drawer.style.transform='translateY(110%)';
-    drawer.setAttribute('aria-hidden','true');
-
-    /* PWA 管理员一键切换 */
+    /* PWA 一键切换管理员/用户 */
     if (toggleAdmin) {
       function refreshAdminButton(){ toggleAdmin.textContent = ADMIN ? '🛎 返回点单' : '👨‍🍳 厨房屏'; }
       refreshAdminButton();
       toggleAdmin.onclick = function(){
         var base = location.pathname.replace(/\/index\.html$/, '/');
-        if (ADMIN) { localStorage.removeItem('adminMode'); location.href = base + '?v=' + (window.__APP_VERSION__||''); }
-        else { localStorage.setItem('adminMode','1'); location.href = base + '?admin=1&r=' + encodeURIComponent(window.ROOM_LOCK) + '&v=' + (window.__APP_VERSION__||''); }
+        if (ADMIN) {
+          localStorage.removeItem('adminMode');
+          location.href = base + '?v=' + (window.__APP_VERSION__||'');
+        } else {
+          localStorage.setItem('adminMode','1');
+          location.href = base + '?admin=1&r=' + encodeURIComponent(window.ROOM_LOCK) + '&v=' + (window.__APP_VERSION__||'');
+        }
       };
     }
 
-    /* 占位图（透明背景，仅 emoji） clean */
-    function iconSVG(e,label){
-      var svg = encodeURIComponent(
-        "<?xml version='1.0'?>"
-       +"<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 220 220'>"
-       +"<rect width='220' height='220' fill='none'/>"
-       +"<text x='110' y='115' font-size='96' text-anchor='middle'>"+(e||'🍽️')+"</text>"
-       +"</svg>"
-      );
-      var im=new Image(); im.className='thumb loaded'; im.alt=label; im.src='data:image/svg+xml;utf8,'+svg; return im;
-    }
+    /* SVG 占位图 */
+    /* ✨ 替换原来的 iconSVG —— 不再绘制白色圆盘，只放 emoji */
+function iconSVG(e, label){
+  var svg = encodeURIComponent(
+    "<?xml version='1.0'?>"
+   +"<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 220 220'>"
+   /* 背景透明，由 .imgbox 提供鼠尾草绿渐变 */
+   +"<rect width='220' height='220' fill='none'/>"
+   /* 仅绘制 emoji，位置略靠上更协调 */
+   +"<text x='110' y='115' font-size='96' text-anchor='middle'>"+(e||'🍽️')+"</text>"
+   /* 可选：下面这行如果你想保留中文标题小贴纸就留，不想要可以删 */
+   // +"<text x='110' y='190' font-size='0' text-anchor='middle'>"+label+"</text>"
+   +"</svg>"
+  );
+  var im = new Image();
+  im.className = 'thumb loaded';
+  im.alt = label;
+  im.src = 'data:image/svg+xml;utf8,' + svg;
+  return im;
+}
     function mediaFor(item){ return iconSVG(item.emoji,item.name_cn); }
 
-    /* ============== 分组 / 渲染 ============== */
+    /* ============== 分类 / 分组渲染（按你的“逻辑改进摘要”） ============== */
     var MENU=[];
-    function groupSection(title, items){
-      var sec=document.createElement('section'); sec.className='section'; sec.setAttribute('aria-expanded','true');
-      var header=document.createElement('div'); header.className='section-header';
-      header.innerHTML="<div class='section-title'><span>"+title+"</span><span class='section-sub'>共 "+items.length+" 道</span></div>";
-      var btn=document.createElement('button'); btn.className='section-toggle btn add'; btn.textContent='收起'; /* 复用浅绿外观 */
-      header.appendChild(btn);
 
-      function toggle(){
-        var open = sec.getAttribute('aria-expanded') !== 'false';
-        sec.setAttribute('aria-expanded', open ? 'false' : 'true');
-        btn.textContent = open ? '展开' : '收起';
-      }
-      btn.addEventListener('click', function(e){ e.stopPropagation(); toggle(); });
-      header.addEventListener('click', function(e){ if (e.target === btn) return; toggle(); });
+    function groupSection(title, items){
+  var sec=document.createElement('section'); sec.className='section'; sec.setAttribute('aria-expanded','true');
+  var header=document.createElement('div'); header.className='section-header';
+  header.innerHTML="<div class='section-title'><span>"+title+"</span><span class='section-sub'>共 "+items.length+" 道</span></div>";
+  var btn=document.createElement('button'); btn.className='section-toggle'; btn.textContent='收起';
+  header.appendChild(btn);
+
+  // ✅ 新增：整条标题栏都可点击收起/展开
+  function toggle(){
+    var open = sec.getAttribute('aria-expanded') !== 'false';
+    sec.setAttribute('aria-expanded', open ? 'false' : 'true');
+    btn.textContent = open ? '展开' : '收起';
+  }
+  btn.addEventListener('click', function(e){ e.stopPropagation(); toggle(); });
+  header.addEventListener('click', function(e){
+    if (e.target === btn) return;
+    toggle();
+  });
 
       var grid=document.createElement('div'); grid.className='grid';
       items.forEach(function(it){
@@ -288,8 +674,8 @@
         content.innerHTML="<h3 class='name'>"+it.name_cn+(it.name_en?' · '+it.name_en:'')+"</h3>"
           +"<p class='desc'>"+(it.desc||'')+"</p>"
           +"<div class='tags'>"+((it.tags||[]).map(function(t){return '<span class=\"tag\">'+t+'</span>';}).join(''))+"</div>"
-          +"<button class='btn add' data-item='"+it.name_cn+"'>加入</button>";
-        content.querySelector('.btn.add').onclick=function(){ cart[it.name_cn]=(cart[it.name_cn]||0)+1; saveCart(); };
+          +"<button class='add' data-item='"+it.name_cn+"'>加入</button>";
+        content.querySelector('.add').onclick=function(){ cart[it.name_cn]=(cart[it.name_cn]||0)+1; saveCart(); };
         card.appendChild(imgbox); card.appendChild(content); grid.appendChild(card);
       });
       sec.appendChild(header); sec.appendChild(grid); return sec;
@@ -299,17 +685,15 @@
       var grid=document.createElement('div'); grid.className='grid-all';
       var q=(searchInput.value||'').trim().toLowerCase();
       items.filter(function(it){
-        var hay=(it.name_cn+' '+(it.name_en||'')+' '+(it.tags||[]).join(' ')).toLowerCase();
+        var hay=(it.name_cn+' '+(it.name_en||'')+' '+(it.category||'')+' '+(it.tags||[]).join(' ')).toLowerCase();
         return !q || hay.includes(q);
       }).forEach(function(it){
-        var card=document.createElement('article'); card.className='card';
+        var card=document.createElement('article'); card.className='card-all';
         var imgbox=document.createElement('div'); imgbox.className='imgbox'; imgbox.appendChild(mediaFor(it));
-        var content=document.createElement('div'); content.className='content';
-        content.innerHTML="<h3 class='name'>"+it.name_cn+"</h3>"
-          +"<div class='tags'></div>"
-          +"<button class='btn add' data-item='"+it.name_cn+"'>加入</button>";
-        content.querySelector('.btn.add').onclick=function(){ cart[it.name_cn]=(cart[it.name_cn]||0)+1; saveCart(); };
-        card.appendChild(imgbox); card.appendChild(content); grid.appendChild(card);
+        var t=document.createElement('div'); t.className='title-only'; t.textContent=it.name_cn;
+        card.appendChild(imgbox); card.appendChild(t);
+        card.onclick=function(){ cart[it.name_cn]=(cart[it.name_cn]||0)+1; saveCart(); };
+        grid.appendChild(card);
       });
       return grid;
     }
@@ -317,34 +701,43 @@
     function renderMenu(){
       root.innerHTML='';
       var q=(searchInput.value||'').trim().toLowerCase();
-      function matchQ(it){ var hay=(it.name_cn+' '+(it.name_en||'')+' '+(it.category||'')+' '+(it.tags||[]).join(' ')).toLowerCase(); return !q || hay.includes(q); }
+      function matchQ(it){
+        var hay=(it.name_cn+' '+(it.name_en||'')+' '+(it.category||'')+' '+(it.tags||[]).join(' ')).toLowerCase();
+        return !q || hay.includes(q);
+      }
       function hasTag(it, tag){ return (it.tags||[]).indexOf(tag)>-1; }
       function nameHas(it, kwCN){ return (it.name_cn||'').indexOf(kwCN)>-1; }
 
       var activeEl=document.querySelector('.pill[aria-pressed="true"]');
       var active = activeEl ? activeEl.dataset.filter : 'all';
+
       if (active === 'all') { root.appendChild(gridAll(MENU)); return; }
 
+      /* —— 热菜（Main） 三组 —— */
       if (active === 'Main') {
         var soup = MENU.filter(function(it){ return matchQ(it) && hasTag(it,'Soup'); });
         var veg  = MENU.filter(function(it){ return matchQ(it) && it.category==='Veg'  && !hasTag(it,'Cold'); });
         var meat = MENU.filter(function(it){ return matchQ(it) && it.category==='Main' && !hasTag(it,'Soup'); });
+
         if (meat.length) root.appendChild(groupSection('🥩 肉菜', meat));
         if (veg.length)  root.appendChild(groupSection('🥦 素菜', veg));
         if (soup.length) root.appendChild(groupSection('🍲 汤类', soup));
         return;
       }
 
+      /* —— 主食（Rice） 三组 —— */
       if (active === 'Rice') {
-        var rice   = MENU.filter(function(it){ return matchQ(it) && (it.category==='Rice' && nameHas(it,'饭')); });
-        var noodle = MENU.filter(function(it){ return matchQ(it) && (it.category==='Rice' && nameHas(it,'面')); });
-        var pastry = MENU.filter(function(it){ return matchQ(it) && (it.category==='Rice' && !nameHas(it,'饭') && !nameHas(it,'面')); });
+        var rice   = MENU.filter(function(it){ return matchQ(it) && it.category==='Rice' && nameHas(it,'饭'); });
+        var noodle = MENU.filter(function(it){ return matchQ(it) && it.category==='Rice' && nameHas(it,'面'); });
+        var pastry = MENU.filter(function(it){ return matchQ(it) && it.category==='Rice' && !nameHas(it,'饭') && !nameHas(it,'面'); });
+
         if (rice.length)   root.appendChild(groupSection('🍚 饭', rice));
         if (noodle.length) root.appendChild(groupSection('🍜 面', noodle));
         if (pastry.length) root.appendChild(groupSection('🥟 面食', pastry));
         return;
       }
 
+      /* —— 凉拌菜（Cold） 不细分 —— */
       if (active === 'Cold') {
         var cold = MENU.filter(function(it){ return matchQ(it) && hasTag(it,'Cold'); });
         if (cold.length) root.appendChild(groupSection('🥒 凉拌菜', cold));
@@ -361,7 +754,7 @@
     });
     searchInput.addEventListener('input', renderMenu);
 
-    /* 购物车基础 */
+    /* 购物车 */
     var cart; try { cart = JSON.parse(localStorage.getItem('yd_cart') || '{}'); } catch { cart = {}; }
     function saveCart(){ localStorage.setItem('yd_cart', JSON.stringify(cart)); renderCart(); }
     function renderCart(){
@@ -371,7 +764,7 @@
         var qty=cart[name]; total+=qty;
         var row=document.createElement('div');
         row.style.display='grid'; row.style.gridTemplateColumns='1fr auto auto'; row.style.gap='12px';
-        row.style.alignItems='center'; row.style.padding='12px 0'; row.style.borderBottom='1px dashed #d4cdbf';
+        row.style.alignItems='center'; row.style.padding='12px 0'; row.style.borderBottom='1px dashed #2a2a44';
         row.innerHTML='<strong class="row-name">'+name+'</strong><div></div>'
           +'<div class="qty row-qty"><button class="btn" data-op="-">-</button> <span>'+qty+'</span> <button class="btn" data-op="+">+</button></div>';
         row.querySelector('[data-op="-"]').onclick=function(){ cart[name]=Math.max(0,(cart[name]||0)-1); if(cart[name]===0) delete cart[name]; saveCart(); };
@@ -380,8 +773,6 @@
       });
       count.textContent='('+total+')';
     }
-
-    /* 抽屉开合 */
     cartBtn.onclick=function(){ drawer.style.transform='translateY(0)'; drawer.setAttribute('aria-hidden','false'); };
     closeDrawer.onclick=function(){ drawer.style.transform='translateY(110%)'; drawer.setAttribute('aria-hidden','true'); };
     clearCart.onclick=function(){ cart={}; saveCart(); };
@@ -393,14 +784,21 @@
     };
     renderCart();
 
-    /* 加载菜单 */
+    /* 加载菜单 JSON */
     fetch(MENU_URL, { cache:'no-store' })
       .then(function(r){ if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); })
       .then(function(d){ MENU = Array.isArray(d)? d : []; renderMenu(); })
       .catch(function(e){ console.error('[menu] load failed', e); });
 
-    /* Firestore */
-    const _firebaseConfig = { apiKey:"AIzaSyA45H7MVPejI-09EmX3Y9RP0G-BzxKUA0M", authDomain:"shenyeshitang-9a3c2.firebaseapp.com", projectId:"shenyeshitang-9a3c2", storageBucket:"shenyeshitang-9a3c2.firebasestorage.app", messagingSenderId:"293937999981", appId:"1:293937999981:web:364b69c1ea61b48e8acf64" };
+    /* Firestore（模块方式） */
+    const _firebaseConfig = {
+      apiKey: "AIzaSyA45H7MVPejI-09EmX3Y9RP0G-BzxKUA0M",
+      authDomain: "shenyeshitang-9a3c2.firebaseapp.com",
+      projectId: "shenyeshitang-9a3c2",
+      storageBucket: "shenyeshitang-9a3c2.firebasestorage.app",
+      messagingSenderId: "293937999981",
+      appId: "1:293937999981:web:364b69c1ea61b48e8acf64"
+    };
     async function ensureDb(){
       if (window.__fs && window.__db) return { fs: window.__fs, db: window.__db };
       const appMod = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js');
@@ -431,61 +829,97 @@
           const qLines = fs.query(fs.collection(db,'yd_order_lines'), fs.where('room','==', window.ROOM_LOCK));
           var firstLoad = true;
 
-          /* 双击标题显隐清空按钮 */
+          /* ===== 改为：双击 显示隐藏按钮 ===== */
           (function revealPurgeButton(){
             var title = document.querySelector('#admin h3');
             var purgeBtn = document.getElementById('purgeAll');
             if(!title || !purgeBtn) return;
+
             var shown = false;
-            function show(){ if (!shown){ purgeBtn.style.display='inline-block'; shown=true; } }
+            function show(){
+              if (!shown) { purgeBtn.style.display = 'inline-block'; shown = true; }
+            }
+
+            // 鼠标/触控板：双击
             title.addEventListener('dblclick', show);
-            var lastTapTime=0,lastX=0,lastY=0, TAP_MS=320,TAP_DIST=24;
+
+            // 触屏双击（两次 tap 间隔与位移阈值）
+            var lastTapTime = 0, lastX = 0, lastY = 0;
+            var TAP_MS = 320, TAP_DIST = 24;
             title.addEventListener('touchend', function(e){
-              var t=e.changedTouches[0], now=Date.now(), dt=now-lastTapTime, dx=Math.abs(t.clientX-lastX), dy=Math.abs(t.clientY-lastY);
-              if (dt<TAP_MS && dx<TAP_DIST && dy<TAP_DIST){ show(); lastTapTime=0; } else { lastTapTime=now; lastX=t.clientX; lastY=t.clientY; }
-            }, {passive:true});
+              var t = e.changedTouches[0];
+              var now = Date.now();
+              var dt = now - lastTapTime;
+              var dx = Math.abs(t.clientX - lastX);
+              var dy = Math.abs(t.clientY - lastY);
+              if (dt < TAP_MS && dx < TAP_DIST && dy < TAP_DIST) {
+                show();
+                lastTapTime = 0;
+              } else {
+                lastTapTime = now; lastX = t.clientX; lastY = t.clientY;
+              }
+            }, { passive: true });
           })();
 
-          /* 清空本房间订单 */
+          /* ===== 清空本房间订单（需输入 DELETE） ===== */
           (function bindPurgeHandler(){
-            var purgeBtn=document.getElementById('purgeAll'); if(!purgeBtn) return;
+            var purgeBtn = document.getElementById('purgeAll');
+            if(!purgeBtn) return;
             purgeBtn.onclick = async function(){
               try{
                 if(!confirm('⚠️ 确认清空房间《'+window.ROOM_LOCK+'》所有订单与明细？此操作不可恢复。')) return;
-                var code = prompt('请输入 DELETE 以确认：'); if(code!=='DELETE'){ alert('已取消'); return; }
-                const { fs, db } = await ensureDb();
-                const sL = await fs.getDocs(fs.query(fs.collection(db,'yd_order_lines'), fs.where('room','==', window.ROOM_LOCK)));
+                var code = prompt('请输入 DELETE 以确认：');
+                if(code!=='DELETE'){ alert('已取消'); return; }
+
+                // 先删明细
+                const qL = fs.query(fs.collection(db,'yd_order_lines'), fs.where('room','==', window.ROOM_LOCK));
+                const sL = await fs.getDocs(qL);
                 await Promise.all(sL.docs.map(function(d){ return fs.deleteDoc(d.ref); }));
-                const sO = await fs.getDocs(fs.query(fs.collection(db,'yd_orders'), fs.where('room','==', window.ROOM_LOCK)));
+
+                // 再删订单头
+                const qO = fs.query(fs.collection(db,'yd_orders'), fs.where('room','==', window.ROOM_LOCK));
+                const sO = await fs.getDocs(qO);
                 await Promise.all(sO.docs.map(function(d){ return fs.deleteDoc(d.ref); }));
+
                 alert('✅ 已清空：订单 '+sO.size+' 单，明细 '+sL.size+' 行');
-              }catch(e){ alert('清空失败：'+(e && e.message ? e.message : e)); }
+              }catch(e){
+                console.error('清空失败：', e);
+                alert('清空失败：'+(e && e.message ? e.message : e));
+              }
             };
           })();
 
-          const { fs } = await ensureDb();
           fs.onSnapshot(qLines, function(snap){
             var tbody=document.getElementById('adminRows'); if(!tbody) return;
             tbody.innerHTML='';
             var rows=[];
-            snap.forEach(function(d){ var data=d.data(); var ts=data.createdAt&&data.createdAt.toMillis?data.createdAt.toMillis():0; rows.push({id:d.id,data:data,ts:ts}); });
+            snap.forEach(function(d){
+              var data=d.data();
+              var ts=data.createdAt&&data.createdAt.toMillis?data.createdAt.toMillis():0;
+              rows.push({id:d.id,data:data,ts:ts});
+            });
             rows.sort(function(a,b){return b.ts-a.ts;});
             var showPendingOnly=document.getElementById('showPendingOnly');
+
             rows.forEach(function(row){
               var data=row.data; var isDone=data.status==='done';
               if(showPendingOnly && showPendingOnly.checked && isDone) return;
               var when=(data.createdAt && data.createdAt.toDate)? data.createdAt.toDate().toLocaleString(): '';
               var tr=document.createElement('tr'); tr.style.opacity=isDone?'0.55':'1';
               tr.innerHTML='<td>'+when+'</td><td>'+(data.nick||'-')+'</td><td>'+data.name+'</td><td>'+data.qty+'</td>';
-              var tdOp=document.createElement('td'); var b=document.createElement('button'); b.className='btn'; b.textContent=isDone?'撤销':'完成';
-              b.onclick=async function(){ try{ await fs.updateDoc(fs.doc(window.__db,'yd_order_lines',row.id),{status:isDone?'pending':'done',doneAt:isDone?null:new Date()}); }catch(e){ alert('更新失败：'+e.message); } };
-              tdOp.appendChild(b); tr.appendChild(tdOp); tbody.appendChild(tr);
+              var tdOp=document.createElement('td'); var btn=document.createElement('button'); btn.className='btn'; btn.textContent=isDone?'撤销':'完成';
+              btn.onclick=async function(){ try{ await fs.updateDoc(fs.doc(db,'yd_order_lines',row.id),{status:isDone?'pending':'done',doneAt:isDone?null:new Date()}); }catch(e){ alert('更新失败：'+e.message); } };
+              tdOp.appendChild(btn); tr.appendChild(tdOp); tbody.appendChild(tr);
             });
+
             if(!firstLoad && 'Notification' in window && Notification.permission==='granted'){
-              snap.docChanges().forEach(function(ch){ if(ch.type==='added'){ var d=ch.doc.data(); if(d.status!=='done'){ new Notification('新订单 · '+d.name+' × '+d.qty); } }});
+              snap.docChanges().forEach(function(ch){
+                if(ch.type==='added'){ var d=ch.doc.data(); if(d.status!=='done'){ new Notification('新订单 · '+d.name+' × '+d.qty); } }
+              });
             }
             firstLoad=false;
           }, function(err){
+            console.error('实时订单监听失败：', err);
             var roomInfo=document.getElementById('roomInfo'); if(roomInfo) roomInfo.textContent='实时订单监听失败：'+err.message;
             alert('实时订单监听失败：'+err.message);
           });
@@ -495,7 +929,6 @@
             markAllBtn.onclick=async function(){
               if(!confirm('将当前显示的订单全部标记为完成？')) return;
               try{
-                const { fs, db } = await ensureDb();
                 const snap2 = await fs.getDocs(qLines);
                 const ops=[];
                 const onlyPending=document.getElementById('showPendingOnly')?.checked;
@@ -504,16 +937,25 @@
               }catch(e){ alert('批量完成失败：'+e.message); }
             };
           }
+
           var notifyBtn=document.getElementById('enableNotify');
           if(notifyBtn){
             notifyBtn.onclick=function(){
               if('Notification' in window){
                 Notification.requestPermission().then(function(p){ alert(p==='granted'?'已开启系统通知':'未授权通知'); });
-              }else{ alert('当前环境不支持通知'); }
+              }else{
+                alert('当前环境不支持通知');
+              }
             }
           }
-          var info=document.getElementById('roomInfo'); if(info) info.textContent='房间：'+window.ROOM_LOCK+'（固定）';
-        }catch(e){ alert('Firebase 初始化失败：'+e.message); }
+
+          var info=document.getElementById('roomInfo');
+          if(info) info.textContent='房间：'+window.ROOM_LOCK+'（固定）';
+
+        }catch(e){
+          console.warn('Firebase 初始化失败：', e);
+          alert('Firebase 初始化失败：'+e.message);
+        }
       })();
     })();
 
@@ -522,11 +964,22 @@
       if (Object.keys(cart).length === 0) { alert('请先加入菜品'); return; }
       try {
         const { fs, db } = await ensureDb();
+        const nick = (nickname && nickname.value ? nickname.value.trim() : '');
         const items = Object.entries(cart).map(([name, qty]) => ({ name, qty }));
-        const headerRef = await fs.addDoc(fs.collection(db, "yd_orders"), { room: window.ROOM_LOCK, nick:"", items, status:"pending", doneAt:null, createdAt: fs.serverTimestamp() });
-        await Promise.all(items.map(it => fs.addDoc(fs.collection(db, "yd_order_lines"), { room: window.ROOM_LOCK, nick:"", orderId: headerRef.id, name: it.name, qty: it.qty, status:"pending", doneAt: null, createdAt: fs.serverTimestamp() })));
-        cart = {}; saveCart(); drawer.style.transform="translateY(110%)"; alert("✅ 已提交成功");
-      } catch (e) { alert("提交失败：" + e.message); }
+
+        const headerRef = await fs.addDoc(fs.collection(db, "yd_orders"), {
+          room: window.ROOM_LOCK, nick, items,
+          status: "pending", doneAt: null, createdAt: fs.serverTimestamp()
+        });
+        await Promise.all(items.map(it => fs.addDoc(fs.collection(db, "yd_order_lines"), {
+          room: window.ROOM_LOCK, nick, orderId: headerRef.id,
+          name: it.name, qty: it.qty, status: "pending", doneAt: null, createdAt: fs.serverTimestamp()
+        })));
+
+        cart = {}; saveCart(); drawer.style.transform = "translateY(110%)"; alert("✅ 已提交成功");
+      } catch (e) {
+        console.error("提交失败：", e); alert("提交失败：" + e.message);
+      }
     };
   </script>
 </body>
