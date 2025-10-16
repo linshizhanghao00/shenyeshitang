@@ -6,21 +6,18 @@
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 
-  <!-- ==== 建议④：同时把 manifest.admin.webmanifest 的 start_url 也改成
-       "/shenyeshitang/index.html?admin=1&r=%E5%AE%B6%E5%BA%AD%E8%81%9A%E9%A4%90&v=v3" ==== -->
-
   <!-- 默认普通版 manifest；运行时按管理员状态切换为管理员 manifest -->
   <link id="manifestLink" rel="manifest" href="/shenyeshitang/manifest.webmanifest">
   <link rel="apple-touch-icon" href="/shenyeshitang/icons/icon-192.png">
   <title>深夜食堂</title>
 
-  <!-- 必改①：全局房间常量 + 版本号（强制 PWA 刷新缓存） -->
+  <!-- 全局常量 + 版本号（PWA 强更缓存） -->
   <script>
-    window.ROOM_LOCK = '家庭聚餐';   /* 全局：订阅与提交都能拿到 */
-    window.__APP_VERSION__ = 'v3';   /* 每次发版改它，例如 v4/v5 */
+    window.ROOM_LOCK = '家庭聚餐';
+    window.__APP_VERSION__ = 'v3';
   </script>
 
-  <!-- 方案B：管理员 PWA 记忆 + iOS A2HS 丢 query 的兜底修复 -->
+  <!-- 管理员记忆 + A2HS 丢 query 兜底 -->
   <script>
     (function () {
       try {
@@ -30,7 +27,6 @@
 
         console.log('[PWA] admin?', p.get('admin'), 'savedAdmin?', savedAdmin);
 
-        // 必改②(a)：带 admin=1 或曾记忆为管理员 → 切管理员 manifest
         if (p.get('admin') === '1' || savedAdmin) {
           localStorage.setItem('adminMode', '1');
           localStorage.setItem('adminRoom', window.ROOM_LOCK);
@@ -40,14 +36,13 @@
             console.log('[PWA] manifest switched to admin');
           }
         } else {
-          // 必改②(b)：PWA 启动但丢了 query → 强制跳一次带参地址（带版本号，绕缓存）
           if (isPWA && savedAdmin) {
             var base = location.pathname.replace(/\/index\.html$/, '/');
             var target = base + '?admin=1&r=' + encodeURIComponent(window.ROOM_LOCK) + '&v=' + (window.__APP_VERSION__ || '');
             if (location.search.indexOf('admin=1') === -1) {
               console.log('[PWA] fix query →', target);
               location.replace(target);
-              return; // 交由带参页面初始化
+              return;
             }
           }
         }
@@ -68,18 +63,26 @@
       background:radial-gradient(1200px 600px at 70% -10%,rgba(124,92,255,.15),transparent 60%),
                  radial-gradient(1000px 500px at 0% 100%,rgba(61,217,178,.12),transparent 60%),var(--bg)
     }
-    /* 顶部留白（PWA 与管理员叠加） */
     body.pwa-on header{ padding-top: calc(var(--safeTop) + 10px); }
     body.admin-on header{ padding-top: calc(var(--safeTop) + 22px); }
     body.pwa-on.admin-on header{ padding-top: calc(var(--safeTop) + 26px); }
     header{position:sticky;top:0;z-index:20;background:rgba(12,12,15,.85);backdrop-filter:blur(8px)}
-    .topbar{display:grid;grid-template-columns:1fr auto;gap:12px;align-items:center;padding:18px var(--safe) 10px}
+
+    .topbar{display:grid;grid-template-columns:1fr auto auto;gap:12px;align-items:center;padding:18px var(--safe) 10px}
     .brand{display:flex;gap:14px;align-items:center}
     .logo{width:46px;height:46px;border-radius:14px;display:grid;place-items:center;background:linear-gradient(135deg,var(--brand),var(--brand2));color:#fff;font-size:24px}
     .logo::after{content:'🌙'}
     .title{font-size:26px;font-weight:800}
+
+    .searchwrap{display:flex;align-items:center;gap:10px}
     .search{display:flex;align-items:center;gap:8px;background:#0f0f15;border:1px solid #242438;color:var(--text);padding:10px 12px;border-radius:12px;min-width:min(260px,40vw)}
     .search input{flex:1;background:transparent;border:0;color:inherit;outline:none;font-size:15px}
+    .catselect{background:#0f0f15;border:1px solid #242438;color:#e9e9f2;border-radius:12px;padding:10px 12px;font-size:14px}
+
+    .adminToggle{display:none}
+    body.pwa-on .adminToggle{display:inline-flex}
+    .adminToggle .btn{background:#1a1b26;border:1px solid #2a2a44;color:#e9e9f2;padding:10px 12px;border-radius:12px;cursor:pointer;font-size:14px}
+    .adminToggle .btn:active{transform:scale(.98)}
 
     .tabs{display:flex;gap:10px;overflow:auto;padding:8px var(--safe) 14px}
     .pill{border:1px solid #28283e;background:#13131b;color:var(--text);padding:10px 14px;border-radius:999px;font-size:14px;cursor:pointer}
@@ -96,7 +99,6 @@
     .thumb.loaded{opacity:1;animation:none;transition:opacity .4s}
     @keyframes pulse{0%{opacity:.4}50%{opacity:.9}100%{opacity:.4}}
 
-    /* 购物车按钮 / 抽屉 */
     #cartBtn{position:fixed;right:16px;bottom:calc(16px + env(safe-area-inset-bottom));background:linear-gradient(135deg,#7c5cff,#ffd166);color:#0b0b0e;border:0;border-radius:16px;padding:14px 18px;font-weight:900;box-shadow:0 14px 40px rgba(0,0,0,.45);z-index:40;font-size:16px}
     #drawer{position:fixed;inset:auto 0 0 auto;right:0;width:min(420px,96vw);max-height:86vh;background:#0f0f16;border-top-left-radius:18px;border:1px solid #2a2a44;box-shadow:0 -20px 60px rgba(0,0,0,.6);transform:translateY(110%);transition:transform .25s;z-index:50}
     .drawer-hd{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid #22243c}
@@ -105,26 +107,17 @@
     .drawer-ft .btn{font-size:16px;padding:12px 14px;border-radius:12px}
     #submitOrder{font-size:20px;padding:20px 18px;min-height:72px;border-radius:14px}
 
-    /* —— UI修复：输入框文字与占位符可见 —— */
-    .drawer-ft input.btn,
-    .drawer-ft input.btn:focus{
-      color:#fff !important;
-      background:#161622 !important;
-      border:1px solid #2a2a44 !important;
-    }
+    .drawer-ft input.btn,.drawer-ft input.btn:focus{color:#fff !important;background:#161622 !important;border:1px solid #2a2a44 !important}
     .drawer-ft input.btn::placeholder{color:#c7cbe0;opacity:.85}
 
-    /* —— UI修复：加减与清空按钮放大约2倍 —— */
     .btn{background:#1a1b26;border:1px solid #2a2a44;color:#e9e9f2;padding:10px 12px;border-radius:10px;cursor:pointer}
     .btn:active{transform:scale(.98)}
     #clearCart{font-size:18px;padding:14px 16px;border-radius:12px}
     .qty .btn{font-size:20px;line-height:1;padding:10px 14px;min-width:44px}
 
-    /* —— UI修复：购物车菜名与数量字号加大 —— */
     #cartList .row-name{font-size:18px;font-weight:800}
     #cartList .row-qty{font-size:18px;font-weight:800}
 
-    /* 管理员页面按钮放大（约2x） */
     #admin .btn{font-size:16px;padding:12px 14px;border-radius:12px}
 
     footer{margin:28px 0 120px;text-align:center;color:var(--muted);font-size:12px}
@@ -151,9 +144,24 @@
   <header>
     <div class="topbar">
       <div class="brand"><div class="logo"></div><div class="title">深夜食堂</div></div>
-      <div class="search">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M21 21l-4.35-4.35M10.5 18a7.5 7.5 0 1 1 0-15 7.5 7.5 0 0 1 0 15z" stroke="#8086a3" stroke-width="2" stroke-linecap="round"/></svg>
-        <input id="search" type="search" placeholder="搜索菜名/标签…" />
+
+      <!-- 搜索 + 下拉分类 -->
+      <div class="searchwrap">
+        <div class="search">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M21 21l-4.35-4.35M10.5 18a7.5 7.5 0 1 1 0-15 7.5 7.5 0 0 1 0 15z" stroke="#8086a3" stroke-width="2" stroke-linecap="round"/></svg>
+          <input id="search" type="search" placeholder="搜索菜名/标签…" />
+        </div>
+        <select id="catSelect" class="catselect">
+          <option value="all">全部</option>
+          <option value="Main">热菜</option>
+          <option value="Rice">主食</option>
+          <option value="Cold">凉拌菜</option>
+        </select>
+      </div>
+
+      <!-- PWA 可见：一键切换管理员/用户 -->
+      <div class="adminToggle">
+        <button id="toggleAdmin" class="btn">👨‍🍳 厨房屏</button>
       </div>
     </div>
 
@@ -168,7 +176,6 @@
   <div id="toast" aria-live="polite"></div>
   <main id="menu-root"></main>
 
-  <!-- 购物车 / 自定义 / 提交（自定义在上，提交在下） -->
   <button id="cartBtn">🛒 购物车 <small id="cartCount">(0)</small></button>
   <aside id="drawer" aria-hidden="true">
     <div class="drawer-hd"><strong>🛒 购物车</strong><button class="btn" id="closeDrawer">关闭</button></div>
@@ -189,24 +196,20 @@
   <footer>© 2025 深夜食堂 · 安装到主屏幕后离线可用。</footer>
 
   <script>
-    /* —— 固定菜单 URL —— */
     var MENU_URL = 'https://linshizhanghao00.github.io/shenyeshitang/menu.json';
 
-    /* —— 房间与管理员状态 —— */
     var qs = new URLSearchParams(location.search);
     var isPWA = (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) || (navigator.standalone === true);
     var savedAdmin = localStorage.getItem('adminMode') === '1';
-
-    /* 微改③：管理员识别更宽松（去掉 isPWA 限制） */
     var ADMIN = (qs.get('admin') === '1') || savedAdmin;
 
     if (ADMIN) document.body.classList.add('admin-on');
-    if (isPWA) document.body.classList.add('pwa-on'); /* PWA 环境（含非管理员）留白 */
+    if (isPWA) document.body.classList.add('pwa-on');
 
-    /* —— DOM —— */
     var root=document.getElementById('menu-root');
     var pills=document.querySelectorAll('.pill');
     var searchInput=document.getElementById('search');
+    var catSelect=document.getElementById('catSelect');
     var cartBtn=document.getElementById('cartBtn');
     var drawer=document.getElementById('drawer');
     var cartList=document.getElementById('cartList');
@@ -218,6 +221,26 @@
     var cName=document.getElementById('cName');
     var cIngs=document.getElementById('cIngs');
     var addCustom=document.getElementById('addCustom');
+    var toggleAdmin=document.getElementById('toggleAdmin');
+
+    // 一键切换管理员 / 用户（PWA 可见）
+    if (toggleAdmin) {
+      function refreshAdminButton() {
+        toggleAdmin.textContent = ADMIN ? '🛎 返回点单' : '👨‍🍳 厨房屏';
+      }
+      refreshAdminButton();
+      toggleAdmin.onclick = function () {
+        if (ADMIN) {
+          localStorage.removeItem('adminMode');
+          var base = location.pathname.replace(/\/index\.html$/, '/');
+          location.href = base + '?v=' + (window.__APP_VERSION__||'');
+        } else {
+          localStorage.setItem('adminMode','1');
+          var base = location.pathname.replace(/\/index\.html$/, '/');
+          location.href = base + '?admin=1&r=' + encodeURIComponent(window.ROOM_LOCK) + '&v=' + (window.__APP_VERSION__||'');
+        }
+      };
+    }
 
     function iconSVG(e,label){
       var svg=encodeURIComponent(
@@ -235,13 +258,27 @@
     }
     function mediaFor(item){ return iconSVG(item.emoji,item.name_cn); }
 
+    // 过滤状态
+    var currentFilter = 'all';
+    function setFilter(val){
+      currentFilter = val;
+      // 同步 pills UI
+      pills.forEach(function(b){ b.setAttribute('aria-pressed', b.dataset.filter===val ? 'true':'false'); });
+      renderMenu();
+    }
+
     var MENU=[];
     function gridAll(items){
       var grid=document.createElement('div'); grid.className='grid-all';
       var q=(searchInput.value||'').trim().toLowerCase();
       items.filter(function(it){
-        var hay=(it.name_cn+' '+(it.name_en||'')+' '+(it.tags||[]).join(' ')).toLowerCase();
-        return !q || hay.includes(q);
+        var hay=(it.name_cn+' '+(it.name_en||'')+' '+(it.tags||[]).join(' ')+' '+(it.category||'')).toLowerCase();
+
+        var okCat = (currentFilter==='all') ||
+                    (it.category===currentFilter) ||
+                    ((it.tags||[]).includes(currentFilter));
+
+        return (!q || hay.includes(q)) && okCat;
       }).forEach(function(it){
         var card=document.createElement('article'); card.className='card-all';
         var imgbox=document.createElement('div'); imgbox.className='imgbox'; imgbox.appendChild(mediaFor(it));
@@ -253,8 +290,14 @@
       return grid;
     }
     function renderMenu(){ root.innerHTML=''; root.appendChild(gridAll(MENU)); }
-    pills.forEach(function(btn){ btn.addEventListener('click', function(){ pills.forEach(function(b){ b.setAttribute('aria-pressed','false'); }); btn.setAttribute('aria-pressed','true'); renderMenu(); }); });
+
+    pills.forEach(function(btn){
+      btn.addEventListener('click', function(){
+        setFilter(btn.dataset.filter);
+      });
+    });
     searchInput.addEventListener('input', renderMenu);
+    catSelect.addEventListener('change', function(){ setFilter(catSelect.value); });
 
     /* —— 购物车 —— */
     var cart; try { cart = JSON.parse(localStorage.getItem('yd_cart') || '{}'); } catch { cart = {}; }
@@ -276,7 +319,7 @@
       count.textContent='('+total+')';
     }
     cartBtn.onclick=function(){ drawer.style.transform='translateY(0)'; drawer.setAttribute('aria-hidden','false'); };
-    closeDrawer.onclick=function(){ drawer.style.transform='translateY(110%)'; drawer.setAttribute('aria-hidden','true'); };
+    closeDrawer.onclick=function(){ drawer.style.transform='translateY(110%)'; drawer.setAttribute='aria-hidden','true'; };
     clearCart.onclick=function(){ cart={}; saveCart(); };
     addCustom.onclick=function(){
       var name=(cName.value||'').trim(); var ings=(cIngs.value||'').trim();
@@ -292,7 +335,7 @@
       .then(function(d){ if(!Array.isArray(d)){ alert('menu.json 格式错误'); return; } MENU=d; renderMenu(); })
       .catch(function(e){ console.error('加载菜单失败：', e); alert('菜单加载失败：'+e.message); });
 
-    /* ================= 通用 Firestore 初始化 ================= */
+    /* ================= Firestore ================= */
     const _firebaseConfig = {
       apiKey: "AIzaSyA45H7MVPejI-09EmX3Y9RP0G-BzxKUA0M",
       authDomain: "shenyeshitang-9a3c2.firebaseapp.com",
@@ -310,12 +353,9 @@
       window.__fs = fsMod; window.__db = db; return { fs: fsMod, db };
     }
 
-    /* ================= 管理员：插入面板并订阅 ================= */
     (function(){
       if (!ADMIN) return;
-
       try{
-        // 显示管理员面板并顶置
         var adminSection = document.getElementById('admin');
         if (adminSection) {
           adminSection.style.display='block';
@@ -330,8 +370,6 @@
       (async function(){
         try{
           const { fs, db } = await ensureDb();
-
-          // 订阅“家庭聚餐”逐行订单
           const qLines = fs.query(fs.collection(db,'yd_order_lines'), fs.where('room','==', window.ROOM_LOCK));
           var firstLoad = true;
 
@@ -358,11 +396,9 @@
               tdOp.appendChild(btn); tr.appendChild(tdOp); tbody.appendChild(tr);
             });
 
-            // 新增订单的本地提醒（仅在允许通知时）
             if(!firstLoad){
               try{
                 if('Notification' in window){
-                  if(Notification.permission==='default'){ /* 用户尚未授权，点按钮时再申请 */ }
                   if(Notification.permission==='granted'){
                     snap.docChanges().forEach(function(ch){
                       if(ch.type==='added'){
@@ -381,7 +417,6 @@
             alert('实时订单监听失败：'+err.message);
           });
 
-          // 批量完成
           var markAllBtn=document.getElementById('markAllDone');
           if(markAllBtn){
             markAllBtn.onclick=async function(){
@@ -396,7 +431,6 @@
             };
           }
 
-          // 开启系统通知
           var notifyBtn=document.getElementById('enableNotify');
           if(notifyBtn){
             notifyBtn.onclick=function(){
@@ -404,9 +438,7 @@
                 if('Notification' in window){
                   if(Notification.permission==='default'){ Notification.requestPermission().then(function(p){ alert(p==='granted'?'已开启系统通知':'未授权通知'); }); }
                   else { alert(Notification.permission==='granted'?'通知已授权':'未授权通知'); }
-                }else{
-                  alert('当前环境不支持通知');
-                }
+                }else{ alert('当前环境不支持通知'); }
               }catch(e){}
             }
           }
@@ -421,7 +453,7 @@
       })();
     })();
 
-    /* ================= 提交订单：admin/非 admin 通用 ================= */
+    /* 提交订单 */
     submitOrder.onclick = async function () {
       if (Object.keys(cart).length === 0) { alert('请先加入菜品'); return; }
       try {
@@ -444,7 +476,6 @@
       }
     };
 
-    /* —— 加载菜单后渲染 —— */
     function renderAfterMenu(){ renderMenu(); }
   </script>
 </body>
