@@ -593,6 +593,9 @@ thead{ background:#f2e8d9 !important; }
     var cartBtn=document.getElementById('cartBtn');
     var drawer=document.getElementById('drawer');
     var cartList=document.getElementById('cartList');
+    // 确保购物车默认关闭状态
+    drawer.style.transform='translateY(110%)';
+    drawer.setAttribute('aria-hidden','true');
     var cartCount=document.getElementById('cartCount');
     var closeDrawer=document.getElementById('closeDrawer');
     var submitOrder=document.getElementById('submitOrder');
