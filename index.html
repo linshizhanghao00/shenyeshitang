@@ -175,136 +175,119 @@ body.pwa-on.admin-on #admin{
   .logo { width: 28px; height: 28px; }
   .title { font-size: 18px; }
 }
-/* ================= 漫画风主题（开关：body.theme-manga） ================= */
-.theme-manga {
-  --paper:#f4f0e6;           /* 纸张底色 */
-  --ink:#2a2a2a;             /* 墨线颜色 */
-  --wash1:#ffe9b2;           /* 水彩暖洗 */
-  --wash2:#c9e6df;           /* 水彩冷洗 */
-  --wash3:#ffe0d6;           /* 微粉 */
-  --shadow:0 2px 0 rgba(0,0,0,.25), 0 1px 12px rgba(0,0,0,.08);
+/* ================== 浅色手绘风（Light Manga）覆盖块 ================== */
+/* 全局纸张底 + 文本颜色 */
+body{
+  background:#f6f3ea !important;     /* 浅米色纸张底 */
+  color:#2b2b2b !important;
 }
 
-/* 纸张背景 + 细噪点 */
-.theme-manga body{
-  background:
-    radial-gradient(1200px 800px at 60% -10%, rgba(255,255,255,.35), transparent 60%),
-    radial-gradient(800px 600px at 0% 100%, rgba(255,214,170,.18), transparent 60%),
-    var(--paper);
-  background-attachment: fixed;
-}
-.theme-manga body::after{
-  content:""; position:fixed; inset:0; pointer-events:none; z-index:-1;
-  background:
-    repeating-linear-gradient(0deg, rgba(0,0,0,.02) 0, rgba(0,0,0,.02) 1px, transparent 1px, transparent 3px),
-    radial-gradient(3px 3px at 20% 30%, rgba(0,0,0,.03), transparent 60%),
-    radial-gradient(2px 2px at 70% 80%, rgba(0,0,0,.02), transparent 60%);
-  mix-blend-mode:multiply;
+/* 顶栏：浅色毛玻璃 + 纸质描边 */
+header{
+  background:rgba(255,255,255,.75) !important;
+  -webkit-backdrop-filter:blur(14px) saturate(150%) !important;
+  backdrop-filter:blur(14px) saturate(150%) !important;
+  border-bottom:2px solid #d0c7b7 !important;
+  box-shadow:0 3px 6px rgba(0,0,0,.08) !important;
 }
 
-/* 顶栏改成“淡毛玻璃 + 墨线” */
-.theme-manga header{
-  background: rgba(255,255,255,.45);
-  -webkit-backdrop-filter: blur(10px) saturate(120%);
-  backdrop-filter: blur(10px) saturate(120%);
-  border-bottom: 2px solid var(--ink);
-  box-shadow: var(--shadow);
+/* 品牌：月亮贴纸 + 两行标题（已在HTML里换行） */
+.logo{
+  width:32px;height:32px;border-radius:8px;
+  background:url('/shenyeshitang/icons/moon-180.png?v=99') center/cover no-repeat !important;
+  border:2px solid #d3bfa2; box-shadow:0 2px 2px rgba(0,0,0,.10);
+}
+.title{ color:#2b2b2b !important; text-shadow:0 1px 0 rgba(255,255,255,.6); }
+
+/* 搜索栏：纸条质感 */
+.search{
+  background:linear-gradient(180deg,#fff,#f9f5ec 80%) !important;
+  border:2px solid #cfc2a9 !important;
+  border-radius:12px !important;
+  box-shadow:0 2px 0 #b7ab91, 0 2px 6px rgba(0,0,0,.10) !important;
+  padding:8px 12px !important;
+}
+.search input{ color:#2b2b2b !important; }
+.search input::placeholder{ color:#8f8879 !important; }
+
+/* 分类胶囊：贴纸 + 浅阴影 */
+.pill{
+  border:2px solid #b7ab91 !important;
+  border-radius:16px !important;
+  background:linear-gradient(180deg,#fff,#f3e8dc) !important;
+  color:#333 !important; font-weight:700 !important;
+  box-shadow:0 2px 0 #b7ab91 !important;
+  padding:8px 12px !important;
+}
+.pill[aria-pressed="true"]{
+  background:linear-gradient(180deg,#ffe5b0,#ffd794) !important;
+  color:#1e1e1e !important; border-color:#cfa86d !important;
+  box-shadow:0 2px 0 #cfa86d !important;
 }
 
-/* 品牌区：横排两行，像手写字牌 */
-.theme-manga .brand{
-  max-width: 120px; gap:8px; line-height:1.05;
-}
-.theme-manga .logo{
-  width:30px; height:30px; border-radius:6px;
-  background:url('/shenyeshitang/icons/moon-180.png?v=99') center/cover no-repeat;
-  border:2px solid var(--ink);
-  box-shadow: 0 2px 0 rgba(0,0,0,.25);
-}
-.theme-manga .title{
-  font-family: "SF Pro Display","PingFang SC","Hiragino Sans GB","Microsoft YaHei",system-ui,sans-serif;
-  font-weight: 900; font-size: 18px; color:#1e1e1e;
-  letter-spacing:.5px; text-shadow: 0 1px 0 rgba(255,255,255,.6);
+/* 分组条：浅色纸质 */
+.section-header{
+  background:linear-gradient(180deg,#fff,#f7f1e6) !important;
+  border:2px solid #c9bda7 !important;
+  border-radius:12px !important;
+  color:#2b2b2b !important;
 }
 
-/* 搜索框：纸条贴纸风 */
-.theme-manga .search{
-  height:38px; padding:0 12px; border-radius:12px;
-  background: linear-gradient(180deg, #fff, #fff6e9 90%);
-  border: 2px solid var(--ink);
-  box-shadow: var(--shadow);
+/* 卡片：浅水彩底 + 墨线边 */
+.card-all,.card{
+  background:linear-gradient(145deg,#fff,#fdf9f2 70%),
+             radial-gradient(400px 240px at 80% 0%,rgba(255,235,210,.35),transparent 60%) !important;
+  border:2px solid #c9bda7 !important;
+  border-radius:14px !important;
+  box-shadow:0 3px 0 #c9bda7, 0 1px 10px rgba(0,0,0,.08) !important;
 }
-.theme-manga .search input{ color:#2b2b2b; }
-.theme-manga .search input::placeholder{ color:#7a7a7a; }
+.name,.title-only{ color:#2b2b2b !important; }
+.imgbox > img.thumb{ filter:saturate(1.05) brightness(1.05) !important; mix-blend-mode:normal !important; }
 
-/* 胶囊按钮（厨房屏等）：贴纸 + 墨线 */
-.theme-manga .adminToggle .btn,
-.theme-manga .btn{
-  border: 2px solid var(--ink)!important;
-  background: linear-gradient(180deg, var(--wash2), #fff);
-  color:#1e1e1e; font-weight:800;
-  box-shadow: var(--shadow);
+/* 按钮：浅色描边 + 轻阴影 */
+.btn{
+  border:2px solid #bfb19a !important;
+  border-radius:12px !important;
+  background:linear-gradient(180deg,#fff,#f4ece1) !important;
+  color:#2b2b2b !important; font-weight:800 !important;
+  box-shadow:0 2px 0 #bfb19a !important;
 }
+.btn:active{ transform:translateY(1px) !important; box-shadow:0 1px 0 #bfb19a !important; }
 
-/* 分类 pill：手绘轮廓 + 水彩底 */
-.theme-manga .pill{
-  border: 2px solid var(--ink);
-  background: linear-gradient(180deg, #fff, var(--wash3) 95%);
-  color:#222; font-weight:900; border-radius:16px;
-  box-shadow: var(--shadow);
-}
-.theme-manga .pill[aria-pressed="true"]{
-  background: linear-gradient(180deg, var(--wash1), #fff);
-}
-
-/* 菜卡片：水彩背景 + 墨线边 + 轻压印阴影 */
-.theme-manga .card-all,
-.theme-manga .card{
-  border: 2px solid var(--ink);
-  border-radius: 14px;
-  background: linear-gradient(145deg, #fff, #fffdf6 70%),
-              radial-gradient(400px 240px at 80% 0%, var(--wash2) 0, transparent 60%),
-              radial-gradient(320px 200px at 0% 100%, var(--wash3) 0, transparent 60%);
-  box-shadow: var(--shadow);
+/* 提交/购物车主按钮：暖色强调 */
+#submitOrder,
+#cartBtn{
+  background:linear-gradient(180deg,#ffe08a,#ffc970) !important;
+  color:#1a1a1a !important;
+  border:2px solid #cfa86d !important;
+  box-shadow:0 3px 0 #cfa86d !important;
 }
 
-/* 菜缩略图：轻水彩化（不会糊） */
-.theme-manga .imgbox > img.thumb{
-  filter: contrast(.95) saturate(1.08) sepia(.06) hue-rotate(-6deg) brightness(1.04);
-  mix-blend-mode: multiply;
+/* 输入框（抽屉中的）改为浅色纸面 */
+.drawer-ft input.btn,.drawer-ft input.btn:focus{
+  background:#fff !important; color:#2b2b2b !important;
+  border:2px solid #c9bda7 !important;
 }
 
-/* 购物车抽屉 & 表格：统一墨线边 */
-.theme-manga #drawer,
-.theme-manga table{
-  border: 2px solid var(--ink);
-  background: #fffaf0;
-  box-shadow: var(--shadow);
+/* 抽屉与表格：浅色纸面 + 浅墨线 */
+#drawer{
+  background:#fdf9f2 !important;
+  border:2px solid #c9bda7 !important;
+  box-shadow:0 -4px 12px rgba(0,0,0,.1) !important;
+  color:#2b2b2b !important;
 }
-.theme-manga thead th{ border-bottom:2px solid var(--ink); }
+table, th, td{ border-color:#c9bda7 !important; color:#2b2b2b !important; }
+thead{ background:#f3eadb !important; }
 
-/* 轻墨线分隔，减少顶区占高 */
-.theme-manga .topbar{ padding:12px var(--safe) 6px; }
-.theme-manga .tabs{ padding:6px var(--safe) 10px; gap:8px; }
+/* 页脚文本 */
+footer{ color:#847c6b !important; text-shadow:0 1px 0 rgba(255,255,255,.5); }
 
-/* 提交按钮强调：暖色水彩 */
-.theme-manga #submitOrder{
-  background: linear-gradient(180deg, #ffd56e, #ffbd4a);
-  border: 2px solid var(--ink);
-  color:#1a1a1a;
-  box-shadow: var(--shadow);
-}
-
-/* 小屏再压一点 */
-@media (max-width:420px){
-  .theme-manga .brand{ max-width:100px; gap:6px; }
-  .theme-manga .title{ font-size:17px; }
-  .theme-manga .topbar{ padding:10px var(--safe) 6px; }
-  .theme-manga .search{ height:36px; }
-}
+/* 让顶部整体再紧凑一点（可选） */
+.topbar{ padding:14px var(--safe) 8px !important; }
+.tabs{ padding:10px var(--safe) 12px !important; }
   </style>
 </head>
-<body class="theme-manga">
+<body>
   <!-- 管理员面板 -->
   <section id="admin" style="display:none;padding:14px var(--safe)">
     <h3>📟 实时订单</h3>
