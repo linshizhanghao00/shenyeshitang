@@ -56,7 +56,17 @@
     body.pwa-on header{ padding-top: calc(var(--safeTop) + 10px); }
     body.admin-on header{ padding-top: calc(var(--safeTop) + 22px); }
     body.pwa-on.admin-on header{ padding-top: calc(var(--safeTop) + 26px); }
+/* 你已有：
+body.pwa-on header{ padding-top: calc(var(--safeTop) + 10px); }
+body.admin-on header{ padding-top: calc(var(--safeTop) + 22px); }
+body.pwa-on.admin-on header{ padding-top: calc(var(--safeTop) + 26px); }
+*/
 
+    /* ✅ 新增：管理员面板位于 header 之前，单独给 #admin 顶部留白 */
+    body.pwa-on #admin{ padding-top: calc(var(--safeTop) + 10px); }
+    body.admin-on #admin{ padding-top: calc(var(--safeTop) + 22px); }
+    body.pwa-on.admin-on #admin{ padding-top: calc(var(--safeTop) + 26px); }
+    
     header{position:sticky;top:0;z-index:20;background:rgba(12,12,15,.85);backdrop-filter:blur(8px)}
     .topbar{display:grid;grid-template-columns:1fr auto auto;gap:12px;align-items:center;padding:18px var(--safe) 10px}
     .brand{display:flex;gap:14px;align-items:center}
