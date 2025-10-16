@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+
   <!-- 默认用户 manifest；运行时按管理员切换 -->
   <link id="manifestLink" rel="manifest" href="/shenyeshitang/manifest.webmanifest">
   <link rel="apple-touch-icon" href="/shenyeshitang/icons/icon-192.png">
@@ -74,7 +75,7 @@
     .pill{border:1px solid #28283e;background:#13131b;color:var(--text);padding:10px 14px;border-radius:999px;font-size:14px;cursor:pointer}
     .pill[aria-pressed="true"]{background:linear-gradient(135deg,rgba(124,92,255,.25),rgba(61,217,178,.2));border-color:var(--brand)}
 
-    /* 分组卡片（参考你的截图） */
+    /* 分组卡片（默认展开，可折叠） */
     .section{margin:18px var(--safe)}
     .section-header{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:6px 0 10px;padding:10px 12px;border:1px solid #2a2a44;border-radius:12px;background:linear-gradient(180deg,#12131a,#11121a);position:sticky;top:56px;z-index:5;backdrop-filter:blur(6px)}
     .section-title{display:flex;gap:10px;align-items:center;font-weight:900}
@@ -116,7 +117,7 @@
     #cartList .row-name{font-size:18px;font-weight:800}
     #cartList .row-qty{font-size:18px;font-weight:800}
 
-    footer{margin:28px 0 120px;text-align:center;color:var(--muted);font-size:12px}
+    footer{margin:28px 0 120px;text-align:center;color:#98a0be;font-size:12px}
     #toast{position:fixed;top:14px;right:14px;z-index:60;display:grid;gap:8px}
     .toast{background:rgba(20,22,30,.95);border:1px solid #2a2a44;color:#e9e9f2;padding:10px 12px;border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,.45);font-size:14px}
   </style>
@@ -230,7 +231,7 @@
     }
     function mediaFor(item){ return iconSVG(item.emoji,item.name_cn); }
 
-    /* ============== 分类 / 分组渲染（贴合你给的 JSON） ============== */
+    /* ============== 分类 / 分组渲染（按你的“逻辑改进摘要”） ============== */
     var MENU=[];
 
     function groupSection(title, items){
@@ -259,7 +260,7 @@
       var grid=document.createElement('div'); grid.className='grid-all';
       var q=(searchInput.value||'').trim().toLowerCase();
       items.filter(function(it){
-        var hay=(it.name_cn+' '+(it.name_en||'')+' '+(it.tags||[]).join(' ')+' '+(it.category||'')).toLowerCase();
+        var hay=(it.name_cn+' '+(it.name_en||'')+' '+(it.category||'')+' '+(it.tags||[]).join(' ')).toLowerCase();
         return !q || hay.includes(q);
       }).forEach(function(it){
         var card=document.createElement('article'); card.className='card-all';
@@ -275,52 +276,35 @@
     function renderMenu(){
       root.innerHTML='';
       var q=(searchInput.value||'').trim().toLowerCase();
+      function matchQ(it){
+        var hay=(it.name_cn+' '+(it.name_en||'')+' '+(it.category||'')+' '+(it.tags||[]).join(' ')).toLowerCase();
+        return !q || hay.includes(q);
+      }
+      function hasTag(it, tag){ return (it.tags||[]).indexOf(tag)>-1; }
+      function nameHas(it, kwCN){ return (it.name_cn||'').indexOf(kwCN)>-1; }
+
       var activeEl=document.querySelector('.pill[aria-pressed="true"]');
       var active = activeEl ? activeEl.dataset.filter : 'all';
 
-      function hasTag(it, tag){ return (it.tags||[]).indexOf(tag) > -1; }
-      function anyTag(it, arr){ return (it.tags||[]).some(function(t){ return arr.indexOf(t)>-1; }); }
-      function nameHas(it, kw){ return (it.name_cn||'').indexOf(kw) > -1 || (it.name_en||'').toLowerCase().indexOf(kw.toLowerCase())>-1; }
-      function matchQ(it){
-        var hay=(it.name_cn+' '+(it.name_en||'')+' '+(it.tags||[]).join(' ')+' '+(it.category||'')).toLowerCase();
-        return !q || hay.includes(q);
-      }
-
       if (active === 'all') { root.appendChild(gridAll(MENU)); return; }
 
+      /* —— 热菜（Main） 三组 —— */
       if (active === 'Main') {
         var soup = MENU.filter(function(it){ return matchQ(it) && hasTag(it,'Soup'); });
-
-        var meatTags = ['Beef','Pork','Lamb','Chicken','Fried','Assorted'];
-        var meat = MENU.filter(function(it){
-          if (!matchQ(it)) return false;
-          if (hasTag(it,'Soup')) return false;
-          if (it.category!=='Main' && !anyTag(it, ['Meat'])) return false;
-          return it.category==='Main' && anyTag(it, meatTags);
-        });
-
-        var vegLikeTags = ['Vegetarian','Veg','Tofu','Mushroom','Egg','Home Style','Homestyle','Clear','Comfort'];
-        var veg = MENU.filter(function(it){
-          if (!matchQ(it)) return false;
-          if (hasTag(it,'Soup')) return false;
-          if (it.category==='Veg') return true;
-          if (it.category==='Main' && anyTag(it, vegLikeTags) && !anyTag(it, ['Beef','Pork','Lamb','Chicken'])) return true;
-          return false;
-        });
+        var veg  = MENU.filter(function(it){ return matchQ(it) && it.category==='Veg'  && !hasTag(it,'Cold'); });
+        var meat = MENU.filter(function(it){ return matchQ(it) && it.category==='Main' && !hasTag(it,'Soup'); });
 
         if (meat.length) root.appendChild(groupSection('🥩 肉菜', meat));
         if (veg.length)  root.appendChild(groupSection('🥦 素菜', veg));
-        if (soup.length) root.appendChild(groupSection('🍲 汤',   soup));
+        if (soup.length) root.appendChild(groupSection('🍲 汤类', soup));
         return;
       }
 
+      /* —— 主食（Rice） 三组 —— */
       if (active === 'Rice') {
-        var rice   = MENU.filter(function(it){ return matchQ(it) && it.category==='Rice' && (hasTag(it,'Rice') || nameHas(it,'饭')); });
-        var noodle = MENU.filter(function(it){ return matchQ(it) && it.category==='Rice' && (anyTag(it,['Noodle','Pasta']) || nameHas(it,'面')); });
-        var pastry = MENU.filter(function(it){
-          return matchQ(it) && it.category==='Rice' &&
-                 (anyTag(it,['Dumpling','Staple']) || nameHas(it,'饺') || nameHas(it,'饼') || nameHas(it,'粉丝'));
-        });
+        var rice   = MENU.filter(function(it){ return matchQ(it) && it.category==='Rice' && nameHas(it,'饭'); });
+        var noodle = MENU.filter(function(it){ return matchQ(it) && it.category==='Rice' && nameHas(it,'面'); });
+        var pastry = MENU.filter(function(it){ return matchQ(it) && it.category==='Rice' && !nameHas(it,'饭') && !nameHas(it,'面'); });
 
         if (rice.length)   root.appendChild(groupSection('🍚 饭', rice));
         if (noodle.length) root.appendChild(groupSection('🍜 面', noodle));
@@ -328,9 +312,10 @@
         return;
       }
 
+      /* —— 凉拌菜（Cold） 不细分 —— */
       if (active === 'Cold') {
         var cold = MENU.filter(function(it){ return matchQ(it) && hasTag(it,'Cold'); });
-        root.appendChild(groupSection('🥒 凉拌菜', cold));
+        if (cold.length) root.appendChild(groupSection('🥒 凉拌菜', cold));
         return;
       }
     }
