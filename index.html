@@ -5,28 +5,37 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-  <link rel="manifest" href="/shenyeshitang/manifest.webmanifest">
+
+  <!-- 默认普通版 manifest；当检测到 admin=1 时会在运行时切换为管理员 manifest -->
+  <link id="manifestLink" rel="manifest" href="/shenyeshitang/manifest.webmanifest">
   <link rel="apple-touch-icon" href="/shenyeshitang/icons/icon-192.png">
   <title>深夜食堂</title>
 
-  <!-- PWA：若设备已记忆 admin，则从主屏启动时自动进入 ?admin=1&r=家庭聚餐；当前是 admin 链接则写入记忆 -->
+  <!-- 方案B：管理员 PWA 记忆 + iOS A2HS 丢 query 的兜底修复 -->
   <script>
     (function () {
       try {
         var ROOM_LOCK = '家庭聚餐';
         var p = new URLSearchParams(location.search);
+        var isPWA = (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) || (navigator.standalone === true);
+        var savedAdmin = localStorage.getItem('adminMode') === '1';
 
+        // 若当前带 admin=1，写入管理员记忆，并切换管理员 manifest
         if (p.get('admin') === '1') {
           localStorage.setItem('adminMode', '1');
           localStorage.setItem('adminRoom', ROOM_LOCK);
-          return; // 本次已是管理员视图，不跳转
-        }
-
-        var isPWA = (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) || (navigator.standalone === true);
-        var savedAdmin = localStorage.getItem('adminMode') === '1';
-        if (isPWA && savedAdmin && !p.get('admin')) {
-          var base = location.pathname.replace(/\/index\.html$/, '/');
-          location.replace(base + '?admin=1&r=' + encodeURIComponent(ROOM_LOCK));
+          var link = document.getElementById('manifestLink');
+          if (link) link.setAttribute('href', '/shenyeshitang/manifest.admin.webmanifest'); // 管理员专用 manifest
+        } else {
+          // PWA 启动但无 admin 参数：如记忆为管理员，强制跳到带参地址（iOS A2HS 可能丢失 query）
+          if (isPWA && savedAdmin) {
+            var base = location.pathname.replace(/\/index\.html$/, '/');
+            var target = base + '?admin=1&r=' + encodeURIComponent(ROOM_LOCK);
+            if (location.search.indexOf('admin=1') === -1) {
+              location.replace(target);
+              return; // 交由带参页面初始化
+            }
+          }
         }
       } catch (e) {}
     })();
@@ -45,12 +54,10 @@
       background:radial-gradient(1200px 600px at 70% -10%,rgba(124,92,255,.15),transparent 60%),
                  radial-gradient(1000px 500px at 0% 100%,rgba(61,217,178,.12),transparent 60%),var(--bg)
     }
-
-    /* 顶部留白：PWA 与 管理员分别设置；管理员比普通 PWA 再多 */
+    /* 顶部留白（PWA 与管理员叠加） */
     body.pwa-on header{ padding-top: calc(var(--safeTop) + 10px); }
-    body.admin-on header{ padding-top: calc(var(--safeTop) + 22px); margin-top:0; }
+    body.admin-on header{ padding-top: calc(var(--safeTop) + 22px); }
     body.pwa-on.admin-on header{ padding-top: calc(var(--safeTop) + 26px); }
-
     header{position:sticky;top:0;z-index:20;background:rgba(12,12,15,.85);backdrop-filter:blur(8px)}
     .topbar{display:grid;grid-template-columns:1fr auto;gap:12px;align-items:center;padding:18px var(--safe) 10px}
     .brand{display:flex;gap:14px;align-items:center}
@@ -60,12 +67,10 @@
     .search{display:flex;align-items:center;gap:8px;background:#0f0f15;border:1px solid #242438;color:var(--text);padding:10px 12px;border-radius:12px;min-width:min(260px,40vw)}
     .search input{flex:1;background:transparent;border:0;color:inherit;outline:none;font-size:15px}
 
-    /* Tabs（保持上一版逻辑：不做细分，只渲染两列大图） */
     .tabs{display:flex;gap:10px;overflow:auto;padding:8px var(--safe) 14px}
     .pill{border:1px solid #28283e;background:#13131b;color:var(--text);padding:10px 14px;border-radius:999px;font-size:14px;cursor:pointer}
     .pill[aria-pressed="true"]{background:linear-gradient(135deg,rgba(124,92,255,.25),rgba(61,217,178,.2));border-color:var(--brand)}
 
-    /* 两列大图 */
     .grid-all{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;padding:16px}
     @media(min-width:1024px){.grid-all{grid-template-columns:repeat(3,minmax(0,1fr))}}
     .card-all{display:grid;gap:8px;background:linear-gradient(180deg,#171a24,#12131a 40%);border:1px solid #2a2a44;border-radius:16px;overflow:hidden;cursor:pointer;transition:transform .18s,border-color .18s}
@@ -77,7 +82,7 @@
     .thumb.loaded{opacity:1;animation:none;transition:opacity .4s}
     @keyframes pulse{0%{opacity:.4}50%{opacity:.9}100%{opacity:.4}}
 
-    /* 购物车按钮 / 抽屉 —— 放大；自定义在上，提交在下 */
+    /* 购物车按钮 / 抽屉 */
     #cartBtn{position:fixed;right:16px;bottom:calc(16px + env(safe-area-inset-bottom));background:linear-gradient(135deg,#7c5cff,#ffd166);color:#0b0b0e;border:0;border-radius:16px;padding:14px 18px;font-weight:900;box-shadow:0 14px 40px rgba(0,0,0,.45);z-index:40;font-size:16px}
     #drawer{position:fixed;inset:auto 0 0 auto;right:0;width:min(420px,96vw);max-height:86vh;background:#0f0f16;border-top-left-radius:18px;border:1px solid #2a2a44;box-shadow:0 -20px 60px rgba(0,0,0,.6);transform:translateY(110%);transition:transform .25s;z-index:50}
     .drawer-hd{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid #22243c}
@@ -85,6 +90,25 @@
     .drawer-ft{padding:14px 16px;border-top:1px solid #22243c;display:grid;gap:10px}
     .drawer-ft .btn{font-size:16px;padding:12px 14px;border-radius:12px}
     #submitOrder{font-size:20px;padding:20px 18px;min-height:72px;border-radius:14px}
+
+    /* —— UI修复：输入框文字与占位符可见 —— */
+    .drawer-ft input.btn,
+    .drawer-ft input.btn:focus{
+      color:#fff !important;
+      background:#161622 !important;
+      border:1px solid #2a2a44 !important;
+    }
+    .drawer-ft input.btn::placeholder{color:#c7cbe0;opacity:.85}
+
+    /* —— UI修复：加减与清空按钮放大约2倍 —— */
+    .btn{background:#1a1b26;border:1px solid #2a2a44;color:#e9e9f2;padding:10px 12px;border-radius:10px;cursor:pointer}
+    .btn:active{transform:scale(.98)}
+    #clearCart{font-size:18px;padding:14px 16px;border-radius:12px}
+    .qty .btn{font-size:20px;line-height:1;padding:10px 14px;min-width:44px}
+
+    /* —— UI修复：购物车菜名与数量字号加大 —— */
+    #cartList .row-name{font-size:18px;font-weight:800}
+    #cartList .row-qty{font-size:18px;font-weight:800}
 
     /* 管理员页面按钮放大（约2x） */
     #admin .btn{font-size:16px;padding:12px 14px;border-radius:12px}
@@ -98,7 +122,7 @@
   <!-- 管理员面板（admin=1 时置顶） -->
   <section id="admin" style="display:none;padding:14px var(--safe)">
     <h3>📟 实时订单</h3>
-    <div class="toolbar">
+    <div class="toolbar" style="display:flex;gap:10px;flex-wrap:wrap;margin:8px 0 10px">
       <label style="display:flex;align-items:center;gap:8px;cursor:pointer"><input id="showPendingOnly" type="checkbox" checked><span>只看未做</span></label>
       <button id="markAllDone" class="btn">标记完成</button>
       <button id="enableNotify" class="btn">开启提醒</button>
@@ -136,11 +160,11 @@
     <div class="drawer-hd"><strong>🛒 购物车</strong><button class="btn" id="closeDrawer">关闭</button></div>
     <div class="drawer-ct" id="cartList"></div>
     <div class="drawer-ft">
-      <input id="nickname" placeholder="备注 / 桌号 (选填)" class="btn" style="padding:12px;border-radius:12px;background:#161622" />
+      <input id="nickname" placeholder="备注 / 桌号 (选填)" class="btn" />
       <div style="display:grid;gap:8px;margin-top:8px">
         <div style="font-weight:700;opacity:.9">✍️ 自定义点菜</div>
-        <input id="cName" placeholder="菜名（必填）" class="btn" style="padding:12px;border-radius:12px;background:#161622">
-        <input id="cIngs" placeholder="食材（可选，逗号分隔）" class="btn" style="padding:12px;border-radius:12px;background:#161622">
+        <input id="cName" placeholder="菜名（必填）" class="btn">
+        <input id="cIngs" placeholder="食材（可选，逗号分隔）" class="btn">
         <button id="addCustom" class="btn">加入购物车（自定义）</button>
       </div>
       <button class="btn" id="submitOrder" style="background:linear-gradient(135deg,#7c5cff,#ffd166);color:#0b0b0e">提交订单</button>
@@ -227,10 +251,10 @@
       Object.keys(cart).forEach(function(name){
         var qty=cart[name]; total+=qty;
         var row=document.createElement('div');
-        row.style.display='grid'; row.style.gridTemplateColumns='1fr auto auto'; row.style.gap='10px';
-        row.style.alignItems='center'; row.style.padding='10px 0'; row.style.borderBottom='1px dashed #2a2a44';
-        row.innerHTML='<strong>'+name+'</strong><div></div>'
-          +'<div class="qty"><button class="btn" data-op="-">-</button> <span>'+qty+'</span> <button class="btn" data-op="+">+</button></div>';
+        row.style.display='grid'; row.style.gridTemplateColumns='1fr auto auto'; row.style.gap='12px';
+        row.style.alignItems='center'; row.style.padding='12px 0'; row.style.borderBottom='1px dashed #2a2a44';
+        row.innerHTML='<strong class="row-name">'+name+'</strong><div></div>'
+          +'<div class="qty row-qty"><button class="btn" data-op="-">-</button> <span>'+qty+'</span> <button class="btn" data-op="+">+</button></div>';
         row.querySelector('[data-op="-"]').onclick=function(){ cart[name]=Math.max(0,(cart[name]||0)-1); if(cart[name]===0) delete cart[name]; saveCart(); };
         row.querySelector('[data-op="+"]').onclick=function(){ cart[name]=(cart[name]||0)+1; saveCart(); };
         list.appendChild(row);
@@ -252,7 +276,7 @@
     fetch(MENU_URL, { cache:'no-store' })
       .then(function(r){ if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); })
       .then(function(d){ if(!Array.isArray(d)){ alert('menu.json 格式错误'); return; } MENU=d; renderMenu(); })
-      .catch(function(e){ console.error('加载菜单失败：', e); alert('菜单加载失败'); });
+      .catch(function(e){ console.error('加载菜单失败：', e); alert('菜单加载失败：'+e.message); });
 
     /* ================= 通用 Firestore 初始化 ================= */
     const _firebaseConfig = {
@@ -277,6 +301,7 @@
       if (!ADMIN) return;
 
       try{
+        // 显示管理员面板并顶置
         var adminSection = document.getElementById('admin');
         if (adminSection) {
           adminSection.style.display='block';
@@ -293,14 +318,21 @@
           const { fs, db } = await ensureDb();
 
           // 订阅“家庭聚餐”逐行订单
-          const qLines = fs.query(fs.collection(db,'yd_order_lines'), fs.where('room','==',ROOM_EFFECTIVE));
+          const qLines = fs.query(fs.collection(db,'yd_order_lines'), fs.where('room','==',ROOM_LOCK));
           var firstLoad = true;
+
           fs.onSnapshot(qLines, function(snap){
             var tbody=document.getElementById('adminRows'); if(!tbody) return;
             tbody.innerHTML='';
-            var rows=[]; snap.forEach(function(d){ var data=d.data(); var ts=data.createdAt&&data.createdAt.toMillis?data.createdAt.toMillis():0; rows.push({id:d.id,data:data,ts:ts}); });
+            var rows=[];
+            snap.forEach(function(d){
+              var data=d.data();
+              var ts=data.createdAt&&data.createdAt.toMillis?data.createdAt.toMillis():0;
+              rows.push({id:d.id,data:data,ts:ts});
+            });
             rows.sort(function(a,b){return b.ts-a.ts;});
             var showPendingOnly=document.getElementById('showPendingOnly');
+
             rows.forEach(function(row){
               var data=row.data; var isDone=data.status==='done';
               if(showPendingOnly && showPendingOnly.checked && isDone) return;
@@ -311,8 +343,22 @@
               btn.onclick=async function(){ try{ await fs.updateDoc(fs.doc(db,'yd_order_lines',row.id),{status:isDone?'pending':'done',doneAt:isDone?null:new Date()}); }catch(e){ alert('更新失败：'+e.message); } };
               tdOp.appendChild(btn); tr.appendChild(tdOp); tbody.appendChild(tr);
             });
+
+            // 新增订单的本地提醒（仅在允许通知时）
             if(!firstLoad){
-              snap.docChanges().forEach(function(ch){ if(ch.type==='added'){ var d=ch.doc.data(); if(d.status!=='done'){ try{ if('Notification'in window && Notification.permission==='granted'){ new Notification('新订单 · '+d.name+' × '+d.qty); } }catch(e){} } }});
+              try{
+                if('Notification' in window){
+                  if(Notification.permission==='default'){ /* 用户尚未授权，点按钮时再申请 */ }
+                  if(Notification.permission==='granted'){
+                    snap.docChanges().forEach(function(ch){
+                      if(ch.type==='added'){
+                        var d=ch.doc.data();
+                        if(d.status!=='done'){ new Notification('新订单 · '+d.name+' × '+d.qty); }
+                      }
+                    });
+                  }
+                }
+              }catch(e){}
             }
             firstLoad=false;
           }, function(err){
@@ -336,8 +382,23 @@
             };
           }
 
+          // 开启系统通知
+          var notifyBtn=document.getElementById('enableNotify');
+          if(notifyBtn){
+            notifyBtn.onclick=function(){
+              try{
+                if('Notification' in window){
+                  if(Notification.permission==='default'){ Notification.requestPermission().then(function(p){ alert(p==='granted'?'已开启系统通知':'未授权通知'); }); }
+                  else { alert(Notification.permission==='granted'?'通知已授权':'未授权通知'); }
+                }else{
+                  alert('当前环境不支持通知');
+                }
+              }catch(e){}
+            }
+          }
+
           var info=document.getElementById('roomInfo');
-          if(info) info.textContent='房间：'+ROOM_EFFECTIVE+'（固定）';
+          if(info) info.textContent='房间：'+ROOM_LOCK+'（固定）';
 
         }catch(e){
           console.warn('Firebase 初始化失败：', e);
@@ -355,11 +416,11 @@
         const items = Object.entries(cart).map(([name, qty]) => ({ name, qty }));
 
         const headerRef = await fs.addDoc(fs.collection(db, "yd_orders"), {
-          room: ROOM_EFFECTIVE, nick, items,
+          room: ROOM_LOCK, nick, items,
           status: "pending", doneAt: null, createdAt: fs.serverTimestamp()
         });
         await Promise.all(items.map(it => fs.addDoc(fs.collection(db, "yd_order_lines"), {
-          room: ROOM_EFFECTIVE, nick, orderId: headerRef.id,
+          room: ROOM_LOCK, nick, orderId: headerRef.id,
           name: it.name, qty: it.qty, status: "pending", doneAt: null, createdAt: fs.serverTimestamp()
         })));
 
@@ -368,6 +429,9 @@
         console.error("提交失败：", e); alert("提交失败：" + e.message);
       }
     };
+
+    /* —— 加载菜单后渲染 —— */
+    function renderAfterMenu(){ renderMenu(); }
   </script>
 </body>
 </html>
