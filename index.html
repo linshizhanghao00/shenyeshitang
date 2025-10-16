@@ -116,7 +116,7 @@
 
   /* 你原来的视觉可以继续保留（我只保留必要项，剩下你已有的浅色风格样式不改） */
   transform: translateY(110%);               /* 默认收起，由 JS 展开 */
-  transition: transform .25s ease;
+  transition: transform .28s cubic-bezier(.2,.8,.2,1);
   z-index: 50;
 
   /* iOS 抖动/回弹保护 */
@@ -801,8 +801,17 @@ function iconSVG(e, label){
       });
       count.textContent='('+total+')';
     }
-    cartBtn.onclick=function(){ drawer.style.transform='translateY(0)'; drawer.setAttribute('aria-hidden','false'); };
-    closeDrawer.onclick=function(){ drawer.style.transform='translateY(110%)'; drawer.setAttribute('aria-hidden','true'); };
+    /* 打开抽屉 */
+  cartBtn.onclick = function () {
+  drawer.style.transform = 'translateY(0) translateZ(0)';     // 👈
+  drawer.setAttribute('aria-hidden', 'false');
+};
+
+/* 关闭抽屉 */
+  closeDrawer.onclick = function () {
+  drawer.style.transform = 'translateY(110%) translateZ(0)';  // 👈
+  drawer.setAttribute('aria-hidden', 'true');
+};
     clearCart.onclick=function(){ cart={}; saveCart(); };
     addCustom.onclick=function(){
       var name=(cName.value||'').trim(); var ings=(cIngs.value||'').trim();
