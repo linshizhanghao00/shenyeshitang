@@ -64,13 +64,7 @@ body.pwa-on.admin-on header{ padding-top: calc(var(--safeTop) + 26px); }
 
     /* ✅ 新增：管理员面板位于 header 之前，单独给 #admin 顶部留白 */
     /* 管理员区在 header 前面，单独补安全区留白 + 避免首元素外边距塌陷 */
-#admin{
-  padding-top: 28px; /* 基础兜底 */
-}
-body.pwa-on #admin{ padding-top: calc(env(safe-area-inset-top, 0px) + 10px); }
-body.admin-on #admin{ padding-top: calc(env(safe-area-inset-top, 0px) + 22px); }
-body.pwa-on.admin-on #admin{ padding-top: calc(env(safe-area-inset-top, 0px) + 26px); }
-#admin > *:first-child{ margin-top: 0 !important; } /* 防止 h3 margin-top 吃掉 padding */
+
     
     header{position:sticky;top:0;z-index:20;background:rgba(12,12,15,.85);backdrop-filter:blur(8px)}
     .topbar{display:grid;grid-template-columns:1fr auto auto;gap:12px;align-items:center;padding:18px var(--safe) 10px}
@@ -135,6 +129,24 @@ body.pwa-on.admin-on #admin{ padding-top: calc(env(safe-area-inset-top, 0px) + 2
     footer{margin:28px 0 120px;text-align:center;color:#98a0be;font-size:12px}
     #toast{position:fixed;top:14px;right:14px;z-index:60;display:grid;gap:8px}
     .toast{background:rgba(20,22,30,.95);border:1px solid #2a2a44;color:#e9e9f2;padding:10px 12px;border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,.45);font-size:14px}
+    /* 在 body 最前面制造一个“真实的顶部占位块”，彻底避免被吃掉 */
+body.admin-on::before{
+  content:"";
+  display:block;
+  height: calc(env(safe-area-inset-top, 0px) + 22px);  /* 管理员留白 */
+}
+
+/* 如果是 PWA（A2HS）再多给一点，和你 header 的策略一致 */
+body.pwa-on.admin-on::before{
+  height: calc(env(safe-area-inset-top, 0px) + 26px);
+}
+
+/* 仅 PWA 但非 admin 的情况（以防以后需要，也能统一） */
+body.pwa-on:not(.admin-on)::before{
+  content:"";
+  display:block;
+  height: calc(env(safe-area-inset-top, 0px) + 10px);
+}
   </style>
 </head>
 <body>
