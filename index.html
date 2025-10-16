@@ -147,13 +147,6 @@ body.pwa-on:not(.admin-on)::before{
   display:block;
   height: calc(env(safe-area-inset-top, 0px) + 10px);
 }
-/* 危险操作按钮样式 */
-.btn.danger{
-  background:#2b1214;
-  border-color:#5e1a1f;
-  color:#ffb7bf;
-}
-.btn.danger:hover{ border-color:#e74856; color:#ffdbe0; }
   </style>
 </head>
 <body>
@@ -165,7 +158,6 @@ body.pwa-on:not(.admin-on)::before{
       <button id="markAllDone" class="btn">标记完成</button>
       <button id="enableNotify" class="btn">开启提醒</button>
     </div>
-    <button id="purgeAll" class="btn danger" style="display:none">🗑️ 清空本房间订单</button>
     <div id="roomInfo" style="color:#c7cbe0;margin:8px 0"></div>
     <table style="width:100%;border-collapse:collapse;border:1px solid #2a2a44">
       <thead><tr><th>时间</th><th>来源</th><th>菜品</th><th>数量</th><th>操作</th></tr></thead>
@@ -438,65 +430,6 @@ body.pwa-on:not(.admin-on)::before{
           const { fs, db } = await ensureDb();
           const qLines = fs.query(fs.collection(db,'yd_order_lines'), fs.where('room','==', window.ROOM_LOCK));
           var firstLoad = true;
-          <script>
-// ====== 显示隐藏按钮（长按标题 5000ms）======
-(function revealPurgeButton(){
-  var title = document.querySelector('#admin h3');
-  var purgeBtn = document.getElementById('purgeAll');
-  if(!title || !purgeBtn) return;
-
-  var pressTimer=null, shown=false;
-  function show(){ if(!shown){ purgeBtn.style.display='inline-block'; shown=true; } }
-
-  function start(){
-    clearTimeout(pressTimer);
-    pressTimer = setTimeout(show, 5000); // 长按 5000ms
-  }
-  function cancel(){ clearTimeout(pressTimer); }
-
-  title.addEventListener('mousedown', start);
-  title.addEventListener('touchstart', start, {passive:true});
-  ['mouseup','mouseleave','touchend','touchcancel'].forEach(function(ev){
-    title.addEventListener(ev, cancel);
-  });
-})();
-
-// ====== 清空本房间订单（仅当前 ROOM_LOCK）======
-(function bindPurgeHandler(){
-  var purgeBtn = document.getElementById('purgeAll');
-  if(!purgeBtn) return;
-
-  purgeBtn.onclick = async function(){
-    try{
-      // 二次确认
-      if(!confirm('⚠️ 确认清空房间《'+window.ROOM_LOCK+'》所有订单与明细？此操作不可恢复。')) return;
-      var code = prompt('请输入 DELETE 确认执行（区分大小写）：');
-      if(code !== 'DELETE'){ alert('已取消'); return; }
-
-      const { fs, db } = await ensureDb();
-
-      // 先删 yd_order_lines（避免外键引用残留）
-      const qLines = fs.query(fs.collection(db,'yd_order_lines'), fs.where('room','==', window.ROOM_LOCK));
-      const snapLines = await fs.getDocs(qLines);
-      const delLines = [];
-      snapLines.forEach(function(doc){ delLines.push(fs.deleteDoc(doc.ref)); });
-      await Promise.all(delLines);
-
-      // 再删 yd_orders
-      const qOrders = fs.query(fs.collection(db,'yd_orders'), fs.where('room','==', window.ROOM_LOCK));
-      const snapOrders = await fs.getDocs(qOrders);
-      const delOrders = [];
-      snapOrders.forEach(function(doc){ delOrders.push(fs.deleteDoc(doc.ref)); });
-      await Promise.all(delOrders);
-
-      alert('✅ 已清空房间《'+window.ROOM_LOCK+'》的测试订单（共 '+snapOrders.size+' 单，明细 '+snapLines.size+' 行）');
-    }catch(e){
-      console.error('清空失败：', e);
-      alert('清空失败：'+(e && e.message ? e.message : e));
-    }
-  };
-})();
-</script>
 
           fs.onSnapshot(qLines, function(snap){
             var tbody=document.getElementById('adminRows'); if(!tbody) return;
