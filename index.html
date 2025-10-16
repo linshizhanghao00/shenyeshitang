@@ -138,6 +138,43 @@ body.pwa-on.admin-on #admin{
 }
 /* 防止 h3 默认 margin-top 把 padding 吃掉（外边距塌陷） */
 #admin > *:first-child{ margin-top: 0 !important; }
+/* ===== 顶部品牌区：横排 + 自动换行 ===== */
+.brand {
+  display: flex;
+  flex-direction: row;       /* 横向排列 logo 与标题 */
+  align-items: center;       /* 垂直居中 */
+  flex-wrap: wrap;           /* 允许换行，形成两行结构 */
+  gap: 6px;                  /* logo 与文字之间的间距 */
+  max-width: 120px;          /* 控制品牌区总宽度，防止过宽 */
+  line-height: 1.1;
+  margin-bottom: 2px;
+}
+
+/* logo：缩小尺寸，让整体紧凑 */
+.logo {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: url('/shenyeshitang/icons/moon-180.png?v=99') center/cover no-repeat;
+}
+
+/* 标题：允许换行，字体放大一点确保可读 */
+.title {
+  font-size: 20px;
+  font-weight: 800;
+  color: #fff;
+  white-space: normal;       /* 允许自动换行 */
+  word-break: keep-all;
+  text-align: left;
+  line-height: 1.15;
+}
+
+/* 小屏时稍微再紧凑一点 */
+@media (max-width: 420px) {
+  .brand { max-width: 100px; gap: 4px; }
+  .logo { width: 28px; height: 28px; }
+  .title { font-size: 18px; }
+}
   </style>
 </head>
 <body>
@@ -160,7 +197,7 @@ body.pwa-on.admin-on #admin{
 
   <header>
     <div class="topbar">
-      <div class="brand"><div class="logo"></div><div class="title">深夜食堂</div></div>
+      <div class="brand"><div class="logo"></div><div class="title">深夜<br>食堂</div></div>
       <div class="search">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M21 21l-4.35-4.35M10.5 18a7.5 7.5 0 1 1 0-15 7.5 7.5 0 0 1 0 15z" stroke="#8086a3" stroke-width="2" stroke-linecap="round"/></svg>
         <input id="search" type="search" placeholder="搜索菜名/标签…" />
