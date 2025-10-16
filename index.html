@@ -6,38 +6,52 @@
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 
-  <!-- 默认普通版 manifest；当检测到 admin=1 时会在运行时切换为管理员 manifest -->
+  <!-- ==== 建议④：同时把 manifest.admin.webmanifest 的 start_url 也改成
+       "/shenyeshitang/index.html?admin=1&r=%E5%AE%B6%E5%BA%AD%E8%81%9A%E9%A4%90&v=v3" ==== -->
+
+  <!-- 默认普通版 manifest；运行时按管理员状态切换为管理员 manifest -->
   <link id="manifestLink" rel="manifest" href="/shenyeshitang/manifest.webmanifest">
   <link rel="apple-touch-icon" href="/shenyeshitang/icons/icon-192.png">
   <title>深夜食堂</title>
+
+  <!-- 必改①：全局房间常量 + 版本号（强制 PWA 刷新缓存） -->
+  <script>
+    window.ROOM_LOCK = '家庭聚餐';   /* 全局：订阅与提交都能拿到 */
+    window.__APP_VERSION__ = 'v3';   /* 每次发版改它，例如 v4/v5 */
+  </script>
 
   <!-- 方案B：管理员 PWA 记忆 + iOS A2HS 丢 query 的兜底修复 -->
   <script>
     (function () {
       try {
-        var ROOM_LOCK = '家庭聚餐';
         var p = new URLSearchParams(location.search);
         var isPWA = (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) || (navigator.standalone === true);
         var savedAdmin = localStorage.getItem('adminMode') === '1';
 
-        // 若当前带 admin=1，写入管理员记忆，并切换管理员 manifest
-        if (p.get('admin') === '1') {
+        console.log('[PWA] admin?', p.get('admin'), 'savedAdmin?', savedAdmin);
+
+        // 必改②(a)：带 admin=1 或曾记忆为管理员 → 切管理员 manifest
+        if (p.get('admin') === '1' || savedAdmin) {
           localStorage.setItem('adminMode', '1');
-          localStorage.setItem('adminRoom', ROOM_LOCK);
+          localStorage.setItem('adminRoom', window.ROOM_LOCK);
           var link = document.getElementById('manifestLink');
-          if (link) link.setAttribute('href', '/shenyeshitang/manifest.admin.webmanifest'); // 管理员专用 manifest
+          if (link) {
+            link.setAttribute('href', '/shenyeshitang/manifest.admin.webmanifest?v=' + (window.__APP_VERSION__ || ''));
+            console.log('[PWA] manifest switched to admin');
+          }
         } else {
-          // PWA 启动但无 admin 参数：如记忆为管理员，强制跳到带参地址（iOS A2HS 可能丢失 query）
+          // 必改②(b)：PWA 启动但丢了 query → 强制跳一次带参地址（带版本号，绕缓存）
           if (isPWA && savedAdmin) {
             var base = location.pathname.replace(/\/index\.html$/, '/');
-            var target = base + '?admin=1&r=' + encodeURIComponent(ROOM_LOCK);
+            var target = base + '?admin=1&r=' + encodeURIComponent(window.ROOM_LOCK) + '&v=' + (window.__APP_VERSION__ || '');
             if (location.search.indexOf('admin=1') === -1) {
+              console.log('[PWA] fix query →', target);
               location.replace(target);
               return; // 交由带参页面初始化
             }
           }
         }
-      } catch (e) {}
+      } catch (e) { console.warn('[PWA] bootstrap error', e); }
     })();
   </script>
 
@@ -179,12 +193,12 @@
     var MENU_URL = 'https://linshizhanghao00.github.io/shenyeshitang/menu.json';
 
     /* —— 房间与管理员状态 —— */
-    var ROOM_LOCK = '家庭聚餐';
     var qs = new URLSearchParams(location.search);
     var isPWA = (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) || (navigator.standalone === true);
     var savedAdmin = localStorage.getItem('adminMode') === '1';
-    var ADMIN = (qs.get('admin') === '1') || (isPWA && savedAdmin);
-    var ROOM_EFFECTIVE = ROOM_LOCK;
+
+    /* 微改③：管理员识别更宽松（去掉 isPWA 限制） */
+    var ADMIN = (qs.get('admin') === '1') || savedAdmin;
 
     if (ADMIN) document.body.classList.add('admin-on');
     if (isPWA) document.body.classList.add('pwa-on'); /* PWA 环境（含非管理员）留白 */
@@ -318,7 +332,7 @@
           const { fs, db } = await ensureDb();
 
           // 订阅“家庭聚餐”逐行订单
-          const qLines = fs.query(fs.collection(db,'yd_order_lines'), fs.where('room','==',ROOM_LOCK));
+          const qLines = fs.query(fs.collection(db,'yd_order_lines'), fs.where('room','==', window.ROOM_LOCK));
           var firstLoad = true;
 
           fs.onSnapshot(qLines, function(snap){
@@ -398,7 +412,7 @@
           }
 
           var info=document.getElementById('roomInfo');
-          if(info) info.textContent='房间：'+ROOM_LOCK+'（固定）';
+          if(info) info.textContent='房间：'+window.ROOM_LOCK+'（固定）';
 
         }catch(e){
           console.warn('Firebase 初始化失败：', e);
@@ -416,11 +430,11 @@
         const items = Object.entries(cart).map(([name, qty]) => ({ name, qty }));
 
         const headerRef = await fs.addDoc(fs.collection(db, "yd_orders"), {
-          room: ROOM_LOCK, nick, items,
+          room: window.ROOM_LOCK, nick, items,
           status: "pending", doneAt: null, createdAt: fs.serverTimestamp()
         });
         await Promise.all(items.map(it => fs.addDoc(fs.collection(db, "yd_order_lines"), {
-          room: ROOM_LOCK, nick, orderId: headerRef.id,
+          room: window.ROOM_LOCK, nick, orderId: headerRef.id,
           name: it.name, qty: it.qty, status: "pending", doneAt: null, createdAt: fs.serverTimestamp()
         })));
 
