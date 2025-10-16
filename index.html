@@ -129,6 +129,15 @@
     /* 危险按钮样式（清空数据） */
     .btn.danger{ background:#2b1214; border-color:#5e1a1f; color:#ffb7bf; }
     .btn.danger:hover{ border-color:#e74856; color:#ffdbe0; }
+    /* —— 兜底：管理员区本身再加安全区顶部留白 —— */
+body.admin-on #admin{
+  padding-top: calc(env(safe-area-inset-top, 0px) + 22px) !important;
+}
+body.pwa-on.admin-on #admin{
+  padding-top: calc(env(safe-area-inset-top, 0px) + 26px) !important;
+}
+/* 防止 h3 默认 margin-top 把 padding 吃掉（外边距塌陷） */
+#admin > *:first-child{ margin-top: 0 !important; }
   </style>
 </head>
 <body>
