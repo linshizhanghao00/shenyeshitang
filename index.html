@@ -90,7 +90,7 @@
     .desc{font-size:13px;color:#98a0be;min-height:34px}
     .tags{display:flex;flex-wrap:wrap;gap:8px}
     .tag{font-size:12px;color:#c7cbe0;border:1px dashed #2a2a44;padding:4px 8px;border-radius:999px}
-    .add{margin-top:2px;background:#1a1a28;border:1px solid #2a2a44;color:#fff;border-radius:10px;cursor:pointer;justify-self:start}
+    .add{margin-top:2px;background:#1a1a28;border:1px solid #2a2a44;color:#fff;border-radius:10px;padding:10px 14px;font-weight:700;cursor:pointer;justify-self:start}
 
     /* “全部”网格 */
     .grid-all{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;padding:16px}
@@ -102,33 +102,37 @@
 
     /* 购物车与输入 UI 修复 */
     #cartBtn{position:fixed;right:16px;bottom:calc(16px + env(safe-area-inset-bottom));background:linear-gradient(135deg,#7c5cff,#ffd166);color:#0b0b0e;border:0;border-radius:16px;padding:14px 18px;font-weight:900;box-shadow:0 14px 40px rgba(0,0,0,.45);z-index:40;font-size:16px}
-    /* 固定贴底 + iOS 稳定性增强（唯一规则，保留） */
-    #drawer{
-      position: fixed !important;
-      left: 0; right: 0; bottom: 0; top: auto;   /* 钉死底部 */
-      width: 100% !important;                    /* 宽度随屏幕 */
-      max-height: 92vh !important;               /* 视口高度限制 */
-      margin: 0 !important;
-      border-top-left-radius: 18px !important;
-      border-top-right-radius: 18px !important;
-      border-bottom-left-radius: 0 !important;
-      border-bottom-right-radius: 0 !important;
+    /* 固定贴底 + iOS 稳定性增强 */
+#drawer{
+  position: fixed !important;
+  left: 0; right: 0; bottom: 0; top: auto;   /* 钉死底部 */
+  width: 100% !important;                    /* 宽度随屏幕 */
+  max-height: 92vh !important;               /* 视口高度限制 */
+  margin: 0 !important;
+  border-top-left-radius: 18px !important;
+  border-top-right-radius: 18px !important;
+  border-bottom-left-radius: 0 !important;
+  border-bottom-right-radius: 0 !important;
 
-      transform: translateY(110%) translateZ(0); /* 默认收起，由 JS 展开；GPU 合成层 */
-      transition: transform .25s ease;
-      z-index: 50;
+  /* 你原来的视觉可以继续保留（我只保留必要项，剩下你已有的浅色风格样式不改） */
+  transform: translateY(110%);               /* 默认收起，由 JS 展开 */
+  transition: transform .25s ease;
+  z-index: 50;
 
-      overscroll-behavior: contain;              /* 防止抽屉本体被浏览器回弹拖动 */
-    }
+  /* iOS 抖动/回弹保护 */
+  will-change: transform;
+  transform: translateY(110%) translateZ(0); /* 强制 GPU 合成层 */
+  overscroll-behavior: contain;              /* 防止抽屉本体被浏览器回弹拖动 */
+}
     .drawer-hd{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid #22243c}
     .drawer-ct{padding:12px 16px;max-height:60vh;overflow:auto}
     .drawer-ct{
-      padding:12px 16px;
-      max-height:60vh;
-      overflow:auto;
-      -webkit-overflow-scrolling:touch;
-      overscroll-behavior: contain;   /* 防止滑动穿透卡住 */
-    }
+  padding:12px 16px;
+  max-height:60vh;
+  overflow:auto;
+  -webkit-overflow-scrolling:touch;
+  overscroll-behavior: contain;   /* 防止滑动穿透卡住 */
+}
     .drawer-ft{padding:14px 16px;border-top:1px solid #22243c;display:grid;gap:10px}
     .drawer-ft .btn{font-size:16px;padding:12px 14px;border-radius:12px}
     #submitOrder{font-size:20px;padding:20px 18px;min-height:72px;border-radius:14px}
@@ -154,192 +158,445 @@
     .btn.danger{ background:#2b1214; border-color:#5e1a1f; color:#ffb7bf; }
     .btn.danger:hover{ border-color:#e74856; color:#ffdbe0; }
     /* —— 兜底：管理员区本身再加安全区顶部留白 —— */
-    body.admin-on #admin{
-      padding-top: calc(env(safe-area-inset-top, 0px) + 22px) !important;
-    }
-    body.pwa-on.admin-on #admin{
-      padding-top: calc(env(safe-area-inset-top, 0px) + 26px) !important;
-    }
-    /* 防止 h3 默认 margin-top 把 padding 吃掉（外边距塌陷） */
-    #admin > *:first-child{ margin-top: 0 !important; }
-    /* ===== 顶部品牌区：横排 + 自动换行 ===== */
-    .brand {
-      display: flex;
-      flex-direction: row;       /* 横向排列 logo 与标题 */
-      align-items: center;       /* 垂直居中 */
-      flex-wrap: wrap;           /* 允许换行，形成两行结构 */
-      gap: 6px;                  /* logo 与文字之间的间距 */
-      max-width: 120px;          /* 控制品牌区总宽度，防止过宽 */
-      line-height: 1.1;
-      margin-bottom: 2px;
-    }
+body.admin-on #admin{
+  padding-top: calc(env(safe-area-inset-top, 0px) + 22px) !important;
+}
+body.pwa-on.admin-on #admin{
+  padding-top: calc(env(safe-area-inset-top, 0px) + 26px) !important;
+}
+/* 防止 h3 默认 margin-top 把 padding 吃掉（外边距塌陷） */
+#admin > *:first-child{ margin-top: 0 !important; }
+/* ===== 顶部品牌区：横排 + 自动换行 ===== */
+.brand {
+  display: flex;
+  flex-direction: row;       /* 横向排列 logo 与标题 */
+  align-items: center;       /* 垂直居中 */
+  flex-wrap: wrap;           /* 允许换行，形成两行结构 */
+  gap: 6px;                  /* logo 与文字之间的间距 */
+  max-width: 120px;          /* 控制品牌区总宽度，防止过宽 */
+  line-height: 1.1;
+  margin-bottom: 2px;
+}
 
-    /* logo：缩小尺寸，让整体紧凑 */
-    .logo {
-      width: 32px;
-      height: 32px;
-      border-radius: 8px;
-      background: url('/shenyeshitang/icons/moon-180.png?v=99') center/cover no-repeat;
-    }
+/* logo：缩小尺寸，让整体紧凑 */
+.logo {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: url('/shenyeshitang/icons/moon-180.png?v=99') center/cover no-repeat;
+}
 
-    /* 标题：允许换行，字体放大一点确保可读 */
-    .title {
-      font-size: 20px;
-      font-weight: 800;
-      color: #fff;
-      white-space: normal;       /* 允许自动换行 */
-      word-break: keep-all;
-      text-align: left;
-      line-height: 1.15;
-    }
+/* 标题：允许换行，字体放大一点确保可读 */
+.title {
+  font-size: 20px;
+  font-weight: 800;
+  color: #fff;
+  white-space: normal;       /* 允许自动换行 */
+  word-break: keep-all;
+  text-align: left;
+  line-height: 1.15;
+}
 
-    /* 小屏时稍微再紧凑一点 */
-    @media (max-width: 420px) {
-      .brand { max-width: 100px; gap: 4px; }
-      .logo { width: 28px; height: 28px; }
-      .title { font-size: 18px; }
-    }
-    /* ================== Light Sage 手绘系覆盖（与图标同系） ================== */
-    /* 参考色系：鼠尾草绿 #8fa394 / 米色纸面 #f6f3ea / 低饱和白 #f7f5f0 */
+/* 小屏时稍微再紧凑一点 */
+@media (max-width: 420px) {
+  .brand { max-width: 100px; gap: 4px; }
+  .logo { width: 28px; height: 28px; }
+  .title { font-size: 18px; }
+}
+/* ================== Light Sage 手绘系覆盖（与图标同系） ================== */
+/* 参考色系：鼠尾草绿 #8fa394 / 米色纸面 #f6f3ea / 低饱和白 #f7f5f0 */
 
-    body{
-      background:#f6f3ea !important;
-      color:#2b2b2b !important;
-    }
+body{
+  background:#f6f3ea !important;
+  color:#2b2b2b !important;
+}
 
-    /* 顶栏浅色毛玻璃 + 纸面描边 */
-    header{
-      background:rgba(255,255,255,.78) !important;
-      -webkit-backdrop-filter:blur(14px) saturate(150%) !important;
-      backdrop-filter:blur(14px) saturate(150%) !important;
-      border-bottom:2px solid #d7d0c1 !important;
-      box-shadow:0 3px 6px rgba(0,0,0,.08) !important;
-    }
+/* 顶栏浅色毛玻璃 + 纸面描边 */
+header{
+  background:rgba(255,255,255,.78) !important;
+  -webkit-backdrop-filter:blur(14px) saturate(150%) !important;
+  backdrop-filter:blur(14px) saturate(150%) !important;
+  border-bottom:2px solid #d7d0c1 !important;
+  box-shadow:0 3px 6px rgba(0,0,0,.08) !important;
+}
 
-    /* 品牌两行（保留你已有的结构），颜色同系 */
-    .title{ color:#2b2b2b !important; text-shadow:0 1px 0 rgba(255,255,255,.55); }
-    .logo{
-      border:2px solid #d3c8b6;               /* 轻描边，贴纸感 */
-      box-shadow:0 2px 2px rgba(0,0,0,.10);
-    }
+/* 品牌两行（保留你已有的结构），颜色同系 */
+.title{ color:#2b2b2b !important; text-shadow:0 1px 0 rgba(255,255,255,.55); }
+.logo{
+  border:2px solid #d3c8b6;               /* 轻描边，贴纸感 */
+  box-shadow:0 2px 2px rgba(0,0,0,.10);
+}
 
-    /* 搜索栏：纸条质感（同系米白） */
-    .search{
-      background:linear-gradient(180deg,#fdfcf9,#f4efe5 85%) !important;
-      border:2px solid #cec5b4 !important;
-      border-radius:12px !important;
-      box-shadow:0 2px 0 #c0b6a3, 0 2px 6px rgba(0,0,0,.08) !important;
-      padding:8px 12px !important;
-    }
-    .search input{ color:#2b2b2b !important; }
-    .search input::placeholder{ color:#8d8678 !important; }
+/* 搜索栏：纸条质感（同系米白） */
+.search{
+  background:linear-gradient(180deg,#fdfcf9,#f4efe5 85%) !important;
+  border:2px solid #cec5b4 !important;
+  border-radius:12px !important;
+  box-shadow:0 2px 0 #c0b6a3, 0 2px 6px rgba(0,0,0,.08) !important;
+  padding:8px 12px !important;
+}
+.search input{ color:#2b2b2b !important; }
+.search input::placeholder{ color:#8d8678 !important; }
 
-    /* 分类胶囊：米白/米杏，选中用鼠尾草绿 */
-    .pill{
-      border:2px solid #c5baa8 !important;
-      border-radius:16px !important;
-      background:linear-gradient(180deg,#fbfaf7,#efe6db) !important;
-      color:#343434 !important; font-weight:700 !important;
-      box-shadow:0 2px 0 #c5baa8 !important;
-      padding:8px 12px !important;
-    }
-    .pill[aria-pressed="true"]{
-      background:linear-gradient(180deg,#cfd8cf,#b8c6b9) !重要;
-      color:#1f1f1f !important; border-color:#aebaaf !important;
-      box-shadow:0 2px 0 #aebaaf !important;
-    }
+/* 分类胶囊：米白/米杏，选中用鼠尾草绿 */
+.pill{
+  border:2px solid #c5baa8 !important;
+  border-radius:16px !important;
+  background:linear-gradient(180deg,#fbfaf7,#efe6db) !important;
+  color:#343434 !important; font-weight:700 !important;
+  box-shadow:0 2px 0 #c5baa8 !important;
+  padding:8px 12px !important;
+}
+.pill[aria-pressed="true"]{
+  background:linear-gradient(180deg,#cfd8cf,#b8c6b9) !important; /* sage 明度梯度 */
+  color:#1f1f1f !important; border-color:#aebaaf !important;
+  box-shadow:0 2px 0 #aebaaf !important;
+}
 
-    /* 分组条：浅米纸面 + 细描边 */
-    .section-header{
-      background:linear-gradient(180deg,#fff,#f6efe4) !important;
-      border:2px solid #cfc5b3 !important;
-      color:#2b2b2b !important;
-    }
+/* 分组条：浅米纸面 + 细描边 */
+.section-header{
+  background:linear-gradient(180deg,#fff,#f6efe4) !important;
+  border:2px solid #cfc5b3 !important;
+  color:#2b2b2b !important;
+}
 
-    /* 卡片：去深色，改成浅米 + 细描边 + 柔和投影 */
-    .card-all,.card{
-      background:linear-gradient(145deg,#ffffff,#fbf6ee 70%),
-                 radial-gradient(420px 260px at 80% 0%,rgba(203,216,206,.35),transparent 60%) !important;
-      border:2px solid #cfc5b3 !important;
-      border-radius:14px !important;
-      box-shadow:0 3px 0 #cfc5b3, 0 1px 10px rgba(0,0,0,.08) !important;
-    }
-    .name,.title-only{ color:#2b2b2b !important; }
+/* 卡片：去深色，改成浅米 + 细描边 + 柔和投影 */
+.card-all,.card{
+  background:linear-gradient(145deg,#ffffff,#fbf6ee 70%),
+             radial-gradient(420px 260px at 80% 0%,rgba(203,216,206,.35),transparent 60%) !important;
+  border:2px solid #cfc5b3 !important;
+  border-radius:14px !important;
+  box-shadow:0 3px 0 #cfc5b3, 0 1px 10px rgba(0,0,0,.08) !important;
+}
+.name,.title-only{ color:#2b2b2b !important; }
 
-    /* —— 缩略图容器：与图标同系的鼠尾草绿渐变；不再有白色圆盘 —— */
-    .imgbox{
-      background:linear-gradient(160deg,#96a99a 0%, #c7d1c8 100%) !important; /* sage 系列 */
-      border-bottom:1px solid rgba(0,0,0,.04);
-    }
-    .imgbox > img.thumb{
-      filter:saturate(1.04) brightness(1.05) !important;
-      mix-blend-mode:normal !important;
-    }
+/* —— 缩略图容器：与图标同系的鼠尾草绿渐变；不再有白色圆盘 —— */
+.imgbox{
+  background:linear-gradient(160deg,#96a99a 0%, #c7d1c8 100%) !important; /* sage 系列 */
+  border-bottom:1px solid rgba(0,0,0,.04);
+}
+.imgbox > img.thumb{
+  filter:saturate(1.04) brightness(1.05) !important;
+  mix-blend-mode:normal !important;
+}
 
-    /* 购物车/主操作：米杏暖色，统一视觉 */
-    #submitOrder,
-    #cartBtn{
-      background:linear-gradient(180deg,#f4d089,#e6bb6a) !important;
-      color:#1a1a1a !important;
-      border:2px solid #d1ac67 !important;
-      box-shadow:0 3px 0 #d1ac67 !important;
-    }
+/* 购物车/主操作：米杏暖色，统一视觉 */
+#submitOrder,
+#cartBtn{
+  background:linear-gradient(180deg,#f4d089,#e6bb6a) !important;
+  color:#1a1a1a !important;
+  border:2px solid #d1ac67 !important;
+  box-shadow:0 3px 0 #d1ac67 !important;
+}
 
-    /* 通用按钮：低饱和米白 */
-    .btn{
-      border:2px solid #c5baa8 !important;
-      border-radius:12px !important;
-      background:linear-gradient(180deg,#fff,#f4ece1) !important;
-      color:#2b2b2b !important; font-weight:800 !important;
-      box-shadow:0 2px 0 #c5baa8 !important;
-    }
-    .drawer-ft input.btn,.drawer-ft input.btn:focus{
-      background:#fff !important; color:#2b2b2b !important;
-      border:2px solid #cfc5b3 !important;
-    }
+/* 通用按钮：低饱和米白 */
+.btn{
+  border:2px solid #c5baa8 !important;
+  border-radius:12px !important;
+  background:linear-gradient(180deg,#fff,#f4ece1) !important;
+  color:#2b2b2b !important; font-weight:800 !important;
+  box-shadow:0 2px 0 #c5baa8 !important;
+}
+.drawer-ft input.btn,.drawer-ft input.btn:focus{
+  background:#fff !important; color:#2b2b2b !important;
+  border:2px solid #cfc5b3 !important;
+}
 
-    /* 抽屉与表格：浅米纸面 + 浅墨线 */
-    #drawer{
-      background:#fbf6ee !important;
-      border:2px solid #cfc5b3 !important;
-      box-shadow:0 -4px 12px rgba(0,0,0,.10) !important;
-      color:#2b2b2b !important;
-    }
-    table, th, td{ border-color:#cfc5b3 !important; color:#2b2b2b !important; }
-    thead{ background:#f2e8d9 !important; }
+/* 抽屉与表格：浅米纸面 + 浅墨线 */
+#drawer{
+  background:#fbf6ee !important;
+  border:2px solid #cfc5b3 !important;
+  box-shadow:0 -4px 12px rgba(0,0,0,.10) !important;
+  color:#2b2b2b !important;
+}
+table, th, td{ border-color:#cfc5b3 !important; color:#2b2b2b !important; }
+thead{ background:#f2e8d9 !important; }
 
-    /* 顶部再略微紧凑点 */
-    .topbar{ padding:14px var(--safe) 8px !important; }
-    .tabs{ padding:10px var(--safe) 12px !important; }
+/* 顶部再略微紧凑点 */
+.topbar{ padding:14px var(--safe) 8px !important; }
+.tabs{ padding:10px var(--safe) 12px !important; }
+/* ========== 微调修正版（emoji 居中 + 描述加深 + 输入框灰色强化） ========== */
 
-    /* emoji 居中 + 文案加深 */
-    .imgbox > img.thumb { object-fit:contain !important; display:block !important; margin:0 auto !important; filter:saturate(1.05) brightness(1.05) !important; mix-blend-mode:normal !important; padding:12px 0 !important }
-    .desc{ color:#5e5a54 !important; font-weight:500 !important }
-    .tag{ border:1px dashed #a49d8e !important; color:#5c5851 !important; background:rgba(255,255,255,.6) !important }
-    .drawer-ft input.btn, .drawer-ft input.btn:focus{ color:#4f4a44 !important; border-color:#bfb4a1 !important; background:#fffdfa !important }
-    .drawer-ft input.btn::placeholder{ color:#857e72 !important; opacity:1 !important }
-    #drawer{ color:#4a463f !important }
-    #cartBtn{ color:#3e3b35 !important; font-weight:800 !important }
-    #submitOrder{ color:#3c372f !important }
+/* 1️⃣ emoji 居中对齐 */
+.imgbox > img.thumb {
+  object-fit: contain !important;
+  display: block !important;
+  margin: 0 auto !important;
+  filter: saturate(1.05) brightness(1.05) !important;
+  mix-blend-mode: normal !important;
+  padding: 12px 0 !important; /* 让emoji上下留白相等 */
+}
 
-    /* 折叠渲染保持你的规则 */
-    .section[aria-expanded="false"] .grid{ display:none !important }
-    .section[aria-expanded="false"]{ margin-bottom:10px }
-    .section[aria-expanded="false"] .section-header{ border-bottom-left-radius:12px; border-bottom-right-radius:12px }
-    .section .section-header{ cursor:pointer }
+/* 2️⃣ 菜品描述文字、tag 颜色加深 */
+.desc {
+  color: #5e5a54 !important;     /* 柔和深灰（比原色略深） */
+  font-weight: 500 !important;
+}
+.tag {
+  border: 1px dashed #a49d8e !important;
+  color: #5c5851 !important;
+  background: rgba(255,255,255,0.6) !important;
+}
 
-    /* 主体滚动与留白（保持你的设置） */
-    html, body { height:100%; overscroll-behavior-y:none }
-    main { overscroll-behavior:contain }
-    #admin { overscroll-behavior:contain }
-    #drawer .drawer-hd, #drawer .drawer-ft{ touch-action:none; -webkit-user-select:none; user-select:none }
-    main { padding-bottom: calc(max(60px, 8vh) + env(safe-area-inset-bottom, 0px)) !important; }
-    footer { margin-bottom: calc(max(80px, 10vh) + env(safe-area-inset-bottom, 0px)) !important; }
+/* 3️⃣ 购物车输入区文字与占位符颜色加深 */
+.drawer-ft input.btn,
+.drawer-ft input.btn:focus {
+  color: #4f4a44 !important;
+  border-color: #bfb4a1 !important;
+  background: #fffdfa !important;
+}
+.drawer-ft input.btn::placeholder {
+  color: #857e72 !important; /* 深灰米色 */
+  opacity: 1 !important;
+}
 
-    /* 重要：为避免按钮被覆盖的末尾覆盖规则，这里改为固定 16px（不使用 vh） */
-    #cartBtn {
-      bottom: calc(16px + env(safe-area-inset-bottom, 0px)) !important;
-    }
+/* 抽屉整体文字稍加深（购物车标题等） */
+#drawer {
+  color: #4a463f !important;
+}
+
+/* “购物车”主按钮字体颜色统一 */
+#cartBtn {
+  color: #3e3b35 !important;
+  font-weight: 800 !important;
+}
+
+/* 提交按钮文字颜色保持暖灰 */
+#submitOrder {
+  color: #3c372f !important;
+}
+/* 收起/展开：当 aria-expanded="false" 时隐藏列表 */
+.section[aria-expanded="false"] .grid{
+  display: none !important;
+}
+
+/* 收起时的外观微调（可改/可删） */
+.section[aria-expanded="false"]{
+  margin-bottom: 10px;
+}
+.section[aria-expanded="false"] .section-header{
+  border-bottom-left-radius: 12px;
+  border-bottom-right-radius: 12px;
+}
+.section .section-header{
+  cursor: pointer; /* 提示可点 */
+}
+/* ===== 浅鼠尾草绿按钮风格（加入 & 收起） ===== */
+
+/* 主按钮底色浅绿，配合当前主题 */
+.btn,
+.section-toggle {
+  background: linear-gradient(180deg,#cfd8cf,#bfc9c0) !important; /* 浅鼠尾草绿 */
+  border: 1px solid #aebaaf !important;
+  color: #3d413b !important;  /* 深灰文字，不是黑 */
+  box-shadow: 0 2px 3px rgba(0,0,0,.12) !important;
+  transition: all .15s ease;
+}
+
+/* hover 和 active 状态 */
+.btn:hover,
+.section-toggle:hover {
+  background: linear-gradient(180deg,#d8e0d8,#c8d2c8) !important;
+}
+.btn:active,
+.section-toggle:active {
+  background: linear-gradient(180deg,#b8c2b8,#aeb8ae) !important;
+  transform: translateY(1px);
+  box-shadow: 0 1px 2px rgba(0,0,0,.18) inset !important;
+}
+
+/* 收起按钮：更轻、更小圆角 */
+.section-toggle {
+  padding: 6px 12px !important;
+  border-radius: 10px !important;
+  font-weight: 700 !important;
+}
+
+/* 加入按钮：卡片比例适配 */
+.card .btn.add {
+  font-size: 14px !important;
+  padding: 8px 18px !important;
+  border-radius: 8px !important;
+  background: linear-gradient(180deg,#cfd8cf,#bfc9c0) !important;
+}
+/* ===== 仅调整 “加入” 按钮配色，保持与收起一致但更小巧 ===== */
+.card .btn.add {
+  background: linear-gradient(180deg, #cfd8cf, #bfc9c0) !important; /* 浅鼠尾草绿 */
+  border: 1px solid #aebaaf !important;
+  color: #3d413b !important;  /* 深灰文字 */
+  font-weight: 700 !important;
+  font-size: 14px !important;
+  padding: 8px 18px !important;
+  border-radius: 8px !important;
+  box-shadow: 0 2px 3px rgba(0,0,0,.12) !important;
+  transition: all .15s ease;
+}
+
+/* hover / active 状态 */
+.card .btn.add:hover {
+  background: linear-gradient(180deg, #d8e0d8, #c8d2c8) !important;
+}
+.card .btn.add:active {
+  background: linear-gradient(180deg, #b8c2b8, #aeb8ae) !important;
+  transform: translateY(1px);
+  box-shadow: 0 1px 2px rgba(0,0,0,.18) inset !important;
+}
+/* 统一 “加入” 按钮配色为浅鼠尾草绿 */
+.card .add,
+.card .btn.add {
+  background: linear-gradient(180deg, #cfd8cf, #bfc9c0) !important;
+  border: 1px solid #aebaaf !important;
+  color: #3d413b !important;          /* 深一点的灰，不是黑 */
+  font-weight: 700 !important;
+  font-size: 14px !important;
+  padding: 8px 18px !important;
+  border-radius: 8px !important;
+  box-shadow: 0 2px 3px rgba(0,0,0,.12) !important;
+  transition: all .15s ease;
+}
+.card .add:hover,
+.card .btn.add:hover {
+  background: linear-gradient(180deg, #d8e0d8, #c8d2c8) !important;
+}
+.card .add:active,
+.card .btn.add:active {
+  background: linear-gradient(180deg, #b8c2b8, #aeb8ae) !important;
+  transform: translateY(1px);
+  box-shadow: 0 1px 2px rgba(0,0,0,.18) inset !important;
+}
+/* 抽屉改为三段式：头部固定 + 中间滚动 + 底部固定 */
+#drawer{
+  display: flex !important;
+  flex-direction: column !important;
+  max-height: calc(100vh - 20px) !important;   /* 更贴近全屏 */
+}
+.drawer-ct{
+  flex: 1 1 auto !important;
+  overflow: auto !important;
+  -webkit-overflow-scrolling: touch !important; /* iOS 惯性滚动 */
+  overscroll-behavior: contain !important;      /* 防止穿透到底层页面 */
+}
+.drawer-ft{
+  position: sticky;
+  bottom: 0;
+  background: inherit;    /* 视觉连贯 */
+  padding-bottom: calc(14px + env(safe-area-inset-bottom, 0px)) !important;
+}
+/* 购物车“清空”按钮（轻量外观） */
+.btn.ghost{
+  background: linear-gradient(180deg, #fbfaf7, #f3eee6) !important;
+  border: 1px solid #cfc5b3 !important;
+  color: #6a655b !important;
+  box-shadow: 0 1px 2px rgba(0,0,0,.08) !important;
+  font-weight: 700 !important;
+}
+.btn.ghost:hover{
+  background: linear-gradient(180deg, #ffffff, #f7f2ea) !important;
+}
+.btn.ghost:active{
+  background: linear-gradient(180deg, #f0e9df, #e7dfd3) !important;
+}
+/* ===== 优化购物车高度，避免与状态栏重叠 ===== */
+#drawer {
+  top: calc(env(safe-area-inset-top, 0px) + 12px) !important; /* 整体下移一点 */
+  max-height: calc(90vh - env(safe-area-inset-top, 0px)) !important; /* 保留顶部留白 */
+  border-top-left-radius: 18px !important;
+  border-top-right-radius: 18px !important;
+  overflow: hidden !important;
+}
+
+/* 调整抽屉内部布局：保持可滚动区域和底部按钮稳定 */
+.drawer-ct {
+  flex: 1 1 auto !important;
+  overflow: auto !important;
+  -webkit-overflow-scrolling: touch !important;
+  overscroll-behavior: contain !important;
+}
+.drawer-ft {
+  position: sticky !important;
+  bottom: 0 !important;
+  background: inherit !important;
+  padding-bottom: calc(14px + env(safe-area-inset-bottom, 0px)) !important;
+}
+/* ===== 修正购物车抽屉底部悬空问题 ===== */
+#drawer {
+  position: fixed !important;
+  inset: auto 0 0 0 !important;        /* 贴合屏幕底部 */
+  width: 100% !important;
+  max-height: calc(92vh - env(safe-area-inset-top, 0px)) !important;
+  margin: 0 !important;
+  border-top-left-radius: 18px !important;
+  border-top-right-radius: 18px !important;
+  border-bottom-left-radius: 0 !important;
+  border-bottom-right-radius: 0 !important;
+  bottom: 0 !important;
+  transform: translateY(0);            /* 确保展开后贴底 */
+}
+
+/* 底部区域贴合安全区，消除额外空隙 */
+.drawer-ft {
+  position: sticky !important;
+  bottom: 0 !important;
+  background: inherit !important;
+  padding-bottom: env(safe-area-inset-bottom, 0px) !important;
+  border-top: 1px solid #d4cdbf;
+}
+    /* 禁用整页顶部/底部橡皮筋回弹（仍可正常滚动） */
+html, body {
+  height: 100%;
+  overscroll-behavior-y: none;   /* 顶/底不被“拉开” */
+}
+
+/* 主内容作为可滚容器，防止“整页拉扯” */
+main {
+  overscroll-behavior: contain;  /* 向上/向下的滚动不会传递到外层产生回弹 */
+}
+
+/* 管理员表格区域也避免回弹 */
+#admin {
+  overscroll-behavior: contain;
+}
+
+/* 购物车头、尾避免触发默认回弹（你已贴底固定） */
+#drawer .drawer-hd,
+#drawer .drawer-ft{
+  touch-action: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+/* ========== 页面底部留白调整（自适应不同屏幕高度） ========== */
+
+/* 主内容底部留白，避免和购物车按钮贴太近 */
+main {
+  padding-bottom: calc(
+    max(60px, 8vh) + env(safe-area-inset-bottom, 0px)
+  ) !important;
+}
+
+/* 页脚留白（确保底部说明文字不会被挡住） */
+footer {
+  margin-bottom: calc(
+    max(80px, 10vh) + env(safe-area-inset-bottom, 0px)
+  ) !important;
+}
+
+/* 调整购物车按钮与底边的距离，让按钮在不同设备上都自然居中悬浮 */
+#cartBtn {
+  bottom: calc(20px + env(safe-area-inset-bottom, 0px)
+  ) !important;
+}
+/* ===== FIX: iOS 键盘打开后抽屉和按钮自动上移问题修复 ===== */
+:root {
+  --kb-safe: 0px; /* 默认底部补偿为 0 */
+}
+
+/* 将购物车抽屉和按钮的 bottom 锚定到变量 */
+#drawer {
+  bottom: var(--kb-safe) !important;
+}
+#cartBtn {
+  bottom: calc(20px + env(safe-area-inset-bottom, 0px) + var(--kb-safe)) !important;
+}
   </style>
 </head>
 <body>
@@ -450,12 +707,17 @@
     }
 
     /* SVG 占位图 */
+    /* ✨ 替换原来的 iconSVG —— 不再绘制白色圆盘，只放 emoji */
 function iconSVG(e, label){
   var svg = encodeURIComponent(
     "<?xml version='1.0'?>"
    +"<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 220 220'>"
+   /* 背景透明，由 .imgbox 提供鼠尾草绿渐变 */
    +"<rect width='220' height='220' fill='none'/>"
+   /* 仅绘制 emoji，位置略靠上更协调 */
    +"<text x='110' y='115' font-size='96' text-anchor='middle'>"+(e||'🍽️')+"</text>"
+   /* 可选：下面这行如果你想保留中文标题小贴纸就留，不想要可以删 */
+   // +"<text x='110' y='190' font-size='0' text-anchor='middle'>"+label+"</text>"
    +"</svg>"
   );
   var im = new Image();
@@ -468,6 +730,7 @@ function iconSVG(e, label){
 
     /* ============== 分类 / 分组渲染（按你的“逻辑改进摘要”） ============== */
     var MENU=[];
+
     function groupSection(title, items){
   var sec=document.createElement('section'); sec.className='section'; sec.setAttribute('aria-expanded','true');
   var header=document.createElement('div'); header.className='section-header';
@@ -475,7 +738,7 @@ function iconSVG(e, label){
   var btn=document.createElement('button'); btn.className='section-toggle'; btn.textContent='收起';
   header.appendChild(btn);
 
-  // ✅ 整条标题栏都可点击收起/展开
+  // ✅ 新增：整条标题栏都可点击收起/展开
   function toggle(){
     var open = sec.getAttribute('aria-expanded') !== 'false';
     sec.setAttribute('aria-expanded', open ? 'false' : 'true');
@@ -542,7 +805,7 @@ function iconSVG(e, label){
 
         if (meat.length) root.appendChild(groupSection('🥩 肉菜', meat));
         if (veg.length)  root.appendChild(groupSection('🥦 素菜', veg));
-        if (soup长度) root.appendChild(groupSection('🍲 汤类', soup));
+        if (soup.length) root.appendChild(groupSection('🍲 汤类', soup));
         return;
       }
 
@@ -552,16 +815,16 @@ function iconSVG(e, label){
         var noodle = MENU.filter(function(it){ return matchQ(it) && it.category==='Rice' && nameHas(it,'面'); });
         var pastry = MENU.filter(function(it){ return matchQ(it) && it.category==='Rice' && !nameHas(it,'饭') && !nameHas(it,'面'); });
 
-        if (rice长度)   root.appendChild(groupSection('🍚 饭', rice));
-        if (noodle长度) root.appendChild(groupSection('🍜 面', noodle));
-        if (pastry长度) root.appendChild(groupSection('🥟 面食', pastry));
+        if (rice.length)   root.appendChild(groupSection('🍚 饭', rice));
+        if (noodle.length) root.appendChild(groupSection('🍜 面', noodle));
+        if (pastry.length) root.appendChild(groupSection('🥟 面食', pastry));
         return;
       }
 
       /* —— 凉拌菜（Cold） 不细分 —— */
       if (active === 'Cold') {
         var cold = MENU.filter(function(it){ return matchQ(it) && hasTag(it,'Cold'); });
-        if (cold长度) root.appendChild(groupSection('🥒 凉拌菜', cold));
+        if (cold.length) root.appendChild(groupSection('🥒 凉拌菜', cold));
         return;
       }
     }
@@ -595,33 +858,41 @@ function iconSVG(e, label){
       count.textContent='('+total+')';
     }
     cartBtn.onclick=function(){ drawer.style.transform='translateY(0)'; drawer.setAttribute('aria-hidden','false'); };
+    closeDrawer.onclick = function () {
+  // ✅ 先收起键盘，避免按钮/抽屉被“顶住”
+  if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
+  if (cName) cName.blur();
+  if (cIngs) cIngs.blur();
 
-    /* 最小改动：关闭抽屉时收起键盘，避免 iOS 保持键盘态造成“上移” */
-    closeDrawer.onclick=function(){
-      if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
-      if (cName) cName.blur();
-      if (cIngs) cIngs.blur();
+  drawer.style.transform = 'translateY(110%)';
+  drawer.setAttribute('aria-hidden', 'true');
 
-      drawer.style.transform='translateY(110%)';
-      drawer.setAttribute('aria-hidden','true');
-
-      setTimeout(()=>{ window.dispatchEvent(new Event('resize')); },30);
-    };
-
+  // 稳定处理 iOS 可视区
+  setTimeout(() => { window.dispatchEvent(new Event('resize')); }, 30);
+};
     clearCart.onclick=function(){ cart={}; saveCart(); };
+    // 自定义加入：成功后清空输入并收起键盘，避免 iOS 视口保持“键盘态”
+addCustom.onclick = function () {
+  var name = (cName.value || '').trim();
+  var ings = (cIngs.value || '').trim();
 
-    /* 最小改动：自定义加入后清空并收起键盘，避免 iOS 视口变小 */
-    addCustom.onclick=function(){
-      var name=(cName.value||'').trim(); var ings=(cIngs.value||'').trim();
-      if(!name){ alert('请先输入菜名'); cName.focus(); return; }
-      var display=ings ? ('自定义 · '+name+'（'+ings+'）') : ('自定义 · '+name);
-      cart[display]=(cart[display]||0)+1; saveCart();
-      cName.value = ''; cIngs.value = '';
+  if (!name) { alert('请先输入菜名'); cName.focus(); return; }
 
-      if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
-      if (navigator.vibrate){ try{ navigator.vibrate(16); }catch(e){} }
-      setTimeout(()=>{ window.dispatchEvent(new Event('resize')); },30);
-    };
+  var display = ings ? ('自定义 · ' + name + '（' + ings + '）') : ('自定义 · ' + name);
+  cart[display] = (cart[display] || 0) + 1;
+  saveCart();
+
+  // ✅ 清空 & 收起键盘
+  cName.value = '';
+  cIngs.value = '';
+  if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
+  if (cName.blur) cName.blur();
+  if (cIngs.blur) cIngs.blur();
+
+  // 触发一次重算，部分 iOS 机型更稳
+  setTimeout(() => { window.dispatchEvent(new Event('resize')); }, 30);
+};
+    renderCart();
 
     /* 加载菜单 JSON */
     fetch(MENU_URL, { cache:'no-store' })
@@ -862,6 +1133,17 @@ if (_chkOnly) _chkOnly.addEventListener('change', renderAdminRowsCached);
         console.error("提交失败：", e); alert("提交失败：" + e.message);
       }
     };
+    /* ===== FIX: 键盘打开导致抽屉上移 ===== */
+if (window.visualViewport) {
+  const root = document.documentElement;
+  const updateKbSafe = () => {
+    const vp = window.visualViewport;
+    const offset = window.innerHeight - vp.height - vp.offsetTop;
+    root.style.setProperty('--kb-safe', offset > 0 ? offset + 'px' : '0px');
+  };
+  window.visualViewport.addEventListener('resize', updateKbSafe);
+  window.visualViewport.addEventListener('scroll', updateKbSafe);
+}
   </script>
 </body>
 </html>
