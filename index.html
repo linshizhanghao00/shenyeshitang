@@ -53,26 +53,11 @@
       background:radial-gradient(1200px 600px at 70% -10%,rgba(124,92,255,.15),transparent 60%),
                  radial-gradient(1000px 500px at 0% 100%,rgba(61,217,178,.12),transparent 60%),var(--bg)
     }
-    
+    body.pwa-on header{ padding-top: calc(var(--safeTop) + 10px); }
+    body.admin-on header{ padding-top: calc(var(--safeTop) + 22px); }
+    body.pwa-on.admin-on header{ padding-top: calc(var(--safeTop) + 26px); }
 
-    
-    /* 顶部完全固定，不随页面滚动 */
-header{
-  position: fixed;          /* was: sticky */
-  left: 0; right: 0; top: 0;
-  z-index: 30;              /* 在内容之上，在抽屉(#drawer z=50)之下即可 */
-  background: rgba(255,255,255,.78) !important; /* 维持你浅色毛玻璃主题可留 */
-  -webkit-backdrop-filter: blur(14px) saturate(150%) !important;
-  backdrop-filter: blur(14px) saturate(150%) !important;
-}
-    /* 让主体内容从 header 底部开始，不被遮住 */
-:root{ --header-offset: 120px; }  /* 兜底值，JS 会计算精确高度替换它 */
-
-main{
-  padding-top: var(--header-offset) !important;
-}
-
-
+    header{position:sticky;top:0;z-index:20;background:rgba(12,12,15,.85);backdrop-filter:blur(8px)}
     .topbar{display:grid;grid-template-columns:1fr auto auto;gap:12px;align-items:center;padding:18px var(--safe) 10px}
     .brand{display:flex;gap:14px;align-items:center}
     .logo{width:46px;height:46px;border-radius:14px;display:grid;place-items:center;background:linear-gradient(135deg,var(--brand),var(--brand2));color:#fff;font-size:24px}
@@ -556,7 +541,7 @@ thead{ background:#f2e8d9 !important; }
   padding-bottom: env(safe-area-inset-bottom, 0px) !important;
   border-top: 1px solid #d4cdbf;
 }
-/* 禁用整页顶部/底部橡皮筋回弹（仍可正常滚动） */
+    /* 禁用整页顶部/底部橡皮筋回弹（仍可正常滚动） */
 html, body {
   height: 100%;
   overscroll-behavior-y: none;   /* 顶/底不被“拉开” */
@@ -600,69 +585,6 @@ footer {
   bottom: calc(
     max(24px, 4vh) + env(safe-area-inset-bottom, 0px)
   ) !important;
-}
-/* 彻底锁定顶部：页面不滚动，只有 main 滚动 */
-html, body {
-  height: 100%;
-  overflow: hidden;                /* 关键：禁止 body 自身滚动/回弹 */
-  overscroll-behavior-y: none;     /* 防止整体上下拉扯 */
-}
-
-/* header 已经是 fixed；让 main 占据 header 下面到底部的可滚区域 */
-:root{
-  --admin-offset: 0px;     /* 管理员面板高度（JS 会计算） */
-  --header-offset: 120px;  /* header 实际高度（JS 会计算） */
-}
-
-/* main 改为固定布局 + 自己滚动 */
-main{
-  position: fixed;
-  top: calc(var(--admin-offset, 0px) + var(--header-offset, 120px));
-  left: 0; right: 0; bottom: 0;
-  overflow: auto;                      /* 主体滚动放在这里 */
-  -webkit-overflow-scrolling: touch;   /* iOS 惯性滚动 */
-  overscroll-behavior: contain;        /* 不把滚动传给外层 */
-}
-
-/* 如果还没改 header，请保持 fixed，并使用上面两条变量 */
-header{
-  position: fixed;
-  left: 0; right: 0;
-  top: var(--admin-offset, 0px);  /* header 永远在 admin 下面 */
-  z-index: 30;
-  /* 你的毛玻璃 & 背景保留 */
-}
-/* ========== 固定 header + main 滚动（防止轻微上滑） ========== */
-:root{
-  --admin-offset: 0px;     /* JS 会写入实际 admin 高度 */
-  --header-offset: 120px;  /* JS 会写入实际 header 高度 */
-}
-
-html, body {
-  height: 100%;
-  overflow: hidden;                /* 禁止 body 滚动 */
-  overscroll-behavior-y: none;     /* 防止页面回弹 */
-}
-
-/* header 永远固定在 admin 下方 */
-header{
-  position: fixed;
-  left: 0; right: 0;
-  top: var(--admin-offset, 0px);
-  z-index: 30;
-  background: rgba(255,255,255,.78) !important;
-  -webkit-backdrop-filter: blur(14px) saturate(150%) !important;
-  backdrop-filter: blur(14px) saturate(150%) !important;
-}
-
-/* main 变成唯一可滚动区域 */
-main{
-  position: fixed;
-  top: calc(var(--admin-offset, 0px) + var(--header-offset, 120px));
-  left: 0; right: 0; bottom: 0;
-  overflow: auto;
-  -webkit-overflow-scrolling: touch;   /* iOS 惯性滚动 */
-  overscroll-behavior: contain;        /* 防止把滚动传给外层 */
 }
 
   </style>
@@ -757,25 +679,6 @@ main{
     var cIngs=document.getElementById('cIngs');
     var addCustom=document.getElementById('addCustom');
     var toggleAdmin=document.getElementById('toggleAdmin');
-/* 计算 #admin 和 header 的实际高度，写入 CSS 变量 */
-function updateTopOffsets(){
-  var headerEl = document.querySelector('header');
-  var adminEl  = document.getElementById('admin');
-
-  var headerH = headerEl ? Math.round(headerEl.getBoundingClientRect().height) : 0;
-  var adminH  = 0;
-
-  // 只有管理员模式并且 admin 区可见时才计入高度
-  if (document.body.classList.contains('admin-on') && adminEl && adminEl.style.display !== 'none'){
-    adminH = Math.round(adminEl.getBoundingClientRect().height);
-  }
-
-  document.documentElement.style.setProperty('--header-offset', headerH + 'px');
-  document.documentElement.style.setProperty('--admin-offset',  adminH  + 'px');
-}
-window.addEventListener('load',   updateTopOffsets);
-window.addEventListener('resize', updateTopOffsets);
-
 
     /* PWA 一键切换管理员/用户 */
     if (toggleAdmin) {
@@ -991,8 +894,6 @@ function iconSVG(e, label){
             document.body.insertBefore(adminSection, headerEl);
           }
         }
-        updateTopOffsets();   // 插入 admin 后重算偏移
-
         document.body.classList.add('admin-on');
       }catch(e){}
 
@@ -1107,7 +1008,7 @@ if (_chkOnly) _chkOnly.addEventListener('change', renderAdminRowsCached);
             };
           })();
 
-         fs.onSnapshot(qLines, function(snap){
+  fs.onSnapshot(qLines, function(snap){
   // 收集并排序
   const rows = [];
   snap.forEach(function(d){
