@@ -57,7 +57,23 @@
     body.admin-on header{ padding-top: calc(var(--safeTop) + 22px); }
     body.pwa-on.admin-on header{ padding-top: calc(var(--safeTop) + 26px); }
 
-    header{position:sticky;top:0;z-index:20;background:rgba(12,12,15,.85);backdrop-filter:blur(8px)}
+    /* 顶部完全固定，不随页面滚动 */
+header{
+  position: fixed;          /* was: sticky */
+  left: 0; right: 0; top: 0;
+  z-index: 30;              /* 在内容之上，在抽屉(#drawer z=50)之下即可 */
+  background: rgba(255,255,255,.78) !important; /* 维持你浅色毛玻璃主题可留 */
+  -webkit-backdrop-filter: blur(14px) saturate(150%) !important;
+  backdrop-filter: blur(14px) saturate(150%) !important;
+}
+    /* 让主体内容从 header 底部开始，不被遮住 */
+:root{ --header-offset: 120px; }  /* 兜底值，JS 会计算精确高度替换它 */
+
+main{
+  padding-top: var(--header-offset) !important;
+}
+
+
     .topbar{display:grid;grid-template-columns:1fr auto auto;gap:12px;align-items:center;padding:18px var(--safe) 10px}
     .brand{display:flex;gap:14px;align-items:center}
     .logo{width:46px;height:46px;border-radius:14px;display:grid;place-items:center;background:linear-gradient(135deg,var(--brand),var(--brand2));color:#fff;font-size:24px}
@@ -679,6 +695,16 @@ footer {
     var cIngs=document.getElementById('cIngs');
     var addCustom=document.getElementById('addCustom');
     var toggleAdmin=document.getElementById('toggleAdmin');
+/* 计算 header 实际高度并写入 CSS 变量，保证各机型/刘海准确对齐 */
+function updateHeaderOffset(){
+  var h = document.querySelector('header');
+  if(!h) return;
+  var rect = h.getBoundingClientRect();
+  var off = Math.round(rect.height);             // 实际像素高度
+  document.documentElement.style.setProperty('--header-offset', off + 'px');
+}
+window.addEventListener('load', updateHeaderOffset);
+window.addEventListener('resize', updateHeaderOffset);
 
     /* PWA 一键切换管理员/用户 */
     if (toggleAdmin) {
