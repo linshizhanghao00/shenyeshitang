@@ -847,7 +847,7 @@ function iconSVG(e, label){
       });
       count.textContent='('+total+')';
     }
-    cartBtn.onclick=function(){ drawer.style.transform='translateY(0)'; drawer.setAttribute('aria-hidden','false'); };
+    cartBtn.onclick=function(){ drawer.style.transform='translateY(110%)'; drawer.setAttribute('aria-hidden','false'); };
     closeDrawer.onclick=function(){ drawer.style.transform='translateY(110%)'; drawer.setAttribute('aria-hidden','true'); };
     clearCart.onclick=function(){ cart={}; saveCart(); };
     // 自定义加入：成功后清空输入并给一点轻反馈
