@@ -607,6 +607,23 @@ body.pwa-on {
   overflow: hidden !important;
   overscroll-behavior: none !important;
 }
+/* 键盘打开时临时固定页面，键盘关闭立即移除 .kb-fix */
+:root { 
+  --kb-safe: 0px; /* 键盘补偿，默认 0；由 JS 动态写入 */
+}
+
+/* 只在键盘打开时才加到 body 的类 */
+body.kb-fix {
+  position: fixed !important;
+  inset: 0 !important;           /* top/left/right/bottom 全为 0 */
+  height: 100vh !important;      /* 锁定可视高度，避免整个 WebView 被抬升 */
+  overflow: hidden !important;   /* 禁止整页滚动 */
+  overscroll-behavior: none !important;
+}
+
+/* 抽屉和按钮贴底都锚到 --kb-safe，不用改你现有布局 */
+#drawer { bottom: var(--kb-safe) !important; }
+#cartBtn { bottom: calc(16px + env(safe-area-inset-bottom, 0px) + var(--kb-safe)) !important; }
   </style>
 </head>
 <body>
@@ -1173,6 +1190,63 @@ if (_chkOnly) _chkOnly.addEventListener('change', renderAdminRowsCached);
     }, 200);
   });
 });
+/* ===== 键盘期临时固定 + 动态补偿 ===== */
+(function keyboardFix() {
+  const root = document.documentElement;
+  const body = document.body;
+
+  // 兼容普通 Safari 与 PWA 独立 WebView
+  let lastH = window.innerHeight;
+
+  function setKbSafe(px) {
+    root.style.setProperty('--kb-safe', (px > 0 ? px : 0) + 'px');
+  }
+
+  function addKbFix()  { body.classList.add('kb-fix'); }
+  function dropKbFix() { body.classList.remove('kb-fix'); setKbSafe(0); }
+
+  // 监听窗口高度变化 —— PWA 下只能靠 innerHeight
+  function onResize() {
+    const h = window.innerHeight;
+    const diff = lastH - h;
+    if (diff > 150) {          // 键盘打开
+      addKbFix();
+      setKbSafe(diff);
+    } else if (diff < -150) {  // 键盘关闭
+      dropKbFix();
+    }
+    lastH = h;
+  }
+  window.addEventListener('resize', onResize);
+
+  // 对输入框：focus 时确保页面固定；blur 时恢复，并强制归零补偿
+  const inputs = [typeof cName!=='undefined' && cName, typeof cIngs!=='undefined' && cIngs, document.getElementById('search')]
+                  .filter(Boolean);
+
+  inputs.forEach(el => {
+    el.addEventListener('focus', () => {
+      addKbFix();
+      // 某些机型需要延迟才能拿到正确高度
+      setTimeout(onResize, 50);
+      // 保险：滚到底，避免光标被遮挡
+      setTimeout(() => window.scrollTo(0, document.body.scrollHeight), 120);
+    });
+    el.addEventListener('blur', () => {
+      // iOS 有时 blur 不触发 resize，这里主动恢复
+      setTimeout(() => dropKbFix(), 150);
+    });
+  });
+
+  // 关闭抽屉时，顺便收起键盘 + 恢复
+  const closeBtn = document.getElementById('closeDrawer');
+  if (closeBtn) {
+    closeBtn.addEventListener('click', () => {
+      if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
+      dropKbFix();
+      setTimeout(() => window.dispatchEvent(new Event('resize')), 30);
+    });
+  }
+})();
   </script>
 </body>
 </html>
