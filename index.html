@@ -497,13 +497,7 @@ thead{ background:#f2e8d9 !important; }
   background: linear-gradient(180deg, #f0e9df, #e7dfd3) !important;
 }
 /* ===== 优化购物车高度，避免与状态栏重叠 ===== */
-#drawer {
-  top: calc(env(safe-area-inset-top, 0px) + 12px) !important; /* 整体下移一点 */
-  max-height: calc(90vh - env(safe-area-inset-top, 0px)) !important; /* 保留顶部留白 */
-  border-top-left-radius: 18px !important;
-  border-top-right-radius: 18px !important;
-  overflow: hidden !important;
-}
+
 
 /* 调整抽屉内部布局：保持可滚动区域和底部按钮稳定 */
 .drawer-ct {
@@ -583,7 +577,7 @@ footer {
 /* 调整购物车按钮与底边的距离，让按钮在不同设备上都自然居中悬浮 */
 #cartBtn {
   bottom: calc(
-    max(24px, 4vh) + env(safe-area-inset-bottom, 0px)
+    24px + env(safe-area-inset-bottom, 0px)
   ) !important;
 }
 
