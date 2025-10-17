@@ -582,7 +582,7 @@ footer {
 
 /* 调整购物车按钮与底边的距离，让按钮在不同设备上都自然居中悬浮 */
 #cartBtn {
-  bottom: calc(20px + env(safe-area-inset-bottom, 0px)
+  bottom: calc(max(20px, 4vh) + env(safe-area-inset-bottom, 0px)
   );
 }
 /* ===== FIX: iOS 键盘打开后抽屉和按钮自动上移问题修复 ===== */
@@ -595,7 +595,17 @@ footer {
   bottom: var(--kb-safe) !important;
 }
 #cartBtn {
-  bottom: calc(20px + env(safe-area-inset-bottom, 0px) + var(--kb-safe)) !important;
+  bottom: calc(max(20px, 4vh) + env(safe-area-inset-bottom, 0px) + var(--kb-safe)) !important;
+}
+/* ===== iOS PWA 键盘强制上移修复：锁定视口高度 ===== */
+body.pwa-on {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  height: 100vh !important;
+  overflow: hidden !important;
+  overscroll-behavior: none !important;
 }
   </style>
 </head>
@@ -1156,6 +1166,13 @@ if (_chkOnly) _chkOnly.addEventListener('change', renderAdminRowsCached);
     setTimeout(() => root.style.setProperty('--kb-safe', '0px'), 300);
   });
 })();
+[cName, cIngs].forEach(el => {
+  el.addEventListener('focus', () => {
+    setTimeout(() => {
+      window.scrollTo(0, document.body.scrollHeight);
+    }, 200);
+  });
+});
   </script>
 </body>
 </html>
