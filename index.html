@@ -57,7 +57,14 @@
     body.admin-on header{ padding-top: calc(var(--safeTop) + 22px); }
     body.pwa-on.admin-on header{ padding-top: calc(var(--safeTop) + 26px); }
 
-    header{position:sticky;top:0;z-index:20;background:rgba(12,12,15,.85);backdrop-filter:blur(8px)}
+    /* ✅ header 固定在视口顶端 */
+header{
+  position: fixed;
+  left: 0; right: 0; top: 0;
+  z-index: 30;
+  background: rgba(12,12,15,.85);
+  backdrop-filter: blur(8px);
+}
     .topbar{display:grid;grid-template-columns:1fr auto auto;gap:12px;align-items:center;padding:18px var(--safe) 10px}
     .brand{display:flex;gap:14px;align-items:center}
     .logo{width:46px;height:46px;border-radius:14px;display:grid;place-items:center;background:linear-gradient(135deg,var(--brand),var(--brand2));color:#fff;font-size:24px}
@@ -497,13 +504,7 @@ thead{ background:#f2e8d9 !important; }
   background: linear-gradient(180deg, #f0e9df, #e7dfd3) !important;
 }
 /* ===== 优化购物车高度，避免与状态栏重叠 ===== */
-#drawer {
-  top: calc(env(safe-area-inset-top, 0px) + 12px) !important; /* 整体下移一点 */
-  max-height: calc(90vh - env(safe-area-inset-top, 0px)) !important; /* 保留顶部留白 */
-  border-top-left-radius: 18px !important;
-  border-top-right-radius: 18px !important;
-  overflow: hidden !important;
-}
+
 
 /* 调整抽屉内部布局：保持可滚动区域和底部按钮稳定 */
 .drawer-ct {
@@ -519,19 +520,7 @@ thead{ background:#f2e8d9 !important; }
   padding-bottom: calc(14px + env(safe-area-inset-bottom, 0px)) !important;
 }
 /* ===== 修正购物车抽屉底部悬空问题 ===== */
-#drawer {
-  position: fixed !important;
-  inset: auto 0 0 0 !important;        /* 贴合屏幕底部 */
-  width: 100% !important;
-  max-height: calc(92vh - env(safe-area-inset-top, 0px)) !important;
-  margin: 0 !important;
-  border-top-left-radius: 18px !important;
-  border-top-right-radius: 18px !important;
-  border-bottom-left-radius: 0 !important;
-  border-bottom-right-radius: 0 !important;
-  bottom: 0 !important;
-  transform: translateY(0);            /* 确保展开后贴底 */
-}
+
 
 /* 底部区域贴合安全区，消除额外空隙 */
 .drawer-ft {
@@ -585,6 +574,11 @@ footer {
   bottom: calc(
     max(24px, 4vh) + env(safe-area-inset-bottom, 0px)
   ) !important;
+}
+:root{ --header-offset: 120px; }   /* 兜底值 */
+
+main{
+  padding-top: var(--header-offset) !important;
 }
 
   </style>
@@ -679,7 +673,15 @@ footer {
     var cIngs=document.getElementById('cIngs');
     var addCustom=document.getElementById('addCustom');
     var toggleAdmin=document.getElementById('toggleAdmin');
-
+/* 让 main 的顶部刚好在 header 底部 */
+function updateHeaderOffset(){
+  var h = document.querySelector('header');
+  if(!h) return;
+  var off = Math.round(h.getBoundingClientRect().height);
+  document.documentElement.style.setProperty('--header-offset', off + 'px');
+}
+window.addEventListener('load',   updateHeaderOffset);
+window.addEventListener('resize', updateHeaderOffset);
     /* PWA 一键切换管理员/用户 */
     if (toggleAdmin) {
       function refreshAdminButton(){ toggleAdmin.textContent = ADMIN ? '🛎 返回点单' : '👨‍🍳 厨房屏'; }
