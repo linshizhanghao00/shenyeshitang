@@ -582,40 +582,43 @@ footer {
 
 /* 调整购物车按钮与底边的距离，让按钮在不同设备上都自然居中悬浮 */
 #cartBtn {
-  bottom: calc(
-    max(24px, 4vh) + env(safe-area-inset-bottom, 0px)
+  bottom: calc(20px + env(safe-area-inset-bottom, 0px)
   ) !important;
 }
+/* 键盘打开时临时固定页面，键盘关闭立即移除 .kb-fix */
+:root { 
+  --kb-safe: 0px; /* 键盘补偿，默认 0；由 JS 动态写入 */
+}
 
-/* ===== 伪输入层（仅键盘期显示） ===== */
-#kb-sheet{
+/* 只在键盘打开时才加到 body 的类 */
+body.kb-fix {
+  position: fixed !important;
+  inset: 0 !important;           /* top/left/right/bottom 全为 0 */
+  height: 100vh !important;      /* 锁定可视高度，避免整个 WebView 被抬升 */
+  overflow: hidden !important;   /* 禁止整页滚动 */
+  overscroll-behavior: none !important;
+}
+
+/* 抽屉和按钮贴底都锚到 --kb-safe，不用改你现有布局 */
+#drawer { bottom: var(--kb-safe) !important; }
+#cartBtn { bottom: calc(20px + env(safe-area-inset-bottom, 0px) + var(--kb-safe)) !important; }
+
+/* ===== 让 main 成为唯一滚动容器，避免整页 bounce ===== */
+html, body {
+  height: 100%;
+  overflow: hidden;               /* 锁住整页滚动 */
+}
+
+/* 固定 main 的可视区域：上顶=管理员区+header，高度自动算 */
+main {
   position: fixed;
-  left: 0; right: 0; bottom: 0;
-  transform: translateY(110%);
-  transition: transform .25s ease;
-  background: #fdfcf8;
-  border-top: 1px solid rgba(0,0,0,.08);
-  padding: 8px 12px calc(8px + env(safe-area-inset-bottom,0px));
-  z-index: 999; /* 高于 drawer/cartBtn */
-  box-shadow: 0 -10px 30px rgba(0,0,0,.12);
+  left: 0; right: 0;
+  top: var(--page-top, 0px);      /* JS 动态写入 */
+  bottom: 0;
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;   /* 阻止容器自身 bounce 传递 */
 }
-#kb-sheet.on{ transform: translateY(0); }
-#kb-sheet .kb-bar{
-  display: flex; align-items: center; justify-content: space-between;
-  height: 44px; margin-bottom: 8px;
-}
-#kb-sheet .kb-title{ font-weight: 700; opacity: .9; }
-#kb-sheet .kb-btn{
-  padding: 8px 12px; border: 0; border-radius: 10px; background: #efefef;
-}
-#kb-sheet .kb-btn.kb-primary{ background: #d7e8d8; }
-#kb-sheet .kb-wrap{ display: block; }
-#kb-sheet #kb-input{
-  width: 100%; font-size: 16px; line-height: 1.2;
-  padding: 12px 14px; border: 1px solid #ccc; border-radius: 12px;
-  background:#fff;
-}
-
   </style>
 </head>
 <body>
@@ -885,6 +888,12 @@ function iconSVG(e, label){
       var display=ings ? ('自定义 · '+name+'（'+ings+'）') : ('自定义 · '+name);
       cart[display]=(cart[display]||0)+1; saveCart();
       cName.value = ''; cIngs.value = '';
+      if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
+      if (cName.blur) cName.blur(); if (cIngs.blur) cIngs.blur();
+      document.body.classList.remove('kb-fix');
+      document.documentElement.style.setProperty('--kb-safe', '0px');
+
+      setTimeout(() => window.dispatchEvent(new Event('resize')), 30);
     };
     renderCart();
 
@@ -924,6 +933,7 @@ function iconSVG(e, label){
             document.body.insertBefore(adminSection, headerEl);
           }
         }
+        updatePageTop();   // 插入 admin 后立刻重算 main 的 top
         document.body.classList.add('admin-on');
       }catch(e){}
 
@@ -1127,84 +1137,106 @@ if (_chkOnly) _chkOnly.addEventListener('change', renderAdminRowsCached);
         console.error("提交失败：", e); alert("提交失败：" + e.message);
       }
     };
-    /* ===== 伪输入层：仅在 PWA（添加到主屏幕）启用 ===== */
-(function fakeInputSheet(){
-  // 判断是否 PWA 独立模式（也可用你已有的 body.pwa-on）
-  const isPWA = !!(window.matchMedia && window.matchMedia('(display-mode: standalone)').matches
-                || window.navigator.standalone);
-  if (!isPWA) return; // 网页模式保持原生输入体验
+    /* ===== FIX: iOS PWA 模式下键盘上移问题 ===== */
+(function fixKeyboardLift() {
+  const root = document.documentElement;
+  let lastHeight = window.innerHeight;
 
-  const sheet  = document.getElementById('kb-sheet');
-  const input  = document.getElementById('kb-input');
-  const title  = document.getElementById('kb-title');
-  const btnOK  = document.getElementById('kb-done');
-  const btnX   = document.getElementById('kb-cancel');
-
-  // 你页面里原始的两个输入（若变量名不同，可自行替换）
-  const originInputs = [typeof cName!=='undefined'&&cName, typeof cIngs!=='undefined'&&cIngs].filter(Boolean);
-
-  let activeTarget = null;
-
-  function openFor(target){
-    activeTarget = target;
-    // 文本/占位符带过去
-    input.type = target.type || 'text';
-    input.inputMode = target.getAttribute('inputmode') || 'text';
-    title.textContent = target.placeholder || '输入';
-    input.value = target.value || '';
-
-    // 显示底部层
-    sheet.style.display = 'block';
-    requestAnimationFrame(()=> sheet.classList.add('on'));
-    // 防抖动：锁住页面滚动（你不想锁也可去掉）
-    document.body.classList.add('kb-fix');
-
-    setTimeout(()=> input.focus(), 50);
-  }
-  function close(commit){
-    if (commit && activeTarget){
-      activeTarget.value = input.value;      // 写回原输入
-      activeTarget.dispatchEvent(new Event('input', {bubbles:true}));
+  function updateKbSafe() {
+    const h = window.innerHeight;
+    const diff = lastHeight - h;
+    if (diff > 150) { // 键盘打开（一般高度减少 >150）
+      root.style.setProperty('--kb-safe', diff + 'px');
+    } else if (diff < -150) { // 键盘关闭
+      root.style.setProperty('--kb-safe', '0px');
     }
-    sheet.classList.remove('on');
-    setTimeout(()=>{ sheet.style.display='none'; }, 250);
-    document.body.classList.remove('kb-fix');
-    activeTarget = null;
-    input.blur();
-    // 某些 iOS 机型需要触发一次 resize 让布局复位
-    setTimeout(()=> window.dispatchEvent(new Event('resize')), 50);
+    lastHeight = h;
   }
 
-  btnOK.addEventListener('click', ()=> close(true));
-  btnX.addEventListener('click', ()=> close(false));
+  window.addEventListener('resize', updateKbSafe);
+  window.addEventListener('focusout', () => {
+    // 某些设备关闭键盘不触发 resize
+    setTimeout(() => root.style.setProperty('--kb-safe', '0px'), 300);
+  });
+})();
+/* ===== 键盘期临时固定 + 动态补偿 ===== */
+(function keyboardFix() {
+  const root = document.documentElement;
+  const body = document.body;
 
-  // 阻止原输入弹键盘：设为只读并托管到伪层
-  originInputs.forEach(el=>{
-    el.readOnly = true;                  // 关键：不让原生键盘弹起
-    el.addEventListener('click',  e=>{ e.preventDefault(); openFor(el); });
-    el.addEventListener('focus',  e=>{ e.preventDefault(); el.blur(); openFor(el); });
-    // 兼容某些浏览器可能触发的键盘按钮
-    el.addEventListener('touchend', e=>{ if(document.activeElement===el){ el.blur(); }});
+  // 兼容普通 Safari 与 PWA 独立 WebView
+  let lastH = window.innerHeight;
+
+  function setKbSafe(px) {
+    root.style.setProperty('--kb-safe', (px > 0 ? px : 0) + 'px');
+  }
+
+  function addKbFix()  { body.classList.add('kb-fix'); }
+  function dropKbFix() { body.classList.remove('kb-fix'); setKbSafe(0); }
+
+  // 监听窗口高度变化 —— PWA 下只能靠 innerHeight
+  function onResize() {
+    const h = window.innerHeight;
+    const diff = lastH - h;
+    if (diff > 150) {          // 键盘打开
+      addKbFix();
+      setKbSafe(diff);
+    } else if (diff < -150) {  // 键盘关闭
+      dropKbFix();
+    }
+    lastH = h;
+  }
+  window.addEventListener('resize', onResize);
+
+  // 对输入框：focus 时确保页面固定；blur 时恢复，并强制归零补偿
+  const inputs = [typeof cName!=='undefined' && cName, typeof cIngs!=='undefined' && cIngs, document.getElementById('search')]
+                  .filter(Boolean);
+
+  inputs.forEach(el => {
+    el.addEventListener('focus', () => {
+      addKbFix();
+      // 某些机型需要延迟才能拿到正确高度
+      setTimeout(onResize, 50);
+      // 保险：滚到底，避免光标被遮挡
+      setTimeout(() => window.scrollTo(0, document.body.scrollHeight), 120);
+    });
+    el.addEventListener('blur', () => {
+      // iOS 有时 blur 不触发 resize，这里主动恢复
+      setTimeout(() => dropKbFix(), 150);
+    });
   });
 
-  // 保险：当抽屉关闭或提交后，确保伪层也关闭
+  // 关闭抽屉时，顺便收起键盘 + 恢复
   const closeBtn = document.getElementById('closeDrawer');
-  if (closeBtn) closeBtn.addEventListener('click', ()=> close(false));
-  if (typeof submitOrder!=='undefined' && submitOrder)
-    submitOrder.addEventListener('click', ()=> close(false));
+  if (closeBtn) {
+    closeBtn.addEventListener('click', () => {
+      if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
+      dropKbFix();
+      setTimeout(() => window.dispatchEvent(new Event('resize')), 30);
+    });
+  }
+})();
+/* ===== 计算管理员区 + header 的总高度，给 main 顶部留出空间 ===== */
+(function fixMainTop() {
+  function updatePageTop() {
+    const admin = document.getElementById('admin');
+    const header = document.querySelector('header');
+
+    const adminH = (admin && admin.style.display !== 'none')
+      ? Math.round(admin.getBoundingClientRect().height)
+      : 0;
+    const headerH = header ? Math.round(header.getBoundingClientRect().height) : 0;
+
+    document.documentElement.style.setProperty('--page-top', (adminH + headerH) + 'px');
+  }
+
+  window.addEventListener('load', updatePageTop);
+  window.addEventListener('resize', updatePageTop);
+
+  // 你的管理员区是运行时插入/显示的，确保插入或显示后重新测量
+  // 若你有切换管理员/返回点单按钮，也可在它们的回调里手动调用一次：
+  setTimeout(updatePageTop, 50); // 初次渲染后的兜底
 })();
   </script>
-  <!-- 伪输入层：仅在 PWA 模式打开，固定在底部 -->
-<div id="kb-sheet" aria-hidden="true" style="display:none;">
-  <div class="kb-bar">
-    <button type="button" id="kb-cancel" class="kb-btn">取消</button>
-    <div id="kb-title" class="kb-title">输入</div>
-    <button type="button" id="kb-done" class="kb-btn kb-primary">完成</button>
-  </div>
-  <div class="kb-wrap">
-    <input id="kb-input" type="text" autocomplete="off" autocorrect="off"
-           autocapitalize="none" spellcheck="false" />
-  </div>
-</div>
 </body>
 </html>
