@@ -530,7 +530,7 @@ thead{ background:#f2e8d9 !important; }
   border-bottom-left-radius: 0 !important;
   border-bottom-right-radius: 0 !important;
   bottom: 0 !important;
-             /* 确保展开后贴底 */
+  transform: translateY(0);            /* 确保展开后贴底 */
 }
 
 /* 底部区域贴合安全区，消除额外空隙 */
@@ -847,34 +847,17 @@ function iconSVG(e, label){
       });
       count.textContent='('+total+')';
     }
-    cartBtn.onclick=function(){ drawer.style.transform='translateY(110%)'; drawer.setAttribute('aria-hidden','false'); };
+    cartBtn.onclick=function(){ drawer.style.transform='translateY(0)'; drawer.setAttribute('aria-hidden','false'); };
     closeDrawer.onclick=function(){ drawer.style.transform='translateY(110%)'; drawer.setAttribute('aria-hidden','true'); };
     clearCart.onclick=function(){ cart={}; saveCart(); };
-    // 自定义加入：成功后清空输入并给一点轻反馈
-addCustom.onclick = function () {
-  var name = (cName.value || '').trim();
-  var ings = (cIngs.value || '').trim();
-
-  if (!name) {
-    alert('请先输入菜名');
-    cName.focus();
-    return;
-  }
-
-  // 统一 key 的格式，避免“空格/大小写差异”导致重复项
-  var display = ings ? ('自定义 · ' + name + '（' + ings + '）') : ('自定义 · ' + name);
-
-  cart[display] = (cart[display] || 0) + 1;
-  saveCart();
-
-  // ✅ 清空输入
-  cName.value = '';
-  cIngs.value = '';
-
-  // 可选：收起键盘/轻振动反馈
-  cName.blur(); cIngs.blur();
-  if (navigator.vibrate) { try { navigator.vibrate(16); } catch(e){} }
-};
+    addCustom.onclick=function(){
+      var name=(cName.value||'').trim(); var ings=(cIngs.value||'').trim();
+      if(!name){ alert('请先输入菜名'); return; }
+      var display=ings ? ('自定义 · '+name+'（'+ings+'）') : ('自定义 · '+name);
+      cart[display]=(cart[display]||0)+1; saveCart();
+      cName.value = '';
+      cIngs.value = '';
+    };
     renderCart();
 
     /* 加载菜单 JSON */
