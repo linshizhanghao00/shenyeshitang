@@ -854,9 +854,9 @@ function iconSVG(e, label){
       var name=(cName.value||'').trim(); var ings=(cIngs.value||'').trim();
       if(!name){ alert('请先输入菜名'); return; }
       var display=ings ? ('自定义 · '+name+'（'+ings+'）') : ('自定义 · '+name);
-      cart[display]=(cart[display]||0)+1; saveCart();
       cName.value = '';
       cIngs.value = '';
+      cart[display]=(cart[display]||0)+1; saveCart();
     };
     renderCart();
 
