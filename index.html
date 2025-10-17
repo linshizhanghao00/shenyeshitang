@@ -103,7 +103,16 @@
     /* 购物车与输入 UI 修复 */
     #cartBtn{position:fixed;right:16px;bottom:calc(16px + env(safe-area-inset-bottom));background:linear-gradient(135deg,#7c5cff,#ffd166);color:#0b0b0e;border:0;border-radius:16px;padding:14px 18px;font-weight:900;box-shadow:0 14px 40px rgba(0,0,0,.45);z-index:40;font-size:16px}
     /* 固定贴底 + iOS 稳定性增强 */
-
+#drawer{
+  position: fixed !important;
+  left: 0; right: 0; bottom: 0; top: auto;   /* 钉死底部 */
+  width: 100% !important;                    /* 宽度随屏幕 */
+  max-height: 92vh !important;               /* 视口高度限制 */
+  margin: 0 !important;
+  border-top-left-radius: 18px !important;
+  border-top-right-radius: 18px !important;
+  border-bottom-left-radius: 0 !important;
+  border-bottom-right-radius: 0 !important;
 
   /* 你原来的视觉可以继续保留（我只保留必要项，剩下你已有的浅色风格样式不改） */
   transform: translateY(110%);               /* 默认收起，由 JS 展开 */
