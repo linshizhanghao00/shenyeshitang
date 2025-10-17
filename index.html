@@ -568,12 +568,12 @@ main {
 
 /* 主内容底部留白，避免和购物车按钮贴太近 */
 main {
-  padding-bottom: calc(140px + env(safe-area-inset-bottom, 0px)) !important;
+  padding-bottom: calc(100px + env(safe-area-inset-bottom, 0px)) !important;
 }
 
 /* 页脚留白（确保底部说明文字不会被挡住） */
 footer {
-  margin-bottom: calc(100px + env(safe-area-inset-bottom, 0px)) !important;
+  margin-bottom: calc(60px + env(safe-area-inset-bottom, 0px)) !important;
 }
 
 /* 调整购物车按钮与底边的距离，让按钮更自然地悬浮 */
@@ -893,6 +893,51 @@ function iconSVG(e, label){
       (async function(){
         try{
           const { fs, db } = await ensureDb();
+          // === Admin rows cache + instant filter render ===
+let __ADMIN_LAST_ROWS__ = [];
+
+function renderAdminRowsCached(){
+  const tbody = document.getElementById('adminRows');
+  if (!tbody) return;
+  const only = document.getElementById('showPendingOnly');
+
+  tbody.innerHTML = '';
+  __ADMIN_LAST_ROWS__.forEach(row => {
+    const d = row.data;
+    const isDone = d.status === 'done';
+    if (only && only.checked && isDone) return;
+
+    const when = (d.createdAt && d.createdAt.toDate)
+      ? d.createdAt.toDate().toLocaleString()
+      : '';
+
+    const tr = document.createElement('tr');
+    tr.style.opacity = isDone ? '0.55' : '1';
+    tr.innerHTML =
+      `<td>${when}</td><td>${d.nick || '-'}</td><td>${d.name}</td><td>${d.qty}</td>`;
+
+    const tdOp = document.createElement('td');
+    const btn  = document.createElement('button');
+    btn.className = 'btn';
+    btn.textContent = isDone ? '撤销' : '完成';
+    btn.onclick = async () => {
+      try{
+        await fs.updateDoc(fs.doc(db,'yd_order_lines',row.id), {
+          status: isDone ? 'pending' : 'done',
+          doneAt: isDone ? null : new Date()
+        });
+      }catch(e){ alert('更新失败：' + e.message); }
+    };
+    tdOp.appendChild(btn);
+    tr.appendChild(tdOp);
+    tbody.appendChild(tr);
+  });
+}
+
+// 勾选“只看未做”时立即刷新
+const _chkOnly = document.getElementById('showPendingOnly');
+if (_chkOnly) _chkOnly.addEventListener('change', renderAdminRowsCached);
+
           const qLines = fs.query(fs.collection(db,'yd_order_lines'), fs.where('room','==', window.ROOM_LOCK));
           var firstLoad = true;
 
@@ -956,40 +1001,37 @@ function iconSVG(e, label){
             };
           })();
 
-          fs.onSnapshot(qLines, function(snap){
-            var tbody=document.getElementById('adminRows'); if(!tbody) return;
-            tbody.innerHTML='';
-            var rows=[];
-            snap.forEach(function(d){
-              var data=d.data();
-              var ts=data.createdAt&&data.createdAt.toMillis?data.createdAt.toMillis():0;
-              rows.push({id:d.id,data:data,ts:ts});
-            });
-            rows.sort(function(a,b){return b.ts-a.ts;});
-            var showPendingOnly=document.getElementById('showPendingOnly');
+         fs.onSnapshot(qLines, function(snap){
+  // 收集并排序
+  const rows = [];
+  snap.forEach(function(d){
+    const data = d.data();
+    const ts = (data.createdAt && data.createdAt.toMillis) ? data.createdAt.toMillis() : 0;
+    rows.push({ id:d.id, data, ts });
+  });
+  rows.sort((a,b)=> b.ts - a.ts);
 
-            rows.forEach(function(row){
-              var data=row.data; var isDone=data.status==='done';
-              if(showPendingOnly && showPendingOnly.checked && isDone) return;
-              var when=(data.createdAt && data.createdAt.toDate)? data.createdAt.toDate().toLocaleString(): '';
-              var tr=document.createElement('tr'); tr.style.opacity=isDone?'0.55':'1';
-              tr.innerHTML='<td>'+when+'</td><td>'+(data.nick||'-')+'</td><td>'+data.name+'</td><td>'+data.qty+'</td>';
-              var tdOp=document.createElement('td'); var btn=document.createElement('button'); btn.className='btn'; btn.textContent=isDone?'撤销':'完成';
-              btn.onclick=async function(){ try{ await fs.updateDoc(fs.doc(db,'yd_order_lines',row.id),{status:isDone?'pending':'done',doneAt:isDone?null:new Date()}); }catch(e){ alert('更新失败：'+e.message); } };
-              tdOp.appendChild(btn); tr.appendChild(tdOp); tbody.appendChild(tr);
-            });
+  // 缓存并渲染（使“只看未做”能即点即刷）
+  __ADMIN_LAST_ROWS__ = rows;
+  renderAdminRowsCached();
 
-            if(!firstLoad && 'Notification' in window && Notification.permission==='granted'){
-              snap.docChanges().forEach(function(ch){
-                if(ch.type==='added'){ var d=ch.doc.data(); if(d.status!=='done'){ new Notification('新订单 · '+d.name+' × '+d.qty); } }
-              });
-            }
-            firstLoad=false;
-          }, function(err){
-            console.error('实时订单监听失败：', err);
-            var roomInfo=document.getElementById('roomInfo'); if(roomInfo) roomInfo.textContent='实时订单监听失败：'+err.message;
-            alert('实时订单监听失败：'+err.message);
-          });
+  // ===== 下面保留你原有“新增提醒/firstLoad”逻辑 =====
+  if(!firstLoad && 'Notification' in window && Notification.permission==='granted'){
+    snap.docChanges().forEach(function(ch){
+      if(ch.type==='added'){
+        const d=ch.doc.data();
+        if(d.status!=='done'){ new Notification('新订单 · '+d.name+' × '+d.qty); }
+      }
+    });
+  }
+  firstLoad=false;
+}, function(err){
+  console.error('实时订单监听失败：', err);
+  const roomInfo=document.getElementById('roomInfo');
+  if(roomInfo) roomInfo.textContent='实时订单监听失败：'+err.message;
+  alert('实时订单监听失败：'+err.message);
+});
+
 
           var markAllBtn=document.getElementById('markAllDone');
           if(markAllBtn){
