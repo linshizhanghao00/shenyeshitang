@@ -53,23 +53,11 @@
       background:radial-gradient(1200px 600px at 70% -10%,rgba(124,92,255,.15),transparent 60%),
                  radial-gradient(1000px 500px at 0% 100%,rgba(61,217,178,.12),transparent 60%),var(--bg)
     }
+    body.pwa-on header{ padding-top: calc(var(--safeTop) + 10px); }
+    body.admin-on header{ padding-top: calc(var(--safeTop) + 22px); }
+    body.pwa-on.admin-on header{ padding-top: calc(var(--safeTop) + 26px); }
 
-    /* （删除了旧的三条 body.* header{ padding-top }，避免与 fixed 冲突） */
-
-    /* FIXED HEADER —— header 固定，且永远位于 #admin 之下 */
-    :root{
-      --admin-offset: 0px;     /* JS 会写入实际 admin 高度 */
-      --header-offset: 120px;  /* JS 会写入实际 header 高度 */
-    }
-    header{
-      position: fixed;
-      left: 0; right: 0;
-      top: var(--admin-offset, 0px); /* header 永远在 admin 下方 */
-      z-index: 30;
-      background:rgba(12,12,15,.85);
-      backdrop-filter:blur(8px);
-    }
-
+    header{position:sticky;top:0;z-index:20;background:rgba(12,12,15,.85);backdrop-filter:blur(8px)}
     .topbar{display:grid;grid-template-columns:1fr auto auto;gap:12px;align-items:center;padding:18px var(--safe) 10px}
     .brand{display:flex;gap:14px;align-items:center}
     .logo{width:46px;height:46px;border-radius:14px;display:grid;place-items:center;background:linear-gradient(135deg,var(--brand),var(--brand2));color:#fff;font-size:24px}
@@ -127,9 +115,13 @@
   border-bottom-right-radius: 0 !important;
 
   /* 你原来的视觉可以继续保留（我只保留必要项，剩下你已有的浅色风格样式不改） */
-  transform: translateY(110%) translateZ(0); /* 默认收起，由 JS 展开；GPU 合成层 */
+  transform: translateY(110%);               /* 默认收起，由 JS 展开 */
   transition: transform .25s ease;
   z-index: 50;
+
+  /* iOS 抖动/回弹保护 */
+  will-change: transform;
+  transform: translateY(110%) translateZ(0); /* 强制 GPU 合成层 */
   overscroll-behavior: contain;              /* 防止抽屉本体被浏览器回弹拖动 */
 }
     .drawer-hd{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid #22243c}
@@ -157,7 +149,7 @@
     #toast{position:fixed;top:14px;right:14px;z-index:60;display:grid;gap:8px}
     .toast{background:rgba(20,22,30,.95);border:1px solid #2a2a44;color:#e9e9f2;padding:10px 12px;border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,.45);font-size:14px}
 
-    /* 顶部占位（保留你原有 admin 内边距修正） */
+    /* 顶部占位，避免刘海遮挡 */
     body.admin-on::before{content:"";display:block;height:calc(env(safe-area-inset-top,0px)+22px)}
     body.pwa-on.admin-on::before{content:"";display:block;height:calc(env(safe-area-inset-top,0px)+26px)}
     body.pwa-on:not(.admin-on)::before{content:"";display:block;height:calc(env(safe-area-inset-top,0px)+10px)}
@@ -212,12 +204,14 @@ body.pwa-on.admin-on #admin{
   .title { font-size: 18px; }
 }
 /* ================== Light Sage 手绘系覆盖（与图标同系） ================== */
+/* 参考色系：鼠尾草绿 #8fa394 / 米色纸面 #f6f3ea / 低饱和白 #f7f5f0 */
+
 body{
   background:#f6f3ea !important;
   color:#2b2b2b !important;
 }
 
-/* 顶栏浅色毛玻璃 + 纸面描边（覆盖前面的深色） */
+/* 顶栏浅色毛玻璃 + 纸面描边 */
 header{
   background:rgba(255,255,255,.78) !important;
   -webkit-backdrop-filter:blur(14px) saturate(150%) !important;
@@ -228,7 +222,10 @@ header{
 
 /* 品牌两行（保留你已有的结构），颜色同系 */
 .title{ color:#2b2b2b !important; text-shadow:0 1px 0 rgba(255,255,255,.55); }
-.logo{ border:2px solid #d3c8b6; box-shadow:0 2px 2px rgba(0,0,0,.10); }
+.logo{
+  border:2px solid #d3c8b6;               /* 轻描边，贴纸感 */
+  box-shadow:0 2px 2px rgba(0,0,0,.10);
+}
 
 /* 搜索栏：纸条质感（同系米白） */
 .search{
@@ -278,10 +275,14 @@ header{
   background:linear-gradient(160deg,#96a99a 0%, #c7d1c8 100%) !important; /* sage 系列 */
   border-bottom:1px solid rgba(0,0,0,.04);
 }
-.imgbox > img.thumb{ filter:saturate(1.04) brightness(1.05) !important; mix-blend-mode:normal !important; }
+.imgbox > img.thumb{
+  filter:saturate(1.04) brightness(1.05) !important;
+  mix-blend-mode:normal !important;
+}
 
 /* 购物车/主操作：米杏暖色，统一视觉 */
-#submitOrder, #cartBtn{
+#submitOrder,
+#cartBtn{
   background:linear-gradient(180deg,#f4d089,#e6bb6a) !important;
   color:#1a1a1a !important;
   border:2px solid #d1ac67 !important;
@@ -296,63 +297,296 @@ header{
   color:#2b2b2b !important; font-weight:800 !important;
   box-shadow:0 2px 0 #c5baa8 !important;
 }
-.drawer-ft input.btn,.drawer-ft input.btn:focus{ background:#fff !important; color:#2b2b2b !important; border:2px solid #cfc5b3 !important; }
+.drawer-ft input.btn,.drawer-ft input.btn:focus{
+  background:#fff !important; color:#2b2b2b !important;
+  border:2px solid #cfc5b3 !important;
+}
 
 /* 抽屉与表格：浅米纸面 + 浅墨线 */
-#drawer{ background:#fbf6ee !important; border:2px solid #cfc5b3 !important; box-shadow:0 -4px 12px rgba(0,0,0,.10) !important; color:#2b2b2b !important; }
+#drawer{
+  background:#fbf6ee !important;
+  border:2px solid #cfc5b3 !important;
+  box-shadow:0 -4px 12px rgba(0,0,0,.10) !important;
+  color:#2b2b2b !important;
+}
 table, th, td{ border-color:#cfc5b3 !important; color:#2b2b2b !important; }
 thead{ background:#f2e8d9 !important; }
 
 /* 顶部再略微紧凑点 */
 .topbar{ padding:14px var(--safe) 8px !important; }
 .tabs{ padding:10px var(--safe) 12px !important; }
+/* ========== 微调修正版（emoji 居中 + 描述加深 + 输入框灰色强化） ========== */
 
-/* emoji 居中 + 文案加深 */
-.imgbox > img.thumb{ object-fit:contain !important; display:block !important; margin:0 auto !important; filter:saturate(1.05) brightness(1.05) !important; mix-blend-mode:normal !important; padding:12px 0 !important }
-.desc{ color:#5e5a54 !important; font-weight:500 !important }
-.tag{ border:1px dashed #a49d8e !important; color:#5c5851 !important; background:rgba(255,255,255,.6) !important }
-.drawer-ft input.btn, .drawer-ft input.btn:focus{ color:#4f4a44 !important; border-color:#bfb4a1 !important; background:#fffdfa !important }
-.drawer-ft input.btn::placeholder{ color:#857e72 !important; opacity:1 !important }
-#drawer{ color:#4a463f !important }
-#cartBtn{ color:#3e3b35 !important; font-weight:800 !important }
-#submitOrder{ color:#3c372f !important }
+/* 1️⃣ emoji 居中对齐 */
+.imgbox > img.thumb {
+  object-fit: contain !important;
+  display: block !important;
+  margin: 0 auto !important;
+  filter: saturate(1.05) brightness(1.05) !important;
+  mix-blend-mode: normal !important;
+  padding: 12px 0 !important; /* 让emoji上下留白相等 */
+}
 
-/* 折叠渲染保持你的规则 */
-.section[aria-expanded="false"] .grid{ display:none !important }
-.section[aria-expanded="false"]{ margin-bottom:10px }
-.section[aria-expanded="false"] .section-header{ border-bottom-left-radius:12px; border-bottom-right-radius:12px }
-.section .section-header{ cursor:pointer }
+/* 2️⃣ 菜品描述文字、tag 颜色加深 */
+.desc {
+  color: #5e5a54 !important;     /* 柔和深灰（比原色略深） */
+  font-weight: 500 !important;
+}
+.tag {
+  border: 1px dashed #a49d8e !important;
+  color: #5c5851 !important;
+  background: rgba(255,255,255,0.6) !important;
+}
 
-/* 浅绿按钮风格（保持你的外观） */
-.btn, .section-toggle{ background:linear-gradient(180deg,#cfd8cf,#bfc9c0) !important; border:1px solid #aebaaf !important; color:#3d413b !important; box-shadow:0 2px 3px rgba(0,0,0,.12) !important; transition:all .15s ease }
-.btn:hover, .section-toggle:hover{ background:linear-gradient(180deg,#d8e0d8,#c8d2c8) !important }
-.btn:active, .section-toggle:active{ background:linear-gradient(180deg,#b8c2b8,#aeb8ae) !important; transform:translateY(1px); box-shadow:0 1px 2px rgba(0,0,0,.18) inset !important }
-.section-toggle{ padding:6px 12px !important; border-radius:10px !important; font-weight:700 !important }
-.card .btn.add{ font-size:14px !important; padding:8px 18px !important; border-radius:8px !important; background:linear-gradient(180deg,#cfd8cf,#bfc9c0) !important }
-.card .btn.add:hover{ background:linear-gradient(180deg,#d8e0d8,#c8d2c8) !important }
-.card .btn.add:active{ background:linear-gradient(180deg,#b8c2b8,#aeb8ae) !important; transform:translateY(1px); box-shadow:0 1px 2px rgba(0,0,0,.18) inset !important }
+/* 3️⃣ 购物车输入区文字与占位符颜色加深 */
+.drawer-ft input.btn,
+.drawer-ft input.btn:focus {
+  color: #4f4a44 !important;
+  border-color: #bfb4a1 !important;
+  background: #fffdfa !important;
+}
+.drawer-ft input.btn::placeholder {
+  color: #857e72 !important; /* 深灰米色 */
+  opacity: 1 !important;
+}
 
-/* 抽屉布局（保留你的三段式） */
-#drawer{ display:flex !important; flex-direction:column !important; max-height:calc(100vh - 20px) !important }
-.drawer-ct{ flex:1 1 auto !important; overflow:auto !important; -webkit-overflow-scrolling:touch !important; overscroll-behavior:contain !important }
-.drawer-ft{ position:sticky; bottom:0; background:inherit; padding-bottom:calc(14px + env(safe-area-inset-bottom, 0px)) !important }
-.btn.ghost{ background:linear-gradient(180deg,#fbfaf7,#f3eee6) !important; border:1px solid #cfc5b3 !important; color:#6a655b !important; box-shadow:0 1px 2px rgba(0,0,0,.08) !important; font-weight:700 !important }
-.btn.ghost:hover{ background:linear-gradient(180deg,#ffffff,#f7f2ea) !important }
-.btn.ghost:active{ background:linear-gradient(180deg,#f0e9df,#e7dfd3) !important }
+/* 抽屉整体文字稍加深（购物车标题等） */
+#drawer {
+  color: #4a463f !important;
+}
 
-/* 贴底 & 安全区 */
-#drawer{ top:calc(env(safe-area-inset-top, 0px) + 12px) !important; max-height:calc(90vh - env(safe-area-inset-top, 0px)) !important; border-top-left-radius:18px !important; border-top-right-radius:18px !important; overflow:hidden !important }
-.drawer-ft{ position:sticky !important; bottom:0 !important; background:inherit !important; padding-bottom:calc(14px + env(safe-area-inset-bottom, 0px)) !important }
-#drawer{ position:fixed !important; inset:auto 0 0 0 !important; width:100% !important; max-height:calc(92vh - env(safe-area-inset-top, 0px)) !important; margin:0 !important; border-top-left-radius:18px !important; border-top-right-radius:18px !important; border-bottom-left-radius:0 !important; border-bottom-right-radius:0 !important; bottom:0 !important; transform:translateY(0) }
+/* “购物车”主按钮字体颜色统一 */
+#cartBtn {
+  color: #3e3b35 !important;
+  font-weight: 800 !important;
+}
 
-/* 禁用整页回弹；main 成为唯一滚动容器（MAIN SCROLLER） */
-html, body { height:100%; overflow:hidden; overscroll-behavior-y:none }
-main { position:fixed; top:calc(var(--admin-offset, 0px) + var(--header-offset, 120px)); left:0; right:0; bottom:0; overflow:auto; -webkit-overflow-scrolling:touch; overscroll-behavior:contain }
+/* 提交按钮文字颜色保持暖灰 */
+#submitOrder {
+  color: #3c372f !important;
+}
+/* 收起/展开：当 aria-expanded="false" 时隐藏列表 */
+.section[aria-expanded="false"] .grid{
+  display: none !important;
+}
 
-/* 页面底部留白（保留你的舒适版） */
-main { padding-bottom: calc(max(60px, 8vh) + env(safe-area-inset-bottom, 0px)) !important; }
-footer { margin-bottom: calc(max(80px, 10vh) + env(safe-area-inset-bottom, 0px)) !important; }
-#cartBtn { bottom: calc(max(24px, 4vh) + env(safe-area-inset-bottom, 0px)) !important; }
+/* 收起时的外观微调（可改/可删） */
+.section[aria-expanded="false"]{
+  margin-bottom: 10px;
+}
+.section[aria-expanded="false"] .section-header{
+  border-bottom-left-radius: 12px;
+  border-bottom-right-radius: 12px;
+}
+.section .section-header{
+  cursor: pointer; /* 提示可点 */
+}
+/* ===== 浅鼠尾草绿按钮风格（加入 & 收起） ===== */
+
+/* 主按钮底色浅绿，配合当前主题 */
+.btn,
+.section-toggle {
+  background: linear-gradient(180deg,#cfd8cf,#bfc9c0) !important; /* 浅鼠尾草绿 */
+  border: 1px solid #aebaaf !important;
+  color: #3d413b !important;  /* 深灰文字，不是黑 */
+  box-shadow: 0 2px 3px rgba(0,0,0,.12) !important;
+  transition: all .15s ease;
+}
+
+/* hover 和 active 状态 */
+.btn:hover,
+.section-toggle:hover {
+  background: linear-gradient(180deg,#d8e0d8,#c8d2c8) !important;
+}
+.btn:active,
+.section-toggle:active {
+  background: linear-gradient(180deg,#b8c2b8,#aeb8ae) !important;
+  transform: translateY(1px);
+  box-shadow: 0 1px 2px rgba(0,0,0,.18) inset !important;
+}
+
+/* 收起按钮：更轻、更小圆角 */
+.section-toggle {
+  padding: 6px 12px !important;
+  border-radius: 10px !important;
+  font-weight: 700 !important;
+}
+
+/* 加入按钮：卡片比例适配 */
+.card .btn.add {
+  font-size: 14px !important;
+  padding: 8px 18px !important;
+  border-radius: 8px !important;
+  background: linear-gradient(180deg,#cfd8cf,#bfc9c0) !important;
+}
+/* ===== 仅调整 “加入” 按钮配色，保持与收起一致但更小巧 ===== */
+.card .btn.add {
+  background: linear-gradient(180deg, #cfd8cf, #bfc9c0) !important; /* 浅鼠尾草绿 */
+  border: 1px solid #aebaaf !important;
+  color: #3d413b !important;  /* 深灰文字 */
+  font-weight: 700 !important;
+  font-size: 14px !important;
+  padding: 8px 18px !important;
+  border-radius: 8px !important;
+  box-shadow: 0 2px 3px rgba(0,0,0,.12) !important;
+  transition: all .15s ease;
+}
+
+/* hover / active 状态 */
+.card .btn.add:hover {
+  background: linear-gradient(180deg, #d8e0d8, #c8d2c8) !important;
+}
+.card .btn.add:active {
+  background: linear-gradient(180deg, #b8c2b8, #aeb8ae) !important;
+  transform: translateY(1px);
+  box-shadow: 0 1px 2px rgba(0,0,0,.18) inset !important;
+}
+/* 统一 “加入” 按钮配色为浅鼠尾草绿 */
+.card .add,
+.card .btn.add {
+  background: linear-gradient(180deg, #cfd8cf, #bfc9c0) !important;
+  border: 1px solid #aebaaf !important;
+  color: #3d413b !important;          /* 深一点的灰，不是黑 */
+  font-weight: 700 !important;
+  font-size: 14px !important;
+  padding: 8px 18px !important;
+  border-radius: 8px !important;
+  box-shadow: 0 2px 3px rgba(0,0,0,.12) !important;
+  transition: all .15s ease;
+}
+.card .add:hover,
+.card .btn.add:hover {
+  background: linear-gradient(180deg, #d8e0d8, #c8d2c8) !important;
+}
+.card .add:active,
+.card .btn.add:active {
+  background: linear-gradient(180deg, #b8c2b8, #aeb8ae) !important;
+  transform: translateY(1px);
+  box-shadow: 0 1px 2px rgba(0,0,0,.18) inset !important;
+}
+/* 抽屉改为三段式：头部固定 + 中间滚动 + 底部固定 */
+#drawer{
+  display: flex !important;
+  flex-direction: column !important;
+  max-height: calc(100vh - 20px) !important;   /* 更贴近全屏 */
+}
+.drawer-ct{
+  flex: 1 1 auto !important;
+  overflow: auto !important;
+  -webkit-overflow-scrolling: touch !important; /* iOS 惯性滚动 */
+  overscroll-behavior: contain !important;      /* 防止穿透到底层页面 */
+}
+.drawer-ft{
+  position: sticky;
+  bottom: 0;
+  background: inherit;    /* 视觉连贯 */
+  padding-bottom: calc(14px + env(safe-area-inset-bottom, 0px)) !important;
+}
+/* 购物车“清空”按钮（轻量外观） */
+.btn.ghost{
+  background: linear-gradient(180deg, #fbfaf7, #f3eee6) !important;
+  border: 1px solid #cfc5b3 !important;
+  color: #6a655b !important;
+  box-shadow: 0 1px 2px rgba(0,0,0,.08) !important;
+  font-weight: 700 !important;
+}
+.btn.ghost:hover{
+  background: linear-gradient(180deg, #ffffff, #f7f2ea) !important;
+}
+.btn.ghost:active{
+  background: linear-gradient(180deg, #f0e9df, #e7dfd3) !important;
+}
+/* ===== 优化购物车高度，避免与状态栏重叠 ===== */
+#drawer {
+  top: calc(env(safe-area-inset-top, 0px) + 12px) !important; /* 整体下移一点 */
+  max-height: calc(90vh - env(safe-area-inset-top, 0px)) !important; /* 保留顶部留白 */
+  border-top-left-radius: 18px !important;
+  border-top-right-radius: 18px !important;
+  overflow: hidden !important;
+}
+
+/* 调整抽屉内部布局：保持可滚动区域和底部按钮稳定 */
+.drawer-ct {
+  flex: 1 1 auto !important;
+  overflow: auto !important;
+  -webkit-overflow-scrolling: touch !important;
+  overscroll-behavior: contain !important;
+}
+.drawer-ft {
+  position: sticky !important;
+  bottom: 0 !important;
+  background: inherit !important;
+  padding-bottom: calc(14px + env(safe-area-inset-bottom, 0px)) !important;
+}
+/* ===== 修正购物车抽屉底部悬空问题 ===== */
+#drawer {
+  position: fixed !important;
+  inset: auto 0 0 0 !important;        /* 贴合屏幕底部 */
+  width: 100% !important;
+  max-height: calc(92vh - env(safe-area-inset-top, 0px)) !important;
+  margin: 0 !important;
+  border-top-left-radius: 18px !important;
+  border-top-right-radius: 18px !important;
+  border-bottom-left-radius: 0 !important;
+  border-bottom-right-radius: 0 !important;
+  bottom: 0 !important;
+  transform: translateY(0);            /* 确保展开后贴底 */
+}
+
+/* 底部区域贴合安全区，消除额外空隙 */
+.drawer-ft {
+  position: sticky !important;
+  bottom: 0 !important;
+  background: inherit !important;
+  padding-bottom: env(safe-area-inset-bottom, 0px) !important;
+  border-top: 1px solid #d4cdbf;
+}
+    /* 禁用整页顶部/底部橡皮筋回弹（仍可正常滚动） */
+html, body {
+  height: 100%;
+  overscroll-behavior-y: none;   /* 顶/底不被“拉开” */
+}
+
+/* 主内容作为可滚容器，防止“整页拉扯” */
+main {
+  overscroll-behavior: contain;  /* 向上/向下的滚动不会传递到外层产生回弹 */
+}
+
+/* 管理员表格区域也避免回弹 */
+#admin {
+  overscroll-behavior: contain;
+}
+
+/* 购物车头、尾避免触发默认回弹（你已贴底固定） */
+#drawer .drawer-hd,
+#drawer .drawer-ft{
+  touch-action: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+/* ========== 页面底部留白调整（自适应不同屏幕高度） ========== */
+
+/* 主内容底部留白，避免和购物车按钮贴太近 */
+main {
+  padding-bottom: calc(
+    max(60px, 8vh) + env(safe-area-inset-bottom, 0px)
+  ) !important;
+}
+
+/* 页脚留白（确保底部说明文字不会被挡住） */
+footer {
+  margin-bottom: calc(
+    max(80px, 10vh) + env(safe-area-inset-bottom, 0px)
+  ) !important;
+}
+
+/* 调整购物车按钮与底边的距离，让按钮在不同设备上都自然居中悬浮 */
+#cartBtn {
+  bottom: calc(
+    max(24px, 4vh) + env(safe-area-inset-bottom, 0px)
+  ) !important;
+}
+
   </style>
 </head>
 <body>
@@ -446,22 +680,6 @@ footer { margin-bottom: calc(max(80px, 10vh) + env(safe-area-inset-bottom, 0px))
     var addCustom=document.getElementById('addCustom');
     var toggleAdmin=document.getElementById('toggleAdmin');
 
-    /* TOP OFFSETS —— 计算 #admin 和 header 实际高度，写入 CSS 变量 */
-    function updateTopOffsets(){
-      var headerEl = document.querySelector('header');
-      var adminEl  = document.getElementById('admin');
-
-      var headerH = headerEl ? Math.round(headerEl.getBoundingClientRect().height) : 0;
-      var adminH  = 0;
-      if (document.body.classList.contains('admin-on') && adminEl && adminEl.style.display !== 'none'){
-        adminH = Math.round(adminEl.getBoundingClientRect().height);
-      }
-      document.documentElement.style.setProperty('--header-offset', headerH + 'px');
-      document.documentElement.style.setProperty('--admin-offset',  adminH  + 'px');
-    }
-    window.addEventListener('load',   updateTopOffsets);
-    window.addEventListener('resize', updateTopOffsets);
-
     /* PWA 一键切换管理员/用户 */
     if (toggleAdmin) {
       function refreshAdminButton(){ toggleAdmin.textContent = ADMIN ? '🛎 返回点单' : '👨‍🍳 厨房屏'; }
@@ -479,12 +697,17 @@ footer { margin-bottom: calc(max(80px, 10vh) + env(safe-area-inset-bottom, 0px))
     }
 
     /* SVG 占位图 */
+    /* ✨ 替换原来的 iconSVG —— 不再绘制白色圆盘，只放 emoji */
 function iconSVG(e, label){
   var svg = encodeURIComponent(
     "<?xml version='1.0'?>"
    +"<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 220 220'>"
+   /* 背景透明，由 .imgbox 提供鼠尾草绿渐变 */
    +"<rect width='220' height='220' fill='none'/>"
+   /* 仅绘制 emoji，位置略靠上更协调 */
    +"<text x='110' y='115' font-size='96' text-anchor='middle'>"+(e||'🍽️')+"</text>"
+   /* 可选：下面这行如果你想保留中文标题小贴纸就留，不想要可以删 */
+   // +"<text x='110' y='190' font-size='0' text-anchor='middle'>"+label+"</text>"
    +"</svg>"
   );
   var im = new Image();
@@ -497,20 +720,25 @@ function iconSVG(e, label){
 
     /* ============== 分类 / 分组渲染（按你的“逻辑改进摘要”） ============== */
     var MENU=[];
-    function groupSection(title, items){
-      var sec=document.createElement('section'); sec.className='section'; sec.setAttribute('aria-expanded','true');
-      var header=document.createElement('div'); header.className='section-header';
-      header.innerHTML="<div class='section-title'><span>"+title+"</span><span class='section-sub'>共 "+items.length+" 道</span></div>";
-      var btn=document.createElement('button'); btn.className='section-toggle'; btn.textContent='收起';
-      header.appendChild(btn);
 
-      function toggle(){
-        var open = sec.getAttribute('aria-expanded') !== 'false';
-        sec.setAttribute('aria-expanded', open ? 'false' : 'true');
-        btn.textContent = open ? '展开' : '收起';
-      }
-      btn.addEventListener('click', function(e){ e.stopPropagation(); toggle(); });
-      header.addEventListener('click', function(e){ if (e.target === btn) return; toggle(); });
+    function groupSection(title, items){
+  var sec=document.createElement('section'); sec.className='section'; sec.setAttribute('aria-expanded','true');
+  var header=document.createElement('div'); header.className='section-header';
+  header.innerHTML="<div class='section-title'><span>"+title+"</span><span class='section-sub'>共 "+items.length+" 道</span></div>";
+  var btn=document.createElement('button'); btn.className='section-toggle'; btn.textContent='收起';
+  header.appendChild(btn);
+
+  // ✅ 新增：整条标题栏都可点击收起/展开
+  function toggle(){
+    var open = sec.getAttribute('aria-expanded') !== 'false';
+    sec.setAttribute('aria-expanded', open ? 'false' : 'true');
+    btn.textContent = open ? '展开' : '收起';
+  }
+  btn.addEventListener('click', function(e){ e.stopPropagation(); toggle(); });
+  header.addEventListener('click', function(e){
+    if (e.target === btn) return;
+    toggle();
+  });
 
       var grid=document.createElement('div'); grid.className='grid';
       items.forEach(function(it){
@@ -575,10 +803,11 @@ function iconSVG(e, label){
       if (active === 'Rice') {
         var rice   = MENU.filter(function(it){ return matchQ(it) && it.category==='Rice' && nameHas(it,'饭'); });
         var noodle = MENU.filter(function(it){ return matchQ(it) && it.category==='Rice' && nameHas(it,'面'); });
-        var pastry = MENU.filter(function(it){ return matchQ(it) && it.category==='Rice' && !nameHas(it,'饭') && !nameHas它,'面'); });
+        var pastry = MENU.filter(function(it){ return matchQ(it) && it.category==='Rice' && !nameHas(it,'饭') && !nameHas(it,'面'); });
+
         if (rice.length)   root.appendChild(groupSection('🍚 饭', rice));
-        if (noodle长度) root.appendChild(groupSection('🍜 面', noodle));
-        if (pastry长度) root.appendChild(groupSection('🥟 面食', pastry));
+        if (noodle.length) root.appendChild(groupSection('🍜 面', noodle));
+        if (pastry.length) root.appendChild(groupSection('🥟 面食', pastry));
         return;
       }
 
@@ -671,93 +900,145 @@ function iconSVG(e, label){
       (async function(){
         try{
           const { fs, db } = await ensureDb();
-
-          /* 插入 admin 后立刻重算偏移（让 header 让位） */
-          updateTopOffsets();
-
           // === Admin rows cache + instant filter render ===
-          let __ADMIN_LAST_ROWS__ = [];
-          function renderAdminRowsCached(){
-            const tbody = document.getElementById('adminRows');
-            if (!tbody) return;
-            const only = document.getElementById('showPendingOnly');
-            tbody.innerHTML = '';
-            __ADMIN_LAST_ROWS__.forEach(row => {
-              const d = row.data; const isDone = d.status === 'done';
-              if (only && only.checked && isDone) return;
-              const when = (d.createdAt && d.createdAt.toDate) ? d.createdAt.toDate().toLocaleString() : '';
-              const tr = document.createElement('tr'); tr.style.opacity = isDone ? '0.55' : '1';
-              tr.innerHTML = `<td>${when}</td><td>${d.nick || '-'}</td><td>${d.name}</td><td>${d.qty}</td>`;
-              const tdOp = document.createElement('td'); const btn  = document.createElement('button');
-              btn.className='btn'; btn.textContent=isDone?'撤销':'完成';
-              btn.onclick = async () => { try{ await fs.updateDoc(fs.doc(db,'yd_order_lines',row.id),{status:isDone?'pending':'done',doneAt:isDone?null:new Date()}); }catch(e){ alert('更新失败：'+e.message); } };
-              tdOp.appendChild(btn); tr.appendChild(tdOp); tbody.appendChild(tr);
-            });
-          }
-          const _chkOnly = document.getElementById('showPendingOnly');
-          if (_chkOnly) _chkOnly.addEventListener('change', renderAdminRowsCached);
+let __ADMIN_LAST_ROWS__ = [];
+
+function renderAdminRowsCached(){
+  const tbody = document.getElementById('adminRows');
+  if (!tbody) return;
+  const only = document.getElementById('showPendingOnly');
+
+  tbody.innerHTML = '';
+  __ADMIN_LAST_ROWS__.forEach(row => {
+    const d = row.data;
+    const isDone = d.status === 'done';
+    if (only && only.checked && isDone) return;
+
+    const when = (d.createdAt && d.createdAt.toDate)
+      ? d.createdAt.toDate().toLocaleString()
+      : '';
+
+    const tr = document.createElement('tr');
+    tr.style.opacity = isDone ? '0.55' : '1';
+    tr.innerHTML =
+      `<td>${when}</td><td>${d.nick || '-'}</td><td>${d.name}</td><td>${d.qty}</td>`;
+
+    const tdOp = document.createElement('td');
+    const btn  = document.createElement('button');
+    btn.className = 'btn';
+    btn.textContent = isDone ? '撤销' : '完成';
+    btn.onclick = async () => {
+      try{
+        await fs.updateDoc(fs.doc(db,'yd_order_lines',row.id), {
+          status: isDone ? 'pending' : 'done',
+          doneAt: isDone ? null : new Date()
+        });
+      }catch(e){ alert('更新失败：' + e.message); }
+    };
+    tdOp.appendChild(btn);
+    tr.appendChild(tdOp);
+    tbody.appendChild(tr);
+  });
+}
+
+// 勾选“只看未做”时立即刷新
+const _chkOnly = document.getElementById('showPendingOnly');
+if (_chkOnly) _chkOnly.addEventListener('change', renderAdminRowsCached);
 
           const qLines = fs.query(fs.collection(db,'yd_order_lines'), fs.where('room','==', window.ROOM_LOCK));
           var firstLoad = true;
 
-          /* ===== 双击标题：显示隐藏按钮 ===== */
+          /* ===== 改为：双击 显示隐藏按钮 ===== */
           (function revealPurgeButton(){
             var title = document.querySelector('#admin h3');
             var purgeBtn = document.getElementById('purgeAll');
             if(!title || !purgeBtn) return;
+
             var shown = false;
-            function show(){ if (!shown) { purgeBtn.style.display='inline-block'; shown=true; } }
+            function show(){
+              if (!shown) { purgeBtn.style.display = 'inline-block'; shown = true; }
+            }
+
+            // 鼠标/触控板：双击
             title.addEventListener('dblclick', show);
-            var lastTapTime=0,lastX=0,lastY=0, TAP_MS=320,TAP_DIST=24;
+
+            // 触屏双击（两次 tap 间隔与位移阈值）
+            var lastTapTime = 0, lastX = 0, lastY = 0;
+            var TAP_MS = 320, TAP_DIST = 24;
             title.addEventListener('touchend', function(e){
-              var t=e.changedTouches[0], now=Date.now(), dt=now-lastTapTime, dx=Math.abs(t.clientX-lastX), dy=Math.abs(t.clientY-lastY);
-              if (dt<TAP_MS && dx<TAP_DIST && dy<TAP_DIST){ show(); lastTapTime=0; } else { lastTapTime=now; lastX=t.clientX; lastY=t.clientY; }
-            }, {passive:true});
+              var t = e.changedTouches[0];
+              var now = Date.now();
+              var dt = now - lastTapTime;
+              var dx = Math.abs(t.clientX - lastX);
+              var dy = Math.abs(t.clientY - lastY);
+              if (dt < TAP_MS && dx < TAP_DIST && dy < TAP_DIST) {
+                show();
+                lastTapTime = 0;
+              } else {
+                lastTapTime = now; lastX = t.clientX; lastY = t.clientY;
+              }
+            }, { passive: true });
           })();
 
           /* ===== 清空本房间订单（需输入 DELETE） ===== */
           (function bindPurgeHandler(){
-            var purgeBtn=document.getElementById('purgeAll'); if(!purgeBtn) return;
+            var purgeBtn = document.getElementById('purgeAll');
+            if(!purgeBtn) return;
             purgeBtn.onclick = async function(){
               try{
-                if(!confirm('⚠️ 确认清空房间《'+window.ROOM_LOCK+'》所有订单与明细？')) return;
-                var code = prompt('请输入 DELETE 以确认：'); if(code!=='DELETE'){ alert('已取消'); return; }
+                if(!confirm('⚠️ 确认清空房间《'+window.ROOM_LOCK+'》所有订单与明细？此操作不可恢复。')) return;
+                var code = prompt('请输入 DELETE 以确认：');
+                if(code!=='DELETE'){ alert('已取消'); return; }
+
+                // 先删明细
                 const qL = fs.query(fs.collection(db,'yd_order_lines'), fs.where('room','==', window.ROOM_LOCK));
-                const sL = await fs.getDocs(qL); await Promise.all(sL.docs.map(function(d){ return fs.deleteDoc(d.ref); }));
+                const sL = await fs.getDocs(qL);
+                await Promise.all(sL.docs.map(function(d){ return fs.deleteDoc(d.ref); }));
+
+                // 再删订单头
                 const qO = fs.query(fs.collection(db,'yd_orders'), fs.where('room','==', window.ROOM_LOCK));
-                const sO = await fs.getDocs(qO); await Promise.all(sO.docs.map(function(d){ return fs.deleteDoc(d.ref); }));
+                const sO = await fs.getDocs(qO);
+                await Promise.all(sO.docs.map(function(d){ return fs.deleteDoc(d.ref); }));
+
                 alert('✅ 已清空：订单 '+sO.size+' 单，明细 '+sL.size+' 行');
-              }catch(e){ alert('清空失败：'+(e && e.message ? e.message : e)); }
+              }catch(e){
+                console.error('清空失败：', e);
+                alert('清空失败：'+(e && e.message ? e.message : e));
+              }
             };
           })();
 
-          fs.onSnapshot(qLines, function(snap){
-            const rows = [];
-            snap.forEach(function(d){
-              const data=d.data();
-              const ts = (data.createdAt && data.createdAt.toMillis) ? data.createdAt.toMillis() : 0;
-              rows.push({ id:d.id, data, ts });
-            });
-            rows.sort((a,b)=> b.ts - a.ts);
+  fs.onSnapshot(qLines, function(snap){
+  // 收集并排序
+  const rows = [];
+  snap.forEach(function(d){
+    const data = d.data();
+    const ts = (data.createdAt && data.createdAt.toMillis) ? data.createdAt.toMillis() : 0;
+    rows.push({ id:d.id, data, ts });
+  });
+  rows.sort((a,b)=> b.ts - a.ts);
 
-            __ADMIN_LAST_ROWS__ = rows;
-            renderAdminRowsCached();
+  // 缓存并渲染（使“只看未做”能即点即刷）
+  __ADMIN_LAST_ROWS__ = rows;
+  renderAdminRowsCached();
 
-            if(!firstLoad && 'Notification' in window && Notification.permission==='granted'){
-              snap.docChanges().forEach(function(ch){
-                if(ch.type==='added'){
-                  const d=ch.doc.data();
-                  if(d.status!=='done'){ new Notification('新订单 · '+d.name+' × '+d.qty); }
-                }
-              });
-            }
-            firstLoad=false;
-          }, function(err){
-            console.error('实时订单监听失败：', err);
-            const roomInfo=document.getElementById('roomInfo');
-            if(roomInfo) roomInfo.textContent='实时订单监听失败：'+err.message;
-            alert('实时订单监听失败：'+err.message);
-          });
+  // ===== 下面保留你原有“新增提醒/firstLoad”逻辑 =====
+  if(!firstLoad && 'Notification' in window && Notification.permission==='granted'){
+    snap.docChanges().forEach(function(ch){
+      if(ch.type==='added'){
+        const d=ch.doc.data();
+        if(d.status!=='done'){ new Notification('新订单 · '+d.name+' × '+d.qty); }
+      }
+    });
+  }
+  firstLoad=false;
+}, function(err){
+  console.error('实时订单监听失败：', err);
+  const roomInfo=document.getElementById('roomInfo');
+  if(roomInfo) roomInfo.textContent='实时订单监听失败：'+err.message;
+  alert('实时订单监听失败：'+err.message);
+});
+
 
           var markAllBtn=document.getElementById('markAllDone');
           if(markAllBtn){
