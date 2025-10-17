@@ -1134,16 +1134,28 @@ if (_chkOnly) _chkOnly.addEventListener('change', renderAdminRowsCached);
       }
     };
     /* ===== FIX: 键盘打开导致抽屉上移 ===== */
-if (window.visualViewport) {
+/* ===== FIX: iOS PWA 模式下键盘上移问题 ===== */
+(function fixKeyboardLift() {
   const root = document.documentElement;
-  const updateKbSafe = () => {
-    const vp = window.visualViewport;
-    const offset = window.innerHeight - vp.height - vp.offsetTop;
-    root.style.setProperty('--kb-safe', offset > 0 ? offset + 'px' : '0px');
-  };
-  window.visualViewport.addEventListener('resize', updateKbSafe);
-  window.visualViewport.addEventListener('scroll', updateKbSafe);
-}
+  let lastHeight = window.innerHeight;
+
+  function updateKbSafe() {
+    const h = window.innerHeight;
+    const diff = lastHeight - h;
+    if (diff > 150) { // 键盘打开（一般高度减少 >150）
+      root.style.setProperty('--kb-safe', diff + 'px');
+    } else if (diff < -150) { // 键盘关闭
+      root.style.setProperty('--kb-safe', '0px');
+    }
+    lastHeight = h;
+  }
+
+  window.addEventListener('resize', updateKbSafe);
+  window.addEventListener('focusout', () => {
+    // 某些设备关闭键盘不触发 resize
+    setTimeout(() => root.style.setProperty('--kb-safe', '0px'), 300);
+  });
+})();
   </script>
 </body>
 </html>
