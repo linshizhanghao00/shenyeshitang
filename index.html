@@ -912,9 +912,12 @@ addCustom.onclick = function () {
   // ✅ 清空 & 收起键盘
   cName.value = '';
   cIngs.value = '';
+  
   if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
   if (cName.blur) cName.blur();
   if (cIngs.blur) cIngs.blur();
+  document.body.classList.remove('kb-fix');
+  document.documentElement.style.setProperty('--kb-safe', '0px');
 
   // 触发一次重算，部分 iOS 机型更稳
   setTimeout(() => { window.dispatchEvent(new Event('resize')); }, 30);
