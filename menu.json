@@ -24,6 +24,6 @@
   { "name_cn": "拉面", "name_en": "Ramen", "category": "Rice", "tags": ["Noodle"], "emoji": "🍜", "photo": "/shenyeshitang/photos/ramen.webp", "desc": "劲道拉面，暖胃解馋。" },
   { "name_cn": "麻辣烫", "name_en": "Mala Tang", "category": "Rice", "tags": ["Spicy"], "emoji": "🌶️", "photo": "/shenyeshitang/photos/mala-tang.webp", "desc": "麻辣鲜香，热辣汤底，食材可自选。" },
 
-  { "name_cn": "凉拌菜", "name_en": "Cold Mixed Veg Trio", "category": "Veg", "tags": ["Cold","Refreshing"], "emoji": "🥒", "photo": "/shenyeshitang/photos/cold-mixed-veg-trio.webp", "desc": "清爽开胃三拼：黄瓜、金针菇、豆芽。" }
-  { "name_cn": "Guacamole", "name_en": "Guacamole", "category": "Veg", "tags": ["Avocado","Dip","Cold"], "emoji": "🥑", "photo": "/shenyeshitang/photos/guacamole.webp", "desc": "墨西哥牛油果酱，细腻顺滑，搭配玉米片最佳。" },
+  { "name_cn": "凉拌菜", "name_en": "Cold Mixed Veg Trio", "category": "Veg", "tags": ["Cold","Refreshing"], "emoji": "🥒", "photo": "/shenyeshitang/photos/cold-mixed-veg-trio.webp", "desc": "清爽开胃三拼：黄瓜、金针菇、豆芽。" },
+  { "name_cn": "Guacamole", "name_en": "Guacamole", "category": "Veg", "tags": ["Avocado","Dip","Cold"], "emoji": "🥑", "photo": "/shenyeshitang/photos/guacamole.webp", "desc": "墨西哥牛油果酱，细腻顺滑，搭配玉米片最佳。" }
 ]
