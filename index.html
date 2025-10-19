@@ -716,7 +716,50 @@ function iconSVG(e, label){
   im.src = 'data:image/svg+xml;utf8,' + svg;
   return im;
 }
-    function mediaFor(item){ return iconSVG(item.emoji,item.name_cn); }
+    
+    /* 有照片就用照片，没有就用 emoji */
+function iconSVG(e, label){
+  var svg = encodeURIComponent(
+    "<?xml version='1.0'?>"
+   +"<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 220 220'>"
+   +"<rect width='220' height='220' fill='none'/>"
+   +"<text x='110' y='115' font-size='96' text-anchor='middle'>"+(e||'🍽️')+"</text>"
+   +"</svg>"
+  );
+  var im = new Image();
+  im.className = 'thumb loaded';
+  im.alt = label || '菜品';
+  im.src = 'data:image/svg+xml;utf8,' + svg;
+  return im;
+}
+
+function guessPhotoURL(item){
+  try{
+    var base = '/shenyeshitang/photos/';
+    var name = (item.name_en || item.name_cn || '')
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g,'-')
+      .replace(/^-+|-+$/g,'');
+    if(!name) return null;
+    return base + name + '.webp';   // ✅ 你的文件全是 webp
+  }catch(e){ return null; }
+}
+
+/* ✅ 优先加载照片，如果加载失败自动回退 emoji */
+function mediaFor(item){
+  var url = item.photo || guessPhotoURL(item);
+  if (url){
+    var im = new Image();
+    im.className = 'thumb';
+    im.loading = 'lazy';
+    im.alt = item.name_cn || item.name_en || '菜品';
+    im.src = url;
+    im.onerror = function(){ this.replaceWith(iconSVG(item.emoji, item.name_cn)); };
+    return im;
+  }
+  return iconSVG(item.emoji, item.name_cn);
+}
+
 
     /* ============== 分类 / 分组渲染（按你的“逻辑改进摘要”） ============== */
     var MENU=[];
